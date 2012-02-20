@@ -1969,6 +1969,11 @@ static COMMAND(cmd_debug_query)
 	char *p[10];
 	int i;
 
+	if (!(params[0] && *params[0])) {
+		printq("not_enough_params", name);
+		return -1;
+	}
+
 	memset(p, 0, sizeof(p));
 
 	for (i = 0; params[i] && i < 10; i++)
