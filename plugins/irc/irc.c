@@ -526,7 +526,7 @@ static void irc_handle_line(GDataInputStream *input, gpointer data) {
 		if (found) {
 			l = g_data_input_stream_read_line(input, NULL, NULL, NULL);
 			if (l) {
-				irc_parse_line(s, l, -1);
+				irc_parse_line(s, l);
 				g_free(l);
 			}
 		}

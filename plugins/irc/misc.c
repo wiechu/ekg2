@@ -319,7 +319,7 @@ static char *irc_tolower_int(char *buf, int casemapping)
 /*
  */
 
-int irc_parse_line(session_t *s, const char *l, int fd)
+int irc_parse_line(session_t *s, const char *l)
 {
 	static GString *strbuf = NULL;
 	irc_private_t *j = s->priv;
@@ -405,7 +405,7 @@ and the prefix.
 			while(irccommands[c].type != -1) {
 				if (irccommands[c].type == 1 && irccommands[c].num == ecode) {
 					/* I'm sending c not ecode!!!! */
-					if ((*(irccommands[c].handler))(s, j, fd, c, q) == -1 ) {
+					if ((*(irccommands[c].handler))(s, j, c, q) == -1 ) {
 						debug_error("[irc] parse_line() error while executing handler!\n");
 					}
 					/* GiM: XXX I don't expect more,
@@ -417,7 +417,7 @@ and the prefix.
 #ifdef GDEBUG
 			if (irccommands[c].type == -1) {
 				debug("trying default handler\n");
-				if ((*(irccommands[0].handler))(s, j, fd, 0, q) == -1 ) {
+				if ((*(irccommands[0].handler))(s, j, 0, q) == -1 ) {
 					debug("[irc] parse_line() error while executing handler!\n");
 				}
 
@@ -429,7 +429,7 @@ and the prefix.
 				if (irccommands[c].type == 0 && 
 						!xstrcmp(irccommands[c].comm, q[1])) {
 					/* dj: instead of  ecode,    c; */
-					if ((*(irccommands[c].handler))(s, j, fd, c, q) == -1 ) {
+					if ((*(irccommands[c].handler))(s, j, c, q) == -1 ) {
 						debug_error("[irc] parse_line() error while executing handler!\n");
 					}
 					break;
