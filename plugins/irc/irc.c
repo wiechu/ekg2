@@ -572,7 +572,7 @@ static void irc_handle_connect(
 
 		if (pass && *pass)
 			ekg_fprintf(G_OUTPUT_STREAM(j->send_stream), "PASS %s\r\n", pass);
-		ekg_connection_write(j->send_stream,
+		irc_write(s,
 				"USER %s %s unused_field :%s\r\n"
 				"NICK %s\r\n",
 				j->nick, (mode && *mode) ? mode : EKG_IRC_DEFAULT_USERMODE, (real && *real) ? real : j->nick,
@@ -593,7 +593,7 @@ static void irc_handle_connect_failure(GError *err, gpointer data) {
 static int irc_really_connect(session_t *session, gboolean quiet) {
 	irc_private_t *j = irc_private(session);
 	GSocketClient *s;
-	
+
 	const int defport = session_int_get(session, "port");
 	const gchar *bindhost = session_get(session, "hostname");
 	ekg_connection_starter_t cs;
@@ -657,7 +657,7 @@ static COMMAND(irc_command_disconnect) {
 
 	j->disconnecting = TRUE;
 	if (reason && session_connected_get(session))
-		ekg_connection_write(j->send_stream, "QUIT :%s\r\n", reason);
+		irc_write(session, "QUIT :%s\r\n", reason);
 	if (session->connecting) {
 		g_cancellable_cancel(j->connect_cancellable);
 		/* XXX: how about the 'connection processing' part? */
@@ -776,12 +776,12 @@ static COMMAND(irc_command_msg) {
 		{
 			char saved = __mtmp[len_limit];
 			__mtmp[len_limit] = '\0';	/* XXX danger: cut unicode chars */
-			ekg_connection_write(j->send_stream, "%s %s :%s\r\n", (prv) ? "PRIVMSG" : "NOTICE", uid+4, __mtmp);
+			irc_write(session, "%s %s :%s\r\n", (prv) ? "PRIVMSG" : "NOTICE", uid+4, __mtmp);
 			__mtmp[len_limit] = saved;
 			__mtmp += len_limit;
 			msg_len -= len_limit;
 		}
-		ekg_connection_write(j->send_stream, "%s %s :%s\r\n", (prv) ? "PRIVMSG" : "NOTICE", uid+4, __mtmp);
+		irc_write(session, "%s %s :%s\r\n", (prv) ? "PRIVMSG" : "NOTICE", uid+4, __mtmp);
 
 		xfree(line);
 		xfree(recoded);
@@ -808,7 +808,7 @@ static COMMAND(irc_command_inline_msg) {
 }
 
 static COMMAND(irc_command_quote) {
-	ekg_connection_write(irc_private(session)->send_stream, "%s\r\n", params[0]);
+	irc_write(session, "%s\r\n", params[0]);
 	return 0;
 }
 
@@ -993,7 +993,6 @@ static void irc_display_awaylog(session_t *session) {
 }
 
 static COMMAND(irc_command_away) {
-	irc_private_t	*j = irc_private(session);
 	int		isaway = 0;
 
 	if (!xstrcmp(name, ("back"))) {
@@ -1018,12 +1017,9 @@ static COMMAND(irc_command_away) {
 	if (isaway) {
 		const char *status = ekg_status_string(session_status_get(session), 0);
 		const char *descr  = session_descr_get(session);
-		if (descr)
-			ekg_connection_write(j->send_stream, "AWAY :%s\r\n", descr);
-		else
-			ekg_connection_write(j->send_stream, "AWAY :%s\r\n", status);
+		irc_write(session, "AWAY :%s\r\n", descr ? descr : status);
 	} else {
-		ekg_connection_write(j->send_stream, "AWAY :\r\n");
+		irc_write(session, "AWAY :\r\n");
 
 		/* @ back, display awaylog. */
 		irc_display_awaylog(session);
@@ -1032,17 +1028,13 @@ static COMMAND(irc_command_away) {
 }
 
 static void irc_statusdescr_handler(session_t *s, const char *varname) {
-	irc_private_t	*j		= irc_private(s);
 	const status_t	status	= session_status_get(s);
 
 	if (status == EKG_STATUS_AWAY) {
 		const char *descr  = session_descr_get(s);
-		if (descr)
-			ekg_connection_write(j->send_stream, "AWAY :%s\r\n", descr);
-		else
-			ekg_connection_write(j->send_stream, "AWAY :%s\r\n", ekg_status_string(status, 0));
+		irc_write(s, "AWAY :%s\r\n", descr ? descr : ekg_status_string(status, 0));
 	} else {
-		ekg_connection_write(j->send_stream, "AWAY :\r\n");
+		irc_write(s, "AWAY :\r\n");
 
 		/* @ back, display awaylog. */
 		irc_display_awaylog(s);
@@ -1078,7 +1070,7 @@ static QUERY(irc_window_kill) {
 			session_connected_get(w->session)
 			)
 	{
-		ekg_connection_write(j->send_stream, "PART %s :%s\r\n", (w->target)+4, PARTMSG(w->session, NULL));
+		irc_write(w->session, "PART %s :%s\r\n", (w->target)+4, PARTMSG(w->session, NULL));
 	}
 	return 0;
 }
@@ -1370,7 +1362,7 @@ static COMMAND(irc_command_topic) {
 	else
 		newtop = saprintf("TOPIC %s\r\n", chan+4);
 
-	ekg_connection_write(j->send_stream, "%s", newtop);
+	irc_write(session, "%s", newtop);
 	g_strfreev(mp);
 	xfree (newtop);
 	xfree (chan);
@@ -1378,14 +1370,13 @@ static COMMAND(irc_command_topic) {
 }
 
 static COMMAND(irc_command_who) {
-	irc_private_t	*j = irc_private(session);
-	char		**mp, *chan;
+	char	**mp, *chan;
 
 	if (!(chan=irc_getchan(session, params, name,
 					&mp, 0, IRC_GC_CHAN)))
 		return -1;
 
-	ekg_connection_write(j->send_stream, "WHO %s\r\n", chan+4);
+	irc_write(session, "WHO %s\r\n", chan+4);
 
 	g_strfreev(mp);
 	xfree(chan);
@@ -1393,7 +1384,6 @@ static COMMAND(irc_command_who) {
 }
 
 static COMMAND(irc_command_invite) {
-	irc_private_t	*j = irc_private(session);
 	char		**mp, *chan;
 
 	if (!(chan=irc_getchan(session, params, name,
@@ -1405,7 +1395,7 @@ static COMMAND(irc_command_invite) {
 		xfree(chan);
 		return -1;
 	}
-	ekg_connection_write(j->send_stream, "INVITE %s %s\r\n", *mp, chan+4);
+	irc_write(session, "INVITE %s %s\r\n", *mp, chan+4);
 
 	g_strfreev(mp);
 	xfree(chan);
@@ -1413,7 +1403,6 @@ static COMMAND(irc_command_invite) {
 }
 
 static COMMAND(irc_command_kick) {
-	irc_private_t	*j = irc_private(session);
 	char		**mp, *chan;
 
 	if (!(chan=irc_getchan(session, params, name,
@@ -1425,7 +1414,7 @@ static COMMAND(irc_command_kick) {
 		xfree(chan);
 		return -1;
 	}
-	ekg_connection_write(j->send_stream, "KICK %s %s :%s\r\n", chan+4, *mp, KICKMSG(session, mp[1]));
+	irc_write(session, "KICK %s %s :%s\r\n", chan+4, *mp, KICKMSG(session, mp[1]));
 
 	g_strfreev(mp);
 	xfree(chan);
@@ -1456,7 +1445,7 @@ static COMMAND(irc_command_unban) {
 			if (chan && (banlist = (chan->banlist)) ) {
 				for (i=1; banlist && i<banid; banlist = banlist->next, ++i);
 				if (banlist) /* fit or add  i<=banid) ? */
-					ekg_connection_write(j->send_stream, "MODE %s -b %s\r\n", channame+4, (const gchar*) banlist->data);
+					irc_write(session, "MODE %s -b %s\r\n", channame+4, (const gchar*) banlist->data);
 				else
 					debug_warn("%d %d out of range or no such ban %08x\n", i, banid, banlist);
 			}
@@ -1464,7 +1453,7 @@ static COMMAND(irc_command_unban) {
 				debug_error("Chanell || chan->banlist not found -> channel not synced ?!Try /mode +b \n");
 		}
 		else {
-			ekg_connection_write(j->send_stream, "MODE %s -b %s\r\n", channame+4, *mp);
+			irc_write(session, "MODE %s -b %s\r\n", channame+4, *mp);
 		}
 	}
 	g_strfreev(mp);
@@ -1485,7 +1474,7 @@ static COMMAND(irc_command_ban) {
 	debug_function("[irc]_command_ban(): chan: %s mp[0]:%s mp[1]:%s\n", chan, mp[0], mp[1]);
 
 	if (!(*mp))
-		ekg_connection_write(j->send_stream, "MODE %s +b \r\n", chan+4);
+		irc_write(session, "MODE %s +b \r\n", chan+4);
 	else {
 		/* if parameter to /ban is prefixed with irc: like /ban irc:xxx
 		 * we don't care, since this is what user requested ban user with
@@ -1502,10 +1491,10 @@ static COMMAND(irc_command_ban) {
 		if (person)
 			temp = irc_make_banmask(session, person->nick+4, person->ident, person->host);
 		if (temp) {
-			ekg_connection_write(j->send_stream, "MODE %s +b %s\r\n", chan+4, temp);
+			irc_write(session, "MODE %s +b %s\r\n", chan+4, temp);
 			xfree(temp);
 		} else
-			ekg_connection_write(j->send_stream, "MODE %s +b %s\r\n", chan+4, *mp);
+			irc_write(session, "MODE %s +b %s\r\n", chan+4, *mp);
 	}
 	g_strfreev(mp);
 	xfree(chan);
@@ -1572,7 +1561,7 @@ static COMMAND(irc_command_devop) {
 
 		if (tmp) *(--tmp) = '\0';
 		op[i+2]='\0';
-		ekg_connection_write(j->send_stream, "MODE %s %s %s\r\n", chan, op, p);
+		irc_write(session, "MODE %s %s %s\r\n", chan, op, p);
 		if (!tmp) break;
 		*tmp = ' ';
 		tmp++;
@@ -1606,7 +1595,7 @@ static COMMAND(irc_command_ctcp) {
 		return -1;
 	}*/
 
-	ekg_connection_write(irc_private(session)->send_stream, "PRIVMSG %s :\01%s\01\r\n",
+	irc_write(session, "PRIVMSG %s :\01%s\01\r\n",
 			who+4, ctcps[i].name?ctcps[i].name:(*mp));
 
 	g_strfreev(mp);
@@ -1622,7 +1611,7 @@ static COMMAND(irc_command_ping) {
 		return -1;
 
 	g_get_current_time(&tv);
-	ekg_connection_write(irc_private(session)->send_stream, "PRIVMSG %s :\01PING %ld %ld\01\r\n",
+	irc_write(session, "PRIVMSG %s :\01PING %ld %ld\01\r\n",
 			who+4 ,tv.tv_sec, tv.tv_usec);
 
 	g_strfreev(mp);
@@ -1644,7 +1633,7 @@ static COMMAND(irc_command_me) {
 
 	str = irc_convert_out(j, chan+4, *mp);
 
-	ekg_connection_write(irc_private(session)->send_stream, "PRIVMSG %s :\01ACTION %s\01\r\n",
+	irc_write(session, "PRIVMSG %s :\01ACTION %s\01\r\n",
 			chan+4, str?str:"");
 
 	col = irc_ircoldcolstr_to_ekgcolstr(session, *mp, 1);
@@ -1675,11 +1664,9 @@ static COMMAND(irc_command_mode) {
 */
 	debug_function("irc_command_mode %s %s \n", chan, mp[0]);
 	if (!(*mp))
-		ekg_connection_write(irc_private(session)->send_stream, "MODE %s\r\n",
-				chan+4);
+		irc_write(session, "MODE %s\r\n", chan+4);
 	else
-		ekg_connection_write(irc_private(session)->send_stream, "MODE %s %s\r\n",
-				chan+4, *mp);
+		irc_write(session, "MODE %s %s\r\n", chan+4, *mp);
 
 	g_strfreev(mp);
 	xfree(chan);
@@ -1694,7 +1681,7 @@ static COMMAND(irc_command_umode) {
 		return -1;
 	}
 
-	ekg_connection_write(j->send_stream, "MODE %s %s\r\n", j->nick, *params);
+	irc_write(session, "MODE %s %s\r\n", j->nick, *params);
 
 	return 0;
 }
@@ -1708,10 +1695,10 @@ static COMMAND(irc_command_whois) {
 
 	debug_function("irc_command_whois(): %s\n", name);
 	if (!xstrcmp(name, ("whowas")))
-		ekg_connection_write(irc_private(session)->send_stream, "WHOWAS %s\r\n", person+4);
+		irc_write(session, "WHOWAS %s\r\n", person+4);
 	else if (!xstrcmp(name, ("wii")))
-		ekg_connection_write(irc_private(session)->send_stream, "WHOIS %s %s\r\n", person+4, person+4);
-	else	ekg_connection_write(irc_private(session)->send_stream, "WHOIS %s\r\n",  person+4);
+		irc_write(session, "WHOIS %s %s\r\n", person+4, person+4);
+	else	irc_write(session, "WHOIS %s\r\n",  person+4);
 
 	g_strfreev(mp);
 	xfree (person);
@@ -1742,7 +1729,6 @@ static QUERY(irc_status_show_handle) {
 }
 
 static COMMAND(irc_command_query) {
-	irc_private_t	*j = irc_private(session);
 	window_t	*w;
 	char		**mp, *tar, **p = xcalloc(3, sizeof(char*)), *tmp;
 	int		i;
@@ -1780,7 +1766,7 @@ static COMMAND(irc_command_query) {
 	if (!w) {
 		w = window_new(tar, session, 0);
 		if (session_int_get(session, "auto_lusers_sync") > 0)
-			ekg_connection_write(j->send_stream, "USERHOST %s\r\n", tar+4);
+			irc_write(session, "USERHOST %s\r\n", tar+4);
 	}
 
 	window_switch(w->id);
@@ -1817,7 +1803,7 @@ static COMMAND(irc_command_jopacy) {
 	} else
 		return 0;
 
-	ekg_connection_write(j->send_stream, "%s", str);
+	irc_write(session, "%s", str);
 
 	g_strfreev(mp);
 	xfree(tar);
@@ -1832,7 +1818,7 @@ static COMMAND(irc_command_nick) {
 
 	/* GiM: XXX FIXME TODO think more about session->connecting... */
 	if (session->connecting || session_connected_get(session)) {
-		ekg_connection_write(j->send_stream, "NICK %s\r\n", params[0]);
+		irc_write(session, "NICK %s\r\n", params[0]);
 		/* this is needed, couse, when connecting and server will
 		 * respond, nickname is already in use, and user
 		 * will type /nick somethin', server doesn't send respond

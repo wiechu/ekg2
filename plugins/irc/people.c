@@ -491,9 +491,9 @@ static int irc_sync_channel(session_t *s, irc_private_t *j, channel_t *p)
 	/* to ma sie rownac ile ma byc roznych syncow narazie tylko WHO
 	 * ale moze bedziemy syncowac /mode +b, +e, +I) */
 	g_get_current_time(&(p->syncstart));
-	ekg_connection_write(j->send_stream, "WHO %s\r\n", p->name+4);
-	ekg_connection_write(j->send_stream, "MODE %s +b\r\n", p->name+4);
-	ekg_connection_write(j->send_stream, "MODE %s\r\n", p->name+4);
+	irc_write(s, "WHO %s\r\n", p->name+4);
+	irc_write(s, "MODE %s +b\r\n", p->name+4);
+	irc_write(s, "MODE %s\r\n", p->name+4);
 	return 0;
 }
 

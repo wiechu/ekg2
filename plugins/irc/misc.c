@@ -616,7 +616,7 @@ IRC_COMMAND(irc_c_error)
 							session_name(s), altnick);
 					xfree(j->nick);
 					j->nick = xstrdup(altnick);
-					ekg_connection_write(j->send_stream, "NICK %s\r\n", j->nick);
+					irc_write(s, "NICK %s\r\n", j->nick);
 				}
 			}
 			break;
@@ -668,7 +668,7 @@ IRC_COMMAND(irc_c_error)
 			/* zero, identify with nickserv */
 			if (xstrlen(session_get(s, "identify"))) {
 				/* temporary */
-				ekg_connection_write(j->send_stream, "PRIVMSG nickserv :IDENTIFY %s\n", session_get(s, "identify"));
+				irc_write(s, "PRIVMSG nickserv :IDENTIFY %s\n", session_get(s, "identify"));
 				/* XXX, bedzie:
 				 *	session_get(s, "identify") 
 				 *		<nick_ns> <host_ns *weryfikacja zeby nikt nie spoofowac*> "<NICK1 HASLO>" "<NICK2 HASLO>" "[GLOWNE HASLO]"
@@ -683,7 +683,7 @@ IRC_COMMAND(irc_c_error)
 
 			/* first we join */
 			if (xstrlen(session_get(s, "AUTO_JOIN")))
-				ekg_connection_write(j->send_stream, "JOIN %s\r\n", session_get(s, "AUTO_JOIN"));
+				irc_write(s, "JOIN %s\r\n", session_get(s, "AUTO_JOIN"));
 		case 372:
 		case 375:
 			if (session_int_get(s, "SHOW_MOTD") != 0) {
@@ -993,7 +993,7 @@ IRC_COMMAND(irc_c_list)
  */
 IRC_COMMAND(irc_c_ping)
 {
-	ekg_connection_write(j->send_stream, "PONG %s\r\n", param[2]);
+	irc_write(s, "PONG %s\r\n", param[2]);
 	if (session_int_get(s, "DISPLAY_PONG"))
 		print_info("__status", s, "IRC_PINGPONG", session_name(s), OMITCOLON(param[2]));
 	return 0;
@@ -1623,7 +1623,7 @@ IRC_COMMAND(irc_c_invite)
 	xfree(cchn);
 
 	if (session_int_get(s, "AUTO_JOIN_CHANS_ON_INVITE") == 1)
-		ekg_connection_write(j->send_stream, "JOIN %s\r\n", channel);
+		irc_write(s, "JOIN %s\r\n", channel);
 
 	if (tmp) *tmp = '!';
 
@@ -1740,7 +1740,7 @@ IRC_COMMAND(irc_c_mode)
 		print_info(w?w->target:NULL, s, "IRC_MODE_CHAN_NEW", session_name(s),
 				param[0]+1, bang?bang+1:"", cchn, moderpl->str);
 /*		if (moderpl->str[1] == 'b')
- *			ekg_connection_write(j->send_stream, "MODE %s +%c\r\n",  irc_channame, moderpl->str[1]);
+ *			irc_write(s, "MODE %s +%c\r\n",  irc_channame, moderpl->str[1]);
  */
 	} else {
 		print_info(w?w->target:NULL, s, "IRC_MODE_CHAN", session_name(s),

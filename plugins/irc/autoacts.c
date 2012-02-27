@@ -178,12 +178,12 @@ int irc_autorejoin(session_t *s, int when, char *chan) {
 				}
 			}
 			if (st->len) 
-				ekg_connection_write(j->send_stream, "JOIN %s\r\n", st->str);
+				irc_write(s, "JOIN %s\r\n", st->str);
 			string_free(st, 1);
 			break;
 
 		case IRC_REJOIN_KICK:
-			ekg_connection_write(j->send_stream, "JOIN %s\r\n", chan);
+			irc_write(s, "JOIN %s\r\n", chan);
 			break;
 
 		default:
