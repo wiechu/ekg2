@@ -307,7 +307,7 @@ int irc_parse_line(session_t *s, const char *l)
 {
 	static GString *strbuf = NULL;
 	irc_private_t *j = s->priv;
-	int	i, c=0, ecode;
+	int	i, c=0, ecode, n_params;
 	char	*p, *cmd, *colon2, **args = NULL, **pfxcmd = NULL;
 
 	gchar *buf;
@@ -381,6 +381,7 @@ and the prefix.
 	debug_iorecv("\n");
 #endif
 
+	n_params = g_strv_length(args);
 	if (xstrlen(cmd) > 1) {
 		if(!gatoi(cmd, &ecode)) {
 			/* for scripts */
@@ -398,6 +399,10 @@ and the prefix.
 			c=0;
 			while(irccommands[c].type != -1) {
 				if (irccommands[c].type == 1 && irccommands[c].num == ecode) {
+					if (irccommands[c].min_params > n_params) {
+						debug_error("[irc] parse_line() Not enough parameters! cmd=%s, n=%d, min=%d\n",
+								cmd, n_params, irccommands[c].min_params);
+					} else
 					/* I'm sending c not ecode!!!! */
 					if ((*(irccommands[c].handler))(s, j, c, pfxcmd, args) == -1 ) {
 						debug_error("[irc] parse_line() error while executing handler!\n");
@@ -420,8 +425,11 @@ and the prefix.
 		} else {
 			c=0;
 			while(irccommands[c].type != -1) {
-				if (irccommands[c].type == 0 &&
-						!xstrcmp(irccommands[c].comm, cmd)) {
+				if (irccommands[c].type == 0 && !xstrcmp(irccommands[c].comm, cmd)) {
+					if (irccommands[c].min_params > n_params) {
+						debug_error("[irc] parse_line() Not enough parameters! cmd=%s, n=%d, min=%d\n",
+								cmd, n_params, irccommands[c].min_params);
+					} else
 					/* dj: instead of  ecode,    c; */
 					if ((*(irccommands[c].handler))(s, j, c, pfxcmd, args) == -1 ) {
 						debug_error("[irc] parse_line() error while executing handler!\n");
