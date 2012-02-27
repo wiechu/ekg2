@@ -22,8 +22,22 @@
 
 #include "irc.h"
 
-#define IRC_COMMAND(x) static int x(session_t *s, irc_private_t *j, int ecode, char **param)
-typedef int (*Irc_Cmd)		   (session_t * , irc_private_t * , int      , char **);
+/*
+ * IRC_COMMAND()
+ *
+ * s		- session
+ * j		- session private
+ * ecode	- command number in irccommands[]
+ * pfxcmd	- prefixes & command
+ *			0 - prefix or ""
+ *			1 - nick part or ""
+ *			2 - indent host or ""
+ *			3 - command name
+ * args		- command's parameters
+ *
+ */
+#define IRC_COMMAND(x) static int x(session_t *s, irc_private_t *j, int ecode, char **pfxcmd, char **args)
+typedef int (*Irc_Cmd)		   (session_t * , irc_private_t * , int      , char **      , char **);
 
 #define IRC_LISTBAN		0x001
 #define IRC_LISTEXC		0x002
