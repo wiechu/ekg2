@@ -132,6 +132,24 @@ const gint fillchars_len = 2;
 
 PLUGIN_DEFINE(irc, PLUGIN_PROTOCOL, irc_theme_init);
 
+void irc_write(session_t *session, const gchar *format, ...) {
+	irc_private_t *j = irc_private(session);
+	char *tmp, **lines;
+	va_list args;
+	int i;
+
+	va_start(args, format);
+	tmp = g_strdup_vprintf(format, args);
+	lines = g_strsplit(tmp, "\r\n", 0);
+	for (i=0; lines[i]; i++)
+		if (*lines[i])
+			debug_io("irc_write(0x%x) %s\n", session, lines[i]);
+	ekg_connection_write(j->send_stream, tmp);
+	g_strfreev(lines);
+	xfree(tmp);
+	va_end(args);
+}
+
 /**
  * irc_session_init()
  *
