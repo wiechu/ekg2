@@ -631,18 +631,16 @@ IRC_COMMAND(irc_c_error)
 			dest = t;
 			// NO BREAK!;
 		/* topic */
-		case 331:
-		case 332:
+		case 331:	// RPL_NOTOPIC		[mynick] [channel] [:No topic is set]
+		case 332:	// RPL_TOPIC		[mynick] [channel] [:topic of channel]
 			IRC_TO_LOWER(args[1]);
-			if ((chanp = irc_find_channel(j->channels, args[1])))
-			{
-				xfree(chanp->topic);
+			if ((chanp = irc_find_channel(j->channels, args[1]))) {
+				g_free(chanp->topic);
 				chanp->topic  = g_strdup(args[2]);
 
 				coloured = irc_ircoldcolstr_to_ekgcolstr(s, chanp->topic, 1);
 				tmpchn	= clean_channel_names(s, args[1]);
-				print_info(dest, s, irccommands[ecode].name,
-						session_name(s), tmpchn, coloured);
+				print_info(dest, s, irccommands[ecode].name, session_name(s), tmpchn, coloured);
 				xfree(coloured);
 			}
 			break;
@@ -773,8 +771,18 @@ char *clean_channel_names(session_t *session, char *channels) {
 	return ret;
 }
 
-IRC_COMMAND(irc_c_whois)
-{
+IRC_COMMAND(irc_c_whois) {
+/*
+	311	RPL_WHOISUSER		[mynick] <nick> <user> <host> * :<real name>
+	312	RPL_WHOISSERVER		[mynick] <nick> <server> :<server info>
+	313	RPL_WHOISOPERATOR	[mynick] <nick> :is an IRC operator
+	314	RPL_WHOWASUSER		[mynick] <nick> <user> <host> * :<real name>
+	317	RPL_WHOISIDLE		[mynick] <nick> <integer> :seconds idle
+	318	RPL_ENDOFWHOIS		[mynick] <nick> :End of WHOIS list
+	319	RPL_WHOISCHANNELS	[mynick] <nick> :*( ( "@" / "+" ) <channel> " " )
+	320	RPL_WHOISMISC		[mynick] 
+	369	RPL_ENDOFWHOWAS		[mynick] <nick> :End of WHOWAS
+*/
 	char		*t = irc_uid(args[1]), *dest = NULL;
 	char		*str, *tmp, *col[5];
 	int		secs = 0, mins, hours, days, which, i;

@@ -206,8 +206,8 @@ static const IrcCommand irccommands[] =
 /*	{ 1,	325,	NULL,	"RPL_UNIQOPIS",		&irc_c_error,	*/
 	{ 1,	324,	NULL,	"RPL_CHANNELMODEIS",	&irc_c_mode,	IRC_RPL_OTHER,	0 },
 	/* 331 is really RPL_NOTOPIC, but I don't want another format... */
-	{ 1,	331,	NULL,	"RPL_TOPIC",		&irc_c_error,	IRC_RPL_OTHER,	0 },
-	{ 1,	332,	NULL,	"RPL_TOPIC",		&irc_c_error,	IRC_RPL_OTHER,	0 },
+	{ 1,	331,	NULL,	"RPL_TOPIC",		&irc_c_error,	IRC_RPL_OTHER,	2 },
+	{ 1,	332,	NULL,	"RPL_TOPIC",		&irc_c_error,	IRC_RPL_OTHER,	2 },
 	/* [*] 333 not in rfc 2812 */
 	{ 1,	333,	NULL,	"RPL_TOPICBY",		&irc_c_error,	IRC_RPL_OTHER,	3 },
 	{ 1,	341,	NULL,	"RPL_INVITE",		&irc_c_error,	IRC_RPL_OTHER,	3 },
@@ -304,7 +304,7 @@ static const IrcCommand irccommands[] =
 
 	{ 0,	0,	"PING",	"PING",			&irc_c_ping,	0,	0 },
 	{ 0,	0,	"INVITE", "INVITE",		&irc_c_invite,	0,	0 },
-	{ 0,	0,	"NICK", "NICK",			&irc_c_nick,	0,	0 },
+	{ 0,	0,	"NICK", "NICK",			&irc_c_nick,	0,	1 },
 	{ 0,	0,	"PRIVMSG", "PRIVMSG",		&irc_c_msg,	0,	0 },
 	{ 0,	0,	"NOTICE", "NOTICE",		&irc_c_msg,	0,	0 },
 	{ 0,	0,	"JOIN", "JOIN",			&irc_c_join,	0,	0 },
