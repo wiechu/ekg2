@@ -201,6 +201,8 @@ static int is_ctcp(char *mesg)
 			return i+1;
 		}
 
+	if (p) *p = ' ';
+
 	return 0;
 }
 
@@ -208,14 +210,12 @@ char *ctcp_parser(session_t *sess, int ispriv, char *sender, char *recp, char *s
 {
 	irc_private_t	*j = session_private_get(sess);
 	char		*begin, *end, *winname, *p, *bang, *newsender, *coloured;
-	string_t	ret;
 	int		ctcp;
 
 	if (!s || xstrlen(s) < 2)
 		return s?xstrdup(s):NULL;
 
 	winname = irc_uid(recp);
-	ret = string_init("");
 	p = begin = s;
 
 	while (1) {
@@ -250,29 +250,19 @@ char *ctcp_parser(session_t *sess, int ispriv, char *sender, char *recp, char *s
 			xfree(coloured);
 
 			if (bang) *bang = '!';
-			string_append(ret, p);
-			p = end+1;
 		} else {
-			/*
-			print_info(winname, sess, "irc_unknown_ctcp",
-					session_names(sess), sender, begin,
-					spc+1);
-			*spc = ' ';
-			*/
-			irc_write(sess, "NOTICE %s :\01ERRMSG %s :unknown ctcp\01\r\n",
-					sender, begin);
-			begin--; *begin = 1; *end = 1; 
+			print_info(winname, sess, "irc_unknown_ctcp", session_name(sess), sender, begin, end+1);
+#if 0
+			irc_write(sess, "NOTICE %s :\01ERRMSG %s :unknown ctcp\01\r\n", sender, begin);
+#endif
 		}
-		begin=end+1;
+		p = begin = end+1;
 	}
 
 	xfree(winname);
-	string_append(ret, p);
-	p = string_free(ret, 0);
 
 	if (xstrlen(p))
-		return p;
-	xfree(p);
+		return g_strdup(p);
 	return NULL;
 }
 
