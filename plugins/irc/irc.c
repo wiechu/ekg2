@@ -1905,6 +1905,20 @@ static variable_map_t ban_type_map[] = {
 		VAR_MAP_END()
 	};
 
+static variable_map_t display_map[] = {
+		VAR_MAP_ADD( 0, 0, "all channels"),
+		VAR_MAP_ADD( 1, 0, "status window"),
+		VAR_MAP_ADD( 2, 0, "current window"),
+		VAR_MAP_END()
+	};
+
+static variable_map_t rejoin_map[] = {
+		VAR_MAP_ADD( 0, 0, "none"),
+		VAR_MAP_ADD( 1, 0, "kick"),
+		VAR_MAP_ADD( 2, 0, "[re]connect"),
+		VAR_MAP_END()
+	};
+
 static plugins_params_t irc_plugin_vars[] = {
 	/* lower case: names of variables that reffer to client itself */
 	PLUGIN_VAR_ADD("alt_nick",		VAR_STR, NULL, 0, NULL),
@@ -1927,7 +1941,7 @@ static plugins_params_t irc_plugin_vars[] = {
 	PLUGIN_VAR_ADD("hostname",		VAR_STR, 0, 0, NULL),
 	PLUGIN_VAR_ADD("identify",		VAR_STR, 0, 0, NULL),
 	PLUGIN_VAR_ADD("log_formats",		VAR_STR, "irssi", 0, NULL),
-	PLUGIN_VAR_ADD("make_window",		VAR_INT, "2", 0, NULL),
+	PLUGIN_VAR_ADD("make_window",		VAR_INT, "2", 0, NULL),	// XXX VAR_MAP
 #define IRC_PLUGIN_VAR_NICKNAME 21
 	PLUGIN_VAR_ADD("nickname",		VAR_STR, NULL, 0, NULL),		/* value will be inited @ irc_plugin_init() [pwd_entry->pw_name] */
 	PLUGIN_VAR_ADD("password",		VAR_STR, 0, 1, NULL),
@@ -1948,14 +1962,14 @@ static plugins_params_t irc_plugin_vars[] = {
 	PLUGIN_VAR_ADD("DEFAULT_COLOR",			VAR_INT, "0", 0, NULL),			/* TODO :> */
 	PLUGIN_VAR_ADD("DISPLAY_AWAY_NOTIFICATION",	VAR_INT, "1", 0, NULL),
 	PLUGIN_VAR_ADD("DISPLAY_IN_CURRENT",		VAR_INT, "2", 0, NULL),
-	PLUGIN_VAR_ADD("DISPLAY_NICKCHANGE",		VAR_INT, "0", 0, NULL),
+	PLUGIN_VAR_ADD_MAP("DISPLAY_NICKCHANGE",	VAR_MAP, "0", 0, NULL, display_map),
 	PLUGIN_VAR_ADD("DISPLAY_PONG",			VAR_BOOL, "0", 0, NULL),
-	PLUGIN_VAR_ADD("DISPLAY_QUIT",			VAR_INT, "0", 0, NULL),
+	PLUGIN_VAR_ADD_MAP("DISPLAY_QUIT",		VAR_MAP, "0", 0, NULL, display_map),
 	/* plugin_var_add(&irc_plugin, "HIGHLIGHTS", VAR_STR, 0, 0, NULL); */
 	PLUGIN_VAR_ADD("KICK_MSG",			VAR_STR, DEFKICKMSG, 0, NULL),
 	PLUGIN_VAR_ADD("PART_MSG",			VAR_STR, DEFPARTMSG, 0, NULL),
 	PLUGIN_VAR_ADD("QUIT_MSG",			VAR_STR, DEFQUITMSG, 0, NULL),
-	PLUGIN_VAR_ADD("REJOIN",			VAR_INT, "0", 0, NULL),
+	PLUGIN_VAR_ADD_MAP("REJOIN",			VAR_MAP, "0", 0, NULL, rejoin_map),
 	PLUGIN_VAR_ADD("REJOIN_TIME",			VAR_INT, "2", 0, NULL),
 	PLUGIN_VAR_ADD("SHOW_NICKMODE_EMPTY",		VAR_INT, "1", 0, NULL),
 	PLUGIN_VAR_ADD("SHOW_MOTD",			VAR_BOOL, "1", 0, NULL),
