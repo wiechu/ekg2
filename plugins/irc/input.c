@@ -457,10 +457,34 @@ CTCP_COMMAND(ctcp_main_noti)
 	 *	like most irc clients do.
 	 */
 
-	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&8),
-			"irc_ctcp_reply", session_name(s),
-			ctcps[number-1].name, sender+4, idhost, t);
-	xfree (t);
+	switch (number) {
+		case CTCP_PING:
+		{
+			GTimeVal t1, now;
+			int diff, err = 0;
+			char *x, *bang;
+			if ((bang = xstrchr(t, ' '))) {
+				*bang = '\0';
+				t1.tv_sec = strtol(t, &x, 10);	err = (x == t);
+				t1.tv_usec = strtol(bang+1, &x, 10);	err = (x == bang+1);
+				if (!err) {
+					g_free(t);
+					g_get_current_time(&now);
+					diff = (now.tv_sec-t1.tv_sec)*1000 + (now.tv_usec-t1.tv_usec)/1000;
+					t = saprintf("%d.%03d s", diff/1000, diff % 1000);
+				}
+				*bang = '\0';
+			}
+			/* no break */
+		}
+		default:
+			print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&8),
+					"irc_ctcp_reply", session_name(s),
+					ctcps[number-1].name, sender+4, idhost, t);
+			break;
+	}
+
+	g_free (t);
 
 	return (0);
 }

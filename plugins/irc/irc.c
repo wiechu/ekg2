@@ -1594,27 +1594,35 @@ static COMMAND(irc_command_devop) {
 }
 
 static COMMAND(irc_command_ctcp) {
-	int		i;
+	int		ctcp;
 	char		*who;
 	char		**mp;
 
 	/* GiM: XXX */
-	if (!(who=irc_getchan(session, params, name,
-					&mp, 0, IRC_GC_ANY)))
+	if (!(who=irc_getchan(session, params, name, &mp, 0, IRC_GC_ANY)))
 		return -1;
 
 	if (*mp) {
-		for (i=0; ctcps[i].name; i++)
-			if (!xstrcasecmp(ctcps[i].name, *mp))
+		for (ctcp=1; ctcps[ctcp-1].name; ctcp++)
+			if (!xstrcasecmp(ctcps[ctcp-1].name, *mp))
 				break;
-	} else i = CTCP_VERSION-1;
+	} else ctcp = CTCP_VERSION;
 
-	/*if (!ctcps[i].name) {
-		return -1;
-	}*/
+	switch (ctcp) {
+		case CTCP_PING:
+		{
+			static GTimeVal t;
 
-	irc_write(session, "PRIVMSG %s :\01%s\01\r\n",
-			who+4, ctcps[i].name?ctcps[i].name:(*mp));
+			g_get_current_time(&t);
+			irc_write(session, "PRIVMSG %s :\01PING %ld %ld\01\r\n",
+				who+4, t.tv_sec, t.tv_usec);
+			break;
+		}
+		default:
+			irc_write(session, "PRIVMSG %s :\01%s\01\r\n",
+				who+4, ctcps[ctcp-1].name?ctcps[ctcp-1].name:(*mp));
+			break;
+	}
 
 	g_strfreev(mp);
 	xfree(who);
