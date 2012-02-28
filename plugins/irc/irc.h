@@ -124,7 +124,7 @@ void irc_handle_disconnect(session_t *s, const char *reason, int type);
 
 /* checks if name is in format irc:something
  * checkcon is one of:
- *   name is		   channel   |	nick 
+ *   name is		   channel   |	nick
  *   IRC_GC_CHAN	-  channame  |	NULL
  *   IRC_GC_NOT_CHAN	-  NULL      | nickname
  *   IRC_GC_ANY		-  name if it's in proper format [irc:something]

@@ -780,7 +780,7 @@ IRC_COMMAND(irc_c_whois) {
 	317	RPL_WHOISIDLE		[mynick] <nick> <integer> :seconds idle
 	318	RPL_ENDOFWHOIS		[mynick] <nick> :End of WHOIS list
 	319	RPL_WHOISCHANNELS	[mynick] <nick> :*( ( "@" / "+" ) <channel> " " )
-	320	RPL_WHOISMISC		[mynick] 
+	320	RPL_WHOISMISC		[mynick]
 	369	RPL_ENDOFWHOWAS		[mynick] <nick> :End of WHOWAS
 */
 	char		*t = irc_uid(args[1]), *dest = NULL;

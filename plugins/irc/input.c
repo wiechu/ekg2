@@ -41,7 +41,7 @@ static int irc_getircoldcol(char *org)
 	char	*p = org;
 	int	ibg, ifg, isfg, isbg, isdel, i, ret;
 
-	if (!p || !*p) 
+	if (!p || !*p)
 		return 0;
 
 	isfg = isbg = isdel = 0;
@@ -53,7 +53,7 @@ static int irc_getircoldcol(char *org)
 	if (*p == ',') {
 		p++; isdel=1;
 		if (sscanf(p, "%02d", &ibg) == 1) {
-			p++; if(isdigit(*p)) p++; 
+			p++; if(isdigit(*p)) p++;
 			isbg = 1;
 		}
 	}
@@ -64,7 +64,7 @@ static int irc_getircoldcol(char *org)
 	if (isfg) {
 		ret |= (isfg<<17);
 		ret |= (ifg<<8);
-	} 
+	}
 	if (isdel && !isbg) { isbg = 1;  ibg=DEFAULT_COLOR; }
 	if (isbg) {
 		ret |= (isbg<<16);
@@ -91,11 +91,11 @@ char *irc_ircoldcolstr_juststrip(session_t *sess, char *inp)
 		{
 			col = irc_getircoldcol(str+1);
 			str+=(col>>24)&0xff;
-		} else if (*str == 2) /* ^b */ {} 
+		} else if (*str == 2) /* ^b */ {}
 		else if (*str == 15) /* ^o */ {}
 		else if (*str == 18 || *str == 22) /* ^r */ {}
 		else if (*str == 31) /* ^_ */ {}
-		else 
+		else
 			*back++ = *str;
 		str++;
 	}
@@ -155,7 +155,7 @@ coloring_finito:
 			string_append(s, "\\\\");
 		else if ((*str == '/') && (str[1] == '|'))
 			string_append(s, "//");
-		else 
+		else
 			string_append_c(s, *str);
 		str++;
 	}
@@ -171,7 +171,7 @@ char *irc_ircoldcolstr_to_ekgcolstr(session_t *sess, char *str, int strip)
 
 	if (!str || !(*str))
 		return xstrdup("");
-	
+
 	format = irc_ircoldcolstr_to_ekgcolstr_nf(sess, str, strip);
 	formatted = format_string(format);
 
@@ -219,7 +219,7 @@ char *ctcp_parser(session_t *sess, int ispriv, char *sender, char *recp, char *s
 	p = begin = s;
 
 	while (1) {
-		if (!(begin = xstrchr(begin, 1))) 
+		if (!(begin = xstrchr(begin, 1)))
 			break;
 		if (!(end = xstrchr(begin+1, 1)))
 			break;
@@ -228,7 +228,7 @@ char *ctcp_parser(session_t *sess, int ispriv, char *sender, char *recp, char *s
 		*end = '\0';
 		if ((ctcp = is_ctcp(begin))) {
 
-			if ((bang = xstrchr(sender, '!'))) 
+			if ((bang = xstrchr(sender, '!')))
 				*bang = '\0';
 
 			newsender = irc_uid(sender);
@@ -243,7 +243,7 @@ char *ctcp_parser(session_t *sess, int ispriv, char *sender, char *recp, char *s
 				/* blah blah blah */
 				}
 			} else {
-				ctcp_main_noti(sess, j, ctcp, coloured, newsender, 
+				ctcp_main_noti(sess, j, ctcp, coloured, newsender,
 						bang?bang+1:"", winname, to_us);
 			}
 			xfree(newsender);
@@ -333,9 +333,9 @@ switch (number) {
 	xfree(ta);
 	break;
 
-	
+
     case CTCP_VERSION:	/* ===== ===== ===== ===== ===== VERSION */
-	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4), 
+	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
 			ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
 			session_name(s), purename, idhost, cchname, ctcp);
 
@@ -404,7 +404,7 @@ switch (number) {
 			purename, space?space:"");
 	break;
 
-	
+
     case CTCP_TIME:		/* ===== ===== ===== ===== ===== TIME */
 	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
 			ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
@@ -429,7 +429,7 @@ switch (number) {
 			purename, space?space:"");
 	break;
 
-	
+
 } /* switch(number) */
 
 	xfree(cchname);
@@ -452,7 +452,7 @@ CTCP_COMMAND(ctcp_main_noti)
 	if (!ischn && !w && !(mw&4)) win = window_current->target;
 
 	t = irc_ircoldcolstr_to_ekgcolstr(s, space,1);
-	/* if number == CTCP_PING, we could display 
+	/* if number == CTCP_PING, we could display
 	 *	differences between current gettimeofday() && recv
 	 *	like most irc clients do.
 	 */
@@ -461,7 +461,7 @@ CTCP_COMMAND(ctcp_main_noti)
 			"irc_ctcp_reply", session_name(s),
 			ctcps[number-1].name, sender+4, idhost, t);
 	xfree (t);
-	
+
 	return (0);
 }
 

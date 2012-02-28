@@ -56,7 +56,7 @@ int irc_xstrcasecmp_default(char *str1, char *str2)
  * nick can contain a mode prefix (one of): '@%+'
  *
  * list should be one of:
- *     priv_data->channels 
+ *     priv_data->channels
  *     priv_data->people->channels->onchan
  */
 people_t *irc_find_person(irc_private_t *j, list_t p, char *nick)
@@ -175,7 +175,7 @@ static people_t *irc_add_person_int(session_t *s, irc_private_t *j,
 	if (mode) nick++;
 
 	ircnick = irc_uid(nick);
-	
+
 	w = window_find_s(s, chan->name);
 	/* add user to userlist of window (of a given channel) if not yet there */
 	if (w && !(ulist = userlist_find_u(&(w->userlist), ircnick))) {
@@ -286,7 +286,7 @@ int irc_add_people(session_t *s, irc_private_t *j, char *names, char *channame)
 	query_emit(NULL, "userlist-refresh");
 
 	g_strfreev(save);
-	return 0;	
+	return 0;
 }
 
 static int irc_del_person_channel_int(session_t *s, irc_private_t *j, people_t *nick, channel_t *chan) {
@@ -298,32 +298,32 @@ static int irc_del_person_channel_int(session_t *s, irc_private_t *j, people_t *
 		debug_error("programmer's mistake in call to irc_del_channel_int: nick: %s chan: %s\n", nick ? "OK" : "NULL", chan ? "OK" : "NULL");
 		return -1;
 	}
-	
+
 	/* GiM: We can't use chan->window->userlist,
-	 * cause, window could be already destroyed. ;/ 
+	 * cause, window could be already destroyed. ;/
 	 */
 	if ((w = window_find_s(s, chan->name)))
 		ulist = userlist_find_u(&(w->userlist), nick->nick);
 	if (ulist) {
-	/* delete from userlist 
+	/* delete from userlist
 		debug("-userlisty, "); */
 		userlist_remove_u(&(w->userlist), ulist);
 	}
-	
+
 	if ((tmp = irc_find_person_chan(nick->channels, chan->name))) {
-	/* delete entry in priv_data->people->channels 
+	/* delete entry in priv_data->people->channels
 		debug("-lista kana³ów usera, "); */
 		list_remove(&(nick->channels), tmp, 1);
 	}
 	if (!(nick->channels)) {
-	/* delete entry in priv_data->people 
+	/* delete entry in priv_data->people
 		debug("-%s lista ludzi, ", nick->nick); */
 		LIST_REMOVE(&(j->people), nick, list_irc_people_free);
-		
+
 		list_remove(&(chan->onchan), nick, 0);
 		return 1;
 	}
-	
+
 	/* delete entry in priv_data->channels->onchan
 	debug("-z kana³u\n"); */
 	list_remove(&(chan->onchan), nick, 0);
@@ -331,7 +331,7 @@ static int irc_del_person_channel_int(session_t *s, irc_private_t *j, people_t *
 }
 
 /* irc_del_person_channel()
- * 
+ *
  * deletes data from internal structures, when user has been kicked of or parts from a given channel
  *
  * @param s - current session structure
@@ -389,7 +389,7 @@ int irc_del_person(session_t *s, irc_private_t *j, char *nick,
 	int ret;
 	char *longnick;
 
-	if (!(person = irc_find_person(j, j->people, nick))) 
+	if (!(person = irc_find_person(j, j->people, nick)))
 		return -1;
 
 	/* if person doesn't have any channels, we shouldn't get here
@@ -400,7 +400,7 @@ int irc_del_person(session_t *s, irc_private_t *j, char *nick,
 		 */
 		return -1;
 	}
-	/* 
+	/*
 	 * GiM: removing from priv_data->people is in
 	 *	irc_del_person_channel_int
 	 *
@@ -411,7 +411,7 @@ int irc_del_person(session_t *s, irc_private_t *j, char *nick,
 
 		if (doprint)
 			print_info(pech->chanp->name,
-				s, "irc_quit", session_name(s), 
+				s, "irc_quit", session_name(s),
 				nick, wholenick, reason);
 
 		/* if this call returns !0 it means
@@ -472,7 +472,7 @@ int irc_del_channel(session_t *s, irc_private_t *j, char *name)
 	/* GiM: because we check j->channels in our kill-window handler
 	 * this must be done, before, we'll try to kill_window.... */
 	list_remove(&(j->channels), chan, 1);
-	
+
 	w = window_find_s(s, tmp);
 	if (w && (session_int_get(s, "close_windows") > 0)) {
 		debug("[irc]_del_channel() window_kill(w); %s\n", w->target);
@@ -485,7 +485,7 @@ int irc_del_channel(session_t *s, irc_private_t *j, char *name)
 }
 
 
-static int irc_sync_channel(session_t *s, irc_private_t *j, channel_t *p) 
+static int irc_sync_channel(session_t *s, irc_private_t *j, channel_t *p)
 {
 	p->syncmode = 2;
 	/* to ma sie rownac ile ma byc roznych syncow narazie tylko WHO
@@ -523,7 +523,7 @@ int irc_color_in_contacts(irc_private_t *j, int mode, userlist_t *ul)
 	/* GiM: this could be done much easier on intel ;/ */
 	for (i=0; i<len; i++)
 		if (mode & (1<<i)) break;
-	
+
 	switch (j->nick_modes[i]) {
 		case 'o':	ul->status = EKG_STATUS_AVAIL;		break;	/* op */
 		case 'h':	ul->status = EKG_STATUS_AWAY;		break;	/* half-op */
@@ -544,7 +544,7 @@ int irc_nick_prefix(irc_private_t *j, people_chan_t *ch, int irc_color)
 
 	return 0;
 }
-		
+
 /* irc_nick_change()
  *
  * this is internal function called when give person changes nick
@@ -655,7 +655,7 @@ int irc_free_people(session_t *s, irc_private_t *j)
 		w = window_find_s(s, chan->name);
 		if (w && w->userlist)
 			userlists_destroy(&(w->userlist));
-		/* 
+		/*
 		 * window_kill(chan->window, 1);
 		 */
 	}

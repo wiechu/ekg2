@@ -67,7 +67,7 @@ QUERY(irc_onkick_handler) {
 			int rejoin_time = session_int_get(s, "REJOIN_TIME");
 
 			/* if it's negative value, fix it. cause we set REJOIN... */
-			if (rejoin_time < 0) 
+			if (rejoin_time < 0)
 				rejoin_time = 0;
 
 			/* if we don't want to wait after kick, we do it here. not in next ekg_loop() */
@@ -86,8 +86,8 @@ QUERY(irc_onkick_handler) {
 			timer_add(&irc_plugin, NULL, rejoin_time, 0, irc_autorejoin_timer, data);
 			return 3;
 		}
-	} 
-	
+	}
+
 	return 2;
 }
 
@@ -164,7 +164,7 @@ int irc_autorejoin(session_t *s, int when, char *chan) {
 
 				if (valid_plugin_uid(s->plugin, w->target) != 1)	/* check if window is correct for irc: */
 					continue;
-				
+
 				if (!xstrchr(chanprefix, (w->target)[4]))		/* check if this is channel.. */
 					continue;
 
@@ -177,7 +177,7 @@ int irc_autorejoin(session_t *s, int when, char *chan) {
 					string_append(st, w->target + 4);
 				}
 			}
-			if (st->len) 
+			if (st->len)
 				irc_write(s, "JOIN %s\r\n", st->str);
 			string_free(st, 1);
 			break;
