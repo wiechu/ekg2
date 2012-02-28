@@ -209,8 +209,8 @@ static const IrcCommand irccommands[] =
 	{ 1,	331,	NULL,	"RPL_TOPIC",		&irc_c_error,	IRC_RPL_OTHER,	0 },
 	{ 1,	332,	NULL,	"RPL_TOPIC",		&irc_c_error,	IRC_RPL_OTHER,	0 },
 	/* [*] 333 not in rfc 2812 */
-	{ 1,	333,	NULL,	"RPL_TOPICBY",		&irc_c_error,	IRC_RPL_OTHER,	0 },
-	{ 1,	341,	NULL,	"RPL_INVITE",		&irc_c_error,	IRC_RPL_OTHER,	0 },
+	{ 1,	333,	NULL,	"RPL_TOPICBY",		&irc_c_error,	IRC_RPL_OTHER,	3 },
+	{ 1,	341,	NULL,	"RPL_INVITE",		&irc_c_error,	IRC_RPL_OTHER,	3 },
 /*	{ 1,	443, G->dj: ??? */
 /*	{ 1,	351,	NULL,	"RPL_VERSION",		&irc_c_error,	*/
 	{ 1,	353,	NULL,	"RPL_NAMREPLY",		&irc_c_namerpl,	0,	0 },
@@ -226,10 +226,10 @@ static const IrcCommand irccommands[] =
 	{ 1,	367,	NULL,	"RPL_BANLIST",		&irc_c_list,	IRC_LISTBAN,	0 },
 	{ 1,	368,	NULL,	"RPL_ENDOFBANLIST",	&irc_c_list,	IRC_LISTBAN|IRC_LISTEND,	0 },
 /*	{ 1,	371,	NULL,	"RPL_INFO",		&irc_c_error,	*/
-	{ 1,	372,	NULL,	"RPL_MOTD",		&irc_c_error,	IRC_RPL_OTHER,	0 },
+	{ 1,	372,	NULL,	"RPL_MOTD",		&irc_c_error,	IRC_RPL_OTHER,	2 },
 /*	{ 1,	374,	NULL,	"RPL_ENDOFINFO",	&irc_c_error,	*/
-	{ 1,	375,	NULL,	"RPL_MOTDSTART",	&irc_c_error,	IRC_RPL_OTHER,	0 },
-	{ 1,	376,	NULL,	"RPL_ENDOFMOTD",	&irc_c_error,	IRC_RPL_OTHER,	0 },
+	{ 1,	375,	NULL,	"RPL_MOTDSTART",	&irc_c_error,	IRC_RPL_OTHER,	2 },
+	{ 1,	376,	NULL,	"RPL_ENDOFMOTD",	&irc_c_error,	IRC_RPL_OTHER,	2 },
 /*	{ 1,	381,	NULL,	"RPL_YOUREOPER",	&irc_c_error,
 	{ 1,	382,	NULL,	"RPL_REHASHING",	&irc_c_error,
 	{ 1,	383,	NULL,	"RPL_YOURESERVICE",	&irc_c_error,

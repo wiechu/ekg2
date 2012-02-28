@@ -539,8 +539,8 @@ IRC_COMMAND(irc_c_init)
 
 IRC_COMMAND(irc_c_error)
 {
-	int		i;
-	char		*t = NULL, *dest = NULL, *coloured = NULL, *bang;
+	int		i, n_params = g_strv_length(args);
+	char		*t = NULL, *dest = NULL, *coloured = NULL, *bang = NULL;
 	time_t		try;
 	window_t	*w;
 	char		*altnick;
@@ -646,26 +646,32 @@ IRC_COMMAND(irc_c_error)
 				xfree(coloured);
 			}
 			break;
-		case 333:
+		case 333:	// RPL_TOPICBY		[mynick] [channel] [nick!user@host] [time]
+				//		or	[mynick] [channel] [time]
 			IRC_TO_LOWER(args[1]);
-			if ((chanp = irc_find_channel(j->channels, args[1])))
-			{
-				xfree(chanp->topicby);
-				try = args[3]?atol(args[3]):0;
-				if ((bang = xstrchr(args[2], '!'))) *bang = '\0';
-				chanp->topicby = xstrdup(args[2]);
+			if ((chanp = irc_find_channel(j->channels, args[1]))) {
+				char *nick = "unknown";
+				if (n_params>3) {
+					nick = args[2];
+					if ((bang = xstrchr(args[2], '!'))) *bang = '\0';
+					try = atol(args[3]);
+				} else {
+					try = atol(args[2]);
+				}
+				g_free(chanp->topicby);
+				chanp->topicby = g_strdup(args[2]);
 				print_info(dest, s, "IRC_RPL_TOPICBY",
-						session_name(s), args[2], bang?bang+1:"",
-						args[3]?ctime(&try):"unknown\n");
+						session_name(s), nick, bang?bang+1:"",
+						try ? ctime(&try) : "unknown");
 				if (bang) *bang ='!';
 			}
 			break;
 
-		case 341:
+		case 341:	// RPL_INVITING		[mynick] [nick] [channel]
 			tmpchn = clean_channel_names(s, args[2]);
 			print_info(dest, s, irccommands[ecode].name, session_name(s), args[1], tmpchn);
 			break;
-		case 376:
+		case 376:	// RPL_ENDOFMOTD	[mynick] [:End of MOTD command]
 			/* zero, identify with nickserv */
 			if (xstrlen(session_get(s, "identify"))) {
 				/* temporary */
@@ -685,10 +691,11 @@ IRC_COMMAND(irc_c_error)
 			/* first we join */
 			if (xstrlen(session_get(s, "AUTO_JOIN")))
 				irc_write(s, "JOIN %s\r\n", session_get(s, "AUTO_JOIN"));
-		case 372:
-		case 375:
+		case 372:	// RPL_MOTD		[mynick] [:- <text>]
+		case 375:	// RPL_MOTDSTART	[mynick] [:- <server> Message of the day - ]
 			if (session_int_get(s, "SHOW_MOTD") != 0) {
-				coloured = irc_ircoldcolstr_to_ekgcolstr(s, args[1], 1);
+				char *txt = ('-' == *args[1]) ? args[1]+1 : args[1]; 	/* skip first hyphen */
+				coloured = irc_ircoldcolstr_to_ekgcolstr(s, txt, 1);
 				print_info("__status", s, irccommands[ecode].name, session_name(s), coloured);
 				xfree(coloured);
 			}
