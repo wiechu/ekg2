@@ -276,7 +276,7 @@ static char *irc_tolower_int(char *buf, int casemapping)
 		case IRC_CASEMAPPING_ASCII:		upper_bound = 'Z'; break;
 		case IRC_CASEMAPPING_RFC1459_STRICT:	upper_bound = ']'; break;
 		case IRC_CASEMAPPING_RFC1459:		upper_bound = '^'; break;
-		default: debug_error ("bad value in call to irc_toupper_int: %d\n", casemapping); return 0;
+		default: debug_error ("bad value in call to irc_tolower_int: %d\n", casemapping); return 0;
 	}
 	while (*p)
 	{
@@ -288,11 +288,6 @@ static char *irc_tolower_int(char *buf, int casemapping)
 	return buf;
 }
 
-/**
- * IRC_TO_UPPER - macro around irc_upper_int, that passes currently
- * casemapping used by server
- */
-#define IRC_TO_UPPER(x) irc_toupper_int(x, j->casemapping)
 /**
  * IRC_TO_LOWER - macro around irc_upper_int, that passes currently
  * casemapping used by server

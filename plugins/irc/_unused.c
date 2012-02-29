@@ -40,6 +40,12 @@ static char *irc_toupper_int(char *buf, int casemapping)
 	return buf;
 }
 
+/**
+ * IRC_TO_UPPER - macro around irc_upper_int, that passes currently
+ * casemapping used by server
+ */
+#define IRC_TO_UPPER(x) irc_toupper_int(x, j->casemapping)
+
 static void resolver_child_handler(child_t *c, int pid, const char *name, int status, void *priv) {
 	debug("(%s) resolver [%d] exited with %d\n", name, pid, status);
 }
