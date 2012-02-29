@@ -1109,12 +1109,9 @@ IRC_COMMAND(irc_c_msg)
 			irc_parse_ident_host(t+1, &(person->ident), &(person->host));
 		*/
 		class = (prv?(mw&2):(mw&1)) ? EKG_MSGCLASS_CHAT : EKG_MSGCLASS_MESSAGE;
-		if (*sender) {
-			dest = irc_uid(sender);
-		} else {
-			dest = g_strdup("__status");
+		if (!*sender)
 			sender = prefix;
-		}
+		dest = irc_uid(sender);
 		format = xstrdup(prv?"irc_msg_f_some":"irc_not_f_some");
 		ekgbeep = EKG_TRY_BEEP;
 		xosd_to_us = xosd_is_priv = 1;
