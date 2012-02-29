@@ -1108,15 +1108,19 @@ IRC_COMMAND(irc_c_msg)
 		if (person && t)
 			irc_parse_ident_host(t+1, &(person->ident), &(person->host));
 		*/
-		class = (mw&2)?EKG_MSGCLASS_CHAT:EKG_MSGCLASS_MESSAGE;
-		dest = irc_uid(sender);
+		class = (prv?(mw&2):(mw&1)) ? EKG_MSGCLASS_CHAT : EKG_MSGCLASS_MESSAGE;
+		if (*sender) {
+			dest = irc_uid(sender);
+		} else {
+			dest = g_strdup("__status");
+			sender = prefix;
+		}
 		format = xstrdup(prv?"irc_msg_f_some":"irc_not_f_some");
 		ekgbeep = EKG_TRY_BEEP;
 		xosd_to_us = xosd_is_priv = 1;
 	/* message on channel ... */
 	} else {
 		class = EKG_MSGCLASS_CHAT;
-		// class = (mw&1)?EKG_MSGCLASS_CHAT:EKG_MSGCLASS_MESSAGE;
 		dest = irc_uid(recipient);
 		IRC_TO_LOWER(dest+4);
 

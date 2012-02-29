@@ -71,9 +71,10 @@ make_window
 	
 	suma bitowa, określająca czy należy tworzyć okna w danej sytuacji:
 	
-	1 - nie używane
+	1 - tworzenie okna, gdy przychodzi do nas wiadomość (NOTICE) od innego
+	użytkownika
 	
-	2 - tworzenie okna, gdy przychodzi do nas wiadomość od innego
+	2 - tworzenie okna, gdy przychodzi do nas wiadomość (PRIVMSG) od innego
 	użytkownika
 	
 	4 - tworzenie okna rozmowy z użytkownikiem, jeśli ten wysłał do nas
