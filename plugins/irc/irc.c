@@ -1927,6 +1927,15 @@ static variable_map_t rejoin_map[] = {
 		VAR_MAP_END()
 	};
 
+static variable_map_t make_window_map[] = {
+		VAR_MAP_ADD( 1, 0, "notice"),
+		VAR_MAP_ADD( 2, 0, "privmsg"),
+		VAR_MAP_ADD( 4, 0, "ctcp"),
+		VAR_MAP_ADD( 8, 0, "ctcp_reply"),
+		VAR_MAP_ADD( 8, 0, "connect_notice"),
+		VAR_MAP_END()
+	};
+
 static plugins_params_t irc_plugin_vars[] = {
 	/* lower case: names of variables that reffer to client itself */
 	PLUGIN_VAR_ADD("alt_nick",		VAR_STR, NULL, 0, NULL),
@@ -1949,7 +1958,7 @@ static plugins_params_t irc_plugin_vars[] = {
 	PLUGIN_VAR_ADD("hostname",		VAR_STR, 0, 0, NULL),
 	PLUGIN_VAR_ADD("identify",		VAR_STR, 0, 0, NULL),
 	PLUGIN_VAR_ADD("log_formats",		VAR_STR, "irssi", 0, NULL),
-	PLUGIN_VAR_ADD("make_window",		VAR_INT, "2", 0, NULL),	// XXX VAR_MAP
+	PLUGIN_VAR_ADD_MAP("make_window",	VAR_MAP, "2", 0, NULL, make_window_map),
 #define IRC_PLUGIN_VAR_NICKNAME 21
 	PLUGIN_VAR_ADD("nickname",		VAR_STR, NULL, 0, NULL),		/* value will be inited @ irc_plugin_init() [pwd_entry->pw_name] */
 	PLUGIN_VAR_ADD("password",		VAR_STR, 0, 1, NULL),
