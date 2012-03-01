@@ -279,6 +279,12 @@ void ncurses_backlog_display(window_t *w) {
 			ncurses_backlog_display_line(w, y, bl);
 			y += n_rows;
 		}
+		/* count 'more' */
+		if (n->more_lines && (n->backlog->len - idx < n->more_lines)) {
+			n->more_lines = n->backlog->len - idx;
+			if ((0 == n->more_lines) && (y >= n->height))
+				n->more_lines = 1;
+		}
 
 		if ((!n->cleared && (!(idx < n->backlog->len) && (y <= n->height))) ||
 		    ( n->cleared && !(y < n->height)))
