@@ -479,9 +479,6 @@ IRC_COMMAND(irc_c_init)
 			CHANMODES= beI,k,l, imnpsta (Hybrid)
 			*/
 			break;
-		case 2:
-		case 3:
-			break;
 		case 4:
 			xfree(SOP(USERMODES)); SOP(USERMODES) = xstrdup(args[3]);
 			xfree(SOP(CHANMODES)); SOP(CHANMODES) = xstrdup(args[4]);
@@ -534,7 +531,7 @@ IRC_COMMAND(irc_c_init)
 
 IRC_COMMAND(irc_c_error)
 {
-	int		i, n_params = g_strv_length(args);
+	int		future, i, n_params = g_strv_length(args);
 	char		*t = NULL, *dest = NULL, *coloured = NULL, *bang = NULL;
 	time_t		try;
 	window_t	*w;
@@ -556,8 +553,13 @@ IRC_COMMAND(irc_c_error)
 		else	debug_error("[irc] !s->connecting\n");
 		return -1;
 	}
+
+	future = irccommands[ecode].future&0xff;
+	if ((future == IRC_ERR_NEW) && (2 == g_strv_length(args)))
+		future = IRC_ERR_ONLY1;
+
 	i = irccommands[ecode].future&0x100;
-	switch (irccommands[ecode].future&0xff)
+	switch (future)
 	{
 		case IRC_ERR_21:
 			print_info(NULL, s,

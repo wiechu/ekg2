@@ -109,8 +109,8 @@ static const IrcCommand irccommands[] =
 {
 	{ 1,	-1,	NULL,	NULL,			&irc_c_error,	IRC_ERR_NEW,	0 },
 	{ 1,	1,	NULL,	"RPL_WELCOME",		&irc_c_init,	0,	0 },
-	{ 1,	2,	NULL,	"RPL_YOURHOST",		&irc_c_init,	0,	0 },
-	{ 1,	3,	NULL,	"RPL_CREATED",		&irc_c_init,	0,	0 },
+	{ 1,	2,	NULL,	"RPL_YOURHOST",		&irc_c_error,	IRC_ERR_NEW,	0 },
+	{ 1,	3,	NULL,	"RPL_CREATED",		&irc_c_error,	IRC_ERR_NEW,	0 },
 	{ 1,	4,	NULL,	"RPL_MYINFO",		&irc_c_init,	0,	0 },
 	{ 1,	5,	NULL,	"RPL_BOUNCE",		&irc_c_init,	0,	0 },
 
