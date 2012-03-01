@@ -352,9 +352,10 @@ void update_statusbar(int commit)
 	query_tmp = (sess && q && q->nickname) ? saprintf("%s/%s", q->nickname, q->uid) : xstrdup(window_current->alias ? window_current->alias : window_current->target);
 	__add_format("query", query_tmp, 0);
 	__add_format("query_nickname", (sess && q && q->nickname) ? xstrdup(q->nickname) : xstrdup(window_current->alias ? window_current->alias : window_current->target), 0);
+	if (window_current->more)
+		__add_format("more", saprintf("more:%%T%d%%n", ncurses_current->more_lines), 1);
 
 	__add_format_emp("debug", (!window_current->id));
-	__add_format_emp("more", (window_current->more));
 
 	mail_count = -1;
 	if (query_emit(NULL, "mail-count", &mail_count) != -2)

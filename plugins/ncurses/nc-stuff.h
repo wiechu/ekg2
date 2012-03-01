@@ -44,6 +44,7 @@ typedef struct {
 	int x0, y0, height, width;
 
 	int cleared;
+	int more_lines;		/* count 'more' lines */
 
 	int redraw;		/* does it have to be redrawn before display */
 

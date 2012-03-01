@@ -261,7 +261,7 @@ void ncurses_backlog_display(window_t *w) {
 	/* draw text */
 	if (n->index == EKG_NCURSES_BACKLOG_END) {
 		/* display from end of backlog */
-		w->more = n->cleared = 0;
+		w->more = n->more_lines = n->cleared = 0;
 		for (y = n->height, idx = n->backlog->len - 1; idx >= 0 && y > 0; idx--) {
 			y -= ncurses_get_backlog_height(w, bl, idx);
 			ncurses_backlog_display_line(w, y, bl);
