@@ -33,6 +33,7 @@
 
 #include <ekg/completion.h>
 
+#include "backlog.h"
 #include "bindings.h"
 #include "contacts.h"
 #include "input.h"
@@ -785,6 +786,19 @@ static BINDING_FUNCTION(binding_cycle_sessions)
 		update_statusbar(1);
 }
 
+static BINDING_FUNCTION(binding_begin_of_backlog) {
+	ncurses_current->index = ncurses_current->first_row = 0;
+	ncurses_redraw(window_current);
+	update_statusbar(1);
+}
+
+static BINDING_FUNCTION(binding_end_of_backlog) {
+	ncurses_current->index = EKG_NCURSES_BACKLOG_END;
+	ncurses_redraw(window_current);
+	update_statusbar(1);
+}
+
+
 /*
  * binding_parse()
  *
@@ -853,6 +867,8 @@ static void binding_parse(struct binding *b, const char *action)
 	__action("backward-contacts-line", binding_backward_contacts_line)
 	__action("forward-lastlog-page", binding_forward_lastlog_page)
 	__action("backward-lastlog-page", binding_backward_lastlog_page)
+	__action("begin-of-backlog", binding_begin_of_backlog)
+	__action("end-of-backlog", binding_end_of_backlog)
 	; /* no/unknown action */
 
 
@@ -1251,6 +1267,8 @@ QUERY(ncurses_binding_default)
 	ncurses_binding_add("F4", "next-contacts-group", 1, 1);
 	ncurses_binding_add("F12", "/window switch 0", 1, 1);
 	ncurses_binding_add("F11", "ui-ncurses-debug-toggle", 1, 1);
+	ncurses_binding_add("Alt-PageUp", "begin-of-backlog", 1, 1);
+	ncurses_binding_add("Alt-PageDown", "end-of-backlog", 1, 1);
 	/* ncurses_binding_add("Ctrl-Down", "forward-contacts-page", 1, 1);
 	ncurses_binding_add("Ctrl-Up", "backward-contacts-page", 1, 1); */
 	return 0;
