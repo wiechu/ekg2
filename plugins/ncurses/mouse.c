@@ -164,78 +164,81 @@ void ncurses_mouse_clicked_handler(int x, int y, int mouse_flag)
 
 	/* debug("stalo sie: %s x: %d y: %d\n", tmp, x, y); */
 #endif
+
+#define mouse_in_window(w, x, y) (w && wenclose(w, y, x) && wmouse_trafo(w, &y, &x, FALSE))
+
 	for (w = windows; w; w = w->next) {
-		if (x > w->left && x <= w->left + w->width && y > w->top && y <= w->top + w->height) {
-			ncurses_window_t *n;
-			if (w->id == 0) { /* if we are reporting status window it means that we clicked
-					 * on window_current and some other functions should be called */
-				ncurses_main_window_mouse_handler(x - w->left, y - w->top, mouse_flag);
-				break;
-			}
+		ncurses_window_t *n = w->priv_data;
 
-			n = w->priv_data;
-			/* debug("window id:%d y %d height %d\n", w->id, w->top, w->height); */
-			if (n->handle_mouse)
-				n->handle_mouse(x - w->left, y - w->top, mouse_flag);
-			break;
+		if (mouse_in_window(n->window, x, y)) {
+			if (n->handle_mouse) {
+				n->handle_mouse(x, y, mouse_flag);
+			} else if (w->id == 0) {
+				/* if we are reporting status window it means that we clicked
+				 * on window_current and some other functions should be called */
+				ncurses_main_window_mouse_handler(x, y, mouse_flag);
+			}
+			return;
 		}
 	}
 
-	if (!w) { /* special screen sections */
-			/* input */
-		if (y > stdscr->_maxy - input_size + 1) {
-			y -= (stdscr->_maxy - input_size + 2);
-			x--;
+	/* special screen sections */
 
-			if (input_size == 1) {
-				if (mouse_flag == EKG_SCROLLED_UP)
-					binding_previous_only_history(NULL);
-				else if (mouse_flag == EKG_SCROLLED_DOWN)
-					binding_next_only_history(NULL);
-				else if (mouse_flag == EKG_BUTTON1_CLICKED) {
-						/* XXX, check, cleanup */
-						/* the plugin already calculates offset incorrectly,
-						 * so we shall follow it */
-					const int promptlen	= ncurses_current ? ncurses_current->prompt_len : 0;
-					const int linelen	= xwcslen(ncurses_line);
-
-					line_index = x - promptlen + line_start;
-
-					if (line_index < 0)
-						line_index = 0;
-					else if (line_index > linelen)
-						line_index = linelen;
-				}
-			} else {
-				if (mouse_flag == EKG_SCROLLED_UP) {
-					if (lines_start > 2)
-						lines_start -= 2;
-					else
-						lines_start = 0;
-				} else if (mouse_flag == EKG_SCROLLED_DOWN) {
-					const int lines_count = g_strv_length((char **) ncurses_lines);
-
-					if (lines_start < lines_count - 2)
-						lines_start += 2;
-					else
-						lines_start = lines_count - 1;
-				} else if (mouse_flag == EKG_BUTTON1_CLICKED) {
-					const int lines_count = g_strv_length((char **) ncurses_lines);
-
-					lines_index = lines_start + y;
-					if (lines_index >= lines_count)
-						lines_index = lines_count - 1;
-					line_index = x + line_start;
-					ncurses_lines_adjust();
-				}
-			}
-		} else if (y > stdscr->_maxy - input_size - config_statusbar_size + 1) {
+	if (mouse_in_window(ncurses_input, x, y)) {
+		/* input */
+		if (input_size == 1) {
 			if (mouse_flag == EKG_SCROLLED_UP)
-				command_exec(window_current->target, window_current->session, "/window prev", 0);
+				binding_previous_only_history(NULL);
 			else if (mouse_flag == EKG_SCROLLED_DOWN)
-				command_exec(window_current->target, window_current->session, "/window next", 0);
+				binding_next_only_history(NULL);
+			else if (mouse_flag == EKG_BUTTON1_CLICKED) {
+					/* XXX, check, cleanup */
+					/* the plugin already calculates offset incorrectly,
+					 * so we shall follow it */
+				const int promptlen	= ncurses_current ? ncurses_current->prompt_len : 0;
+				const int linelen	= xwcslen(ncurses_line);
+
+				line_index = x - promptlen + line_start;
+
+				if (line_index < 0)
+					line_index = 0;
+				else if (line_index > linelen)
+					line_index = linelen;
+			}
+		} else {
+			if (mouse_flag == EKG_SCROLLED_UP) {
+				if (lines_start > 2)
+					lines_start -= 2;
+				else
+					lines_start = 0;
+			} else if (mouse_flag == EKG_SCROLLED_DOWN) {
+				const int lines_count = g_strv_length((char **) ncurses_lines);
+
+				if (lines_start < lines_count - 2)
+					lines_start += 2;
+				else
+					lines_start = lines_count - 1;
+			} else if (mouse_flag == EKG_BUTTON1_CLICKED) {
+				const int lines_count = g_strv_length((char **) ncurses_lines);
+
+				lines_index = lines_start + y;
+				if (lines_index >= lines_count)
+					lines_index = lines_count - 1;
+				line_index = x + line_start;
+				ncurses_lines_adjust();
+			}
 		}
+	} else if (mouse_in_window(ncurses_status, x, y)) {
+		/* status */
+		if (mouse_flag == EKG_SCROLLED_UP)
+			command_exec(window_current->target, window_current->session, "/window prev", 0);
+		else if (mouse_flag == EKG_SCROLLED_DOWN)
+			command_exec(window_current->target, window_current->session, "/window next", 0);
+	} else if (mouse_in_window(ncurses_header, x, y)) {
+		/* header */
 	}
+
+#undef mouse_in_window
 }
 
 #ifdef HAVE_LIBGPM
@@ -275,7 +278,7 @@ static WATCHER(ncurses_gpm_watch_handler)
 						mouse_state = EKG_BUTTON2_DOUBLE_CLICKED;
 						break;
 				}
-				ncurses_mouse_clicked_handler(event.x, event.y, mouse_state);
+				ncurses_mouse_clicked_handler(event.x-1, event.y-1, mouse_state);
 				break;
 			}
 		case GPM_SINGLE + GPM_UP:
@@ -292,7 +295,7 @@ static WATCHER(ncurses_gpm_watch_handler)
 						mouse_state = EKG_BUTTON2_CLICKED;
 						break;
 				}
-				ncurses_mouse_clicked_handler(event.x, event.y, mouse_state);
+				ncurses_mouse_clicked_handler(event.x-1, event.y-1, mouse_state);
 				break;
 			}
 			break;

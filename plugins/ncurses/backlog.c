@@ -369,6 +369,9 @@ backlog_line_t *ncurses_backlog_mouse_click(window_t *w, int click_y) {
 	calc_window_dimension(w);
 	click_y -= n->y0;
 
+	if ( (click_y < 0) || (click_y >= n->height) )
+		return NULL;
+
 	i = n->index;
 
 	if (i == EKG_NCURSES_BACKLOG_END) {
@@ -382,10 +385,10 @@ backlog_line_t *ncurses_backlog_mouse_click(window_t *w, int click_y) {
 	} else
 		h = - n->first_row;
 
-	for (y = h; i < n->backlog->len && y < click_y; i++)
+	for (y = h; i < n->backlog->len && y <= click_y; i++)
 		y += ncurses_get_backlog_height(w, bl, i);
 
-	if (click_y > y)
+	if (y <= click_y)
 		return NULL;
 
 	return bl;

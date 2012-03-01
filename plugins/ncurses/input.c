@@ -349,8 +349,8 @@ static int ekg_getch(int meta, unsigned int *ch) {
 		}
 
 		/* 33 based */
-		x = wgetch(input) - 32;
-		y = wgetch(input) - 32;
+		x = wgetch(input) - 33;
+		y = wgetch(input) - 33;
 
 		/* XXX query_emit UI_MOUSE ??? */
 		if (mouse_state)
