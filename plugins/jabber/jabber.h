@@ -26,13 +26,13 @@
 
 struct xmlnode_s {
 	char *name;
-	char *data; 
+	char *data;
 	char **atts;
 	char *xmlns;
 
 	struct xmlnode_s *parent;
 	struct xmlnode_s *children;
-	
+
 	struct xmlnode_s *next;
 /*	struct xmlnode_s *prev; */
 };
@@ -86,7 +86,7 @@ enum jabber_compression_method {
 	JABBER_COMPRESSION_NONE = 0,
 	JABBER_COMPRESSION_ZLIB_INIT,
 	JABBER_COMPRESSION_LZW_INIT,
-	
+
 	JABBER_COMPRESSION_ZLIB,
 	JABBER_COMPRESSION_LZW,
 };

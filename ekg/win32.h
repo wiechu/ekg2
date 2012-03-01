@@ -63,7 +63,7 @@ int uname(struct utsname *buf);					/* emulated ? */
 
 #endif
 
-#define EINPROGRESS WSAEINPROGRESS 
+#define EINPROGRESS WSAEINPROGRESS
 
 #define fileno(__F) ((__F)->_file)
 #define sleep(x) Sleep(x * 1000)

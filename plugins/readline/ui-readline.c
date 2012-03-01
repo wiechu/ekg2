@@ -143,7 +143,7 @@ void ui_readline_print(window_t *w, int separate, const /*locale*/ char *xline)
 		string_append(s, "\033[0m");
 		string_append(s, buf);
 		string_append_c(s, ' ');
-		
+
 		while (*p) {
 			string_append_c(s, *p);
 			if (*p == '\n' && *(p + 1)) {
@@ -219,7 +219,7 @@ void ui_readline_print(window_t *w, int separate, const /*locale*/ char *xline)
 		g_free(old_prompt);
 		rl_forced_update_display();
 	}
-	
+
 done:
 	if (line_buf)
 		g_free(line_buf);
@@ -345,7 +345,7 @@ int ui_readline_loop(void)
 		if (G_UNLIKELY(line[len - 1] == '\\')) {
 			/* multi line handler */
 			GString *s = g_string_new_len(line, len-1);
-			
+
 			free(line);
 
 			no_prompt = 1;
@@ -370,7 +370,7 @@ int ui_readline_loop(void)
 
 			line = g_string_free(s, FALSE);
 		}
-		
+
 		/* if no empty line and we save duplicate lines, add it to history */
 		if (config_history_savedups || !history_length || strcmp(line, history_get(history_length)->line))
 			add_history(line);
@@ -444,7 +444,7 @@ int window_write(int id, const /*locale*/ char *line)
 		set_prompt(current_prompt());
 		rl_redisplay();
 	}
-	
+
 	return 0;
 }
 
@@ -456,7 +456,7 @@ int window_write(int id, const /*locale*/ char *line)
 /*
  * window_activity()
  *
- * zwraca string z actywnymi oknami 
+ * zwraca string z actywnymi oknami
  */
 gchar *window_activity(void)
 {
@@ -466,7 +466,7 @@ gchar *window_activity(void)
 
 	for (w = windows; w; w = w->next) {
 /* we cannot make it colorful with default formats because grey on black doesn't look so good... */
-		if (!w->act || !w->id) 
+		if (!w->act || !w->id)
 			continue;
 
 		if (!first)
@@ -477,7 +477,7 @@ gchar *window_activity(void)
 
 	return g_string_free(s, first);
 }
-		
+
 /*
  * bind_find_command()
  *
@@ -489,7 +489,7 @@ char *bind_find_command(const char *seq)
 
 	if (!seq)
 		return NULL;
-	
+
 	for (s = bindings; s; s = s->next) {
 		if (s->key && !xstrcasecmp(s->key, seq))
 			return s->action;
@@ -556,7 +556,7 @@ int bind_handler_window(int a, int key)
 int bind_sequence(const char *seq, const char *command, int quiet)
 {
 	char *nice_seq = NULL;
-	
+
 	if (!seq)
 		return -1;
 
@@ -564,7 +564,7 @@ int bind_sequence(const char *seq, const char *command, int quiet)
 		printq("bind_seq_exist", seq);
 		return -1;
 	}
-	
+
 	if (!xstrncasecmp(seq, "Ctrl-", 5) && xstrlen(seq) == 6 && xisalpha(seq[5])) {
 		int key = CTRL(xtoupper(seq[5]));
 
@@ -590,7 +590,7 @@ int bind_sequence(const char *seq, const char *command, int quiet)
 			nice_seq[4] = xtoupper(nice_seq[4]);
 		} else
 			rl_unbind_key_in_map(xtolower(seq[4]), emacs_meta_keymap);
-		
+
 	} else {
 		printq("bind_seq_incorrect", seq);
 
@@ -601,7 +601,7 @@ int bind_sequence(const char *seq, const char *command, int quiet)
 		struct binding *s;
 
 		s = xmalloc(sizeof(struct binding));
-		
+
 		s->key = nice_seq;
 		s->action = xstrdup(command);
 		s->internal = 0;

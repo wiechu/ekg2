@@ -286,7 +286,7 @@ static QUERY(gg_status_show_handle) {
 	if (GG_S_F(g->sess->status))
 		priv = format_string(format_find("show_status_private_on"));
 	else
-		priv = format_string(format_find("show_status_private_off")); 
+		priv = format_string(format_find("show_status_private_off"));
 
 	r1 = xstrmid(s->descr, 0, GG_STATUS_DESCR_MAXSIZE);
 	r2 = xstrmid(s->descr, GG_STATUS_DESCR_MAXSIZE, -1);
@@ -378,7 +378,7 @@ static QUERY(gg_add_notify_handle) {
 	if (valid_plugin_uid(&gg_plugin, uid) != 1)
 		return 1;
 
-	gg_add_notify_ex(g->sess, str_to_uin(uid+3), gg_userlist_type(userlist_find(s, s->uid))); 
+	gg_add_notify_ex(g->sess, str_to_uin(uid+3), gg_userlist_type(userlist_find(s, s->uid)));
 	return 0;
 }
 
@@ -509,7 +509,7 @@ static QUERY(gg_userlist_priv_handler) {
 		p = xmalloc(sizeof(gg_userlist_private_t));
 		u->priv = p;
 	}
-		
+
 	switch (function) {
 		case EKG_USERLIST_PRIVHANDLER_FREE:
 			xfree(u->priv);
@@ -527,7 +527,7 @@ static QUERY(gg_userlist_priv_handler) {
 			char **entry	= *va_arg(ap, char ***);
 
 			if (atoi(u->uid)) {	/* backwards compatibility / userlist -g hack for GG */
-				/* 
+				/*
 				 * TODO: This is a hack, we should not be
 				 * freeing memory which has been passed to us
 				 * as const in the first place. But as things
@@ -600,7 +600,7 @@ static TIMER_SESSION(gg_ping_timer_handler) {
 	return 0;
 }
 
-/* 
+/*
  * gg_inv_check_handler()
  *
  * checks if user marked as invisible, is still connected
@@ -610,17 +610,17 @@ static TIMER(gg_inv_check_handler)
 {
 	const gg_currently_checked_t *c = (gg_currently_checked_t *) data;
 	userlist_t *u;
-	
+
 	if (type == 1) {
 		xfree(c->uid);
 		xfree(data);
 		return -1;
 	}
-	
+
 	if ((u = userlist_find(c->session, c->uid)) && (u->status == EKG_STATUS_INVISIBLE)) {
 		command_exec_format(c->uid, c->session, 1, ("/gg:check_conn"));
 	}
-	
+
 	return -1;
 }
 
@@ -635,7 +635,7 @@ static void gg_session_handler_success(session_t *s) {
 	int status;
 	int _status;
 	char *descr;
-	char *cpdescr; 
+	char *cpdescr;
 
 	if (!g || !g->sess) {
 		debug("[gg] gg_session_handler_success() called with null gg_private_t\n");
@@ -648,7 +648,7 @@ static void gg_session_handler_success(session_t *s) {
 
 	/* zapiszmy adres serwera */
 	if (session_int_get(s, "connection_save") == 1) {
-		struct in_addr addr;		
+		struct in_addr addr;
 
 		addr.s_addr = g->sess->server_addr;
 		session_set(s, "server", inet_ntoa(addr));
@@ -665,7 +665,7 @@ static void gg_session_handler_success(session_t *s) {
 
 	/* ustawiamy swój status */
 	_status = GG_S(gg_text_to_status(status, s->descr ? cpdescr : NULL));
-	if (session_int_get(s, "private")) 
+	if (session_int_get(s, "private"))
 		_status |= GG_STATUS_FRIENDS_MASK;
 
 	if (s->descr) {
@@ -673,7 +673,7 @@ static void gg_session_handler_success(session_t *s) {
 	} else {
 		gg_change_status(g->sess, _status);
 	}
-	xfree(cpdescr);	
+	xfree(cpdescr);
 }
 
 /*
@@ -717,7 +717,7 @@ static void gg_session_handler_failure(session_t *s, struct gg_event *e) {
 			xstrncat(newserver, oldserver, comma-oldserver);
 
 			session_set(s, "server", newserver);
-			
+
 			xfree(newserver);
 		}
 	}
@@ -883,16 +883,16 @@ static void gg_session_handler_msg(session_t *s, struct gg_event *e) {
 
 			if ((p[i + 2] & GG_FONT_IMAGE))	{
 				struct gg_msg_richtext_image *img = (void *) &p[i+3];
-					
+
 				/* XXX, needed? */
 				if (i+3 + sizeof(struct gg_msg_richtext_image) > e->event.msg.formats_length) {
 					debug_error("gg_session_handler_msg() wtf?\n");
 					break;
 				}
 
-				debug_function("gg_session_handler_msg() inline image: sender=%d, size=%d, crc32=0x%.8x\n", 
-					e->event.msg.sender, 
-					img->size, 
+				debug_function("gg_session_handler_msg() inline image: sender=%d, size=%d, crc32=0x%.8x\n",
+					e->event.msg.sender,
+					img->size,
 					img->crc32);
 
 				image=1;
@@ -942,7 +942,7 @@ static void gg_session_handler_msg(session_t *s, struct gg_event *e) {
  */
 		protocol_message_emit(s, __sender, __rcpts, __text, __format, e->event.msg.time, __class, NULL, EKG_TRY_BEEP, 0);
 	}
-	
+
 	xfree(__text);
 	xfree(__sender);
 	xfree(__format);
@@ -1001,7 +1001,7 @@ static void gg_session_handler_ack(session_t *s, struct gg_event *e) {
  * gg_session_handler_image()
  *
  * support image request or reply
- * now it is used only by /check_inv 
+ * now it is used only by /check_inv
  * we don't use support images
  */
 static void gg_session_handler_image(session_t *s, struct gg_event *e) {
@@ -1028,7 +1028,7 @@ static void gg_session_handler_image(session_t *s, struct gg_event *e) {
 							if (u) {
 								const int interval = session_int_get(s, "invisible_check_interval");
 								gg_currently_checked_t *c_timer;
-								
+
 								if (interval > 0) {
 									c_timer = xmalloc(sizeof(gg_currently_checked_t));
 									c_timer->uid = xstrdup(tmp);
@@ -1054,7 +1054,7 @@ static void gg_session_handler_image(session_t *s, struct gg_event *e) {
 					image_t *i = l->data;
 
 					l = l->next;
-					if (e->event.image_request.crc32 == i->crc32 && 
+					if (e->event.image_request.crc32 == i->crc32 &&
 							e->event.image_request.size == i->size) {
 						gg_image_reply(g->sess, e->event.image_request.sender, i->filename, i->data, i->size);
 						image_remove_queue(i);
@@ -1071,7 +1071,7 @@ static void gg_session_handler_image(session_t *s, struct gg_event *e) {
 				int i;
 
 		/* 0th, get basedir */
-				image_basedir = gg_config_images_dir ? 
+				image_basedir = gg_config_images_dir ?
 					gg_config_images_dir :			/* dir specified by config */
 					prepare_pathf("images");		/* (ekg_config)/images */
 
@@ -1083,10 +1083,10 @@ static void gg_session_handler_image(session_t *s, struct gg_event *e) {
 
 /* XXX, recode from cp1250 to locales [e->event.image_reply.filename] */
 /* XXX, sanity path */
-				image_file = saprintf("%s/gg_%d_%.4x_%s", 
-					image_basedir, 
-					e->event.image_reply.sender, 
-					e->event.image_reply.crc32, 
+				image_file = saprintf("%s/gg_%d_%.4x_%s",
+					image_basedir,
+					e->event.image_reply.sender,
+					e->event.image_reply.crc32,
 					e->event.image_reply.filename);
 
 				debug("image from %d called %s\n", e->event.image_reply.sender, image_file);
@@ -1122,7 +1122,7 @@ static void gg_session_handler_image(session_t *s, struct gg_event *e) {
 /*
  * gg_session_handler_userlist()
  *
- * support for userlist's events 
+ * support for userlist's events
  *
  */
 static void gg_session_handler_userlist(session_t *s, struct gg_event *e) {
@@ -1308,7 +1308,7 @@ WATCHER_SESSION(gg_session_handler) {		/* tymczasowe */
 			if (check_dcc_limit(e) == -1)
 				break;
 #endif
-			
+
 			uid = saprintf("gg:%d", dccdata->peer_uin);
 
 			switch (dccdata->dcc_type) {
@@ -1378,7 +1378,7 @@ WATCHER_SESSION(gg_session_handler) {		/* tymczasowe */
 			break;
 		}
 
-		case GG_EVENT_DCC7_ACCEPT: 
+		case GG_EVENT_DCC7_ACCEPT:
 		{
 			struct gg_dcc7 *dccdata = e->event.dcc7_accept.dcc7;
 			dcc_t *dcc;
@@ -1414,13 +1414,13 @@ WATCHER_SESSION(gg_session_handler) {		/* tymczasowe */
 
 	if (!broken && g->sess->state != GG_STATE_IDLE && g->sess->state != GG_STATE_ERROR) {
 		watch_t *w;
-		if ((watch == g->sess->check) && g->sess->fd == fd) { 
-			if ((w = watch_find(&gg_plugin, fd, watch))) 
+		if ((watch == g->sess->check) && g->sess->fd == fd) {
+			if ((w = watch_find(&gg_plugin, fd, watch)))
 				watch_timeout_set(w, g->sess->timeout);
 			else debug("[gg] watches managment went to hell?\n");
 			gg_event_free(e);
 			return 0;
-		} 
+		}
 		w = watch_add_session(s, g->sess->fd, g->sess->check, gg_session_handler);
 		watch_timeout_set(w, g->sess->timeout);
 	}
@@ -1466,7 +1466,7 @@ static void gg_changed_private(session_t *s, const char *var) {
  * Handler execute when session variable: "proxy" change
  *
  * @bug BIG XXX, Mistake at art, it should use global config variable, not session ones, because it's used to inform libgadu about proxy servers.<br>
- *	And libgadu has got this variables global, not session private. Maybe we somehow can update these variables before gg_login() by callng gg_changed_proxy() 
+ *	And libgadu has got this variables global, not session private. Maybe we somehow can update these variables before gg_login() by callng gg_changed_proxy()
  *	but now it's BAD, BAD, BAD.
  */
 
@@ -1481,7 +1481,7 @@ static void gg_changed_proxy(session_t *s, const char *var) {
 	gg_proxy_username = NULL;
 	xfree(gg_proxy_password);
 	gg_proxy_password = NULL;
-	gg_proxy_enabled = 0;	
+	gg_proxy_enabled = 0;
 
 	if (!(gg_config_proxy = session_get(s, var)))
 		return;
@@ -1490,7 +1490,7 @@ static void gg_changed_proxy(session_t *s, const char *var) {
 
 	if (!auth[0] || !xstrcmp(auth[0], "")) {
 		g_strfreev(auth);
-		return; 
+		return;
 	}
 
 	gg_proxy_enabled = 1;
@@ -1652,10 +1652,10 @@ static TIMER(gg_scroll_timer) {
 }
 
 static plugins_params_t gg_plugin_vars[] = {
-	PLUGIN_VAR_ADD("alias",			VAR_STR, 0, 0, NULL), 
+	PLUGIN_VAR_ADD("alias",			VAR_STR, 0, 0, NULL),
 	PLUGIN_VAR_ADD("auto_away",		VAR_INT, "600", 0, NULL),
 	PLUGIN_VAR_ADD("auto_away_descr",	VAR_STR, 0, 0, NULL),
-	PLUGIN_VAR_ADD("auto_back",		VAR_INT, "0", 0, NULL),	
+	PLUGIN_VAR_ADD("auto_back",		VAR_INT, "0", 0, NULL),
 	PLUGIN_VAR_ADD("auto_connect",		VAR_BOOL, "0", 0, NULL),
 	PLUGIN_VAR_ADD("auto_find",		VAR_INT, "0", 0, NULL),
 	PLUGIN_VAR_ADD("auto_reconnect",	VAR_INT, "10", 0, NULL),
@@ -1727,7 +1727,7 @@ int EXPORT gg_plugin_init(int prio) {
 	query_connect(&gg_plugin, "userlist-info", gg_userlist_info_handle, NULL);
 	query_connect(&gg_plugin, "userlist-privhandle", gg_userlist_priv_handler, NULL);
 	query_connect(&gg_plugin, "protocol-typing-out", gg_typing_out, NULL);
-	
+
 	gg_register_commands();
 
 	variable_add(&gg_plugin, ("audio"), VAR_BOOL, 1, &gg_config_audio, gg_changed_dcc, NULL, NULL);

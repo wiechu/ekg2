@@ -45,7 +45,7 @@ DYNSTUFF_LIST_DECLARE(msgs_queue, msg_queue_t, list_msg_queue_free,
  * msg_queue_add()
  *
  * dodaje wiadomo¶æ do kolejki wiadomo¶ci.
- * 
+ *
  *  - session - sesja, z której wysy³ano
  *  - rcpts - lista odbiorców
  *  - message - tre¶æ wiadomo¶ci
@@ -108,7 +108,7 @@ int msg_queue_remove_seq(const char *seq)
 	int res = -1;
 	msg_queue_t *m;
 
-	if (!seq) 
+	if (!seq)
 		return -1;
 
 	for (m = msgs_queue; m; m = m->next) {
@@ -148,7 +148,7 @@ int msg_queue_flush(const char *session)
 		if (!m->mark)
 			continue;
 
-		if (session && xstrcmp(m->session, session)) 
+		if (session && xstrcmp(m->session, session))
 			continue;
 				/* wiadomo¶æ wysy³ana z nieistniej±cej ju¿ sesji? usuwamy. */
 		else if (!(s = session_find(m->session))) {
@@ -284,7 +284,7 @@ int msg_queue_read() {
 			buf = read_line(fd);
 		} while (buf && (buf[0] == '#' || buf[0] == ';' || (buf[0] == '/' && buf[1] == '/')));
 		/* Allow leading comments */
-		
+
 		if (buf && *buf == 'v')
 			filever = atoi(buf+1);
 		if (!filever || filever > 2) {
@@ -296,7 +296,7 @@ int msg_queue_read() {
 			g_object_unref(fd);
 			continue;
 		}
-	
+
 		if (!(m.rcpts = g_strdup(read_line(fd)))) {
 			xfree(m.session);
 			g_object_unref(fd);
@@ -318,7 +318,7 @@ int msg_queue_read() {
 			g_object_unref(fd);
 			continue;
 		}
-	
+
 		if (filever == 2) {
 			if (!(buf = read_line(fd))) {
 				xfree(m.session);

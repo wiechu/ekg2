@@ -43,7 +43,7 @@ DYNSTUFF_LIST_DECLARE_WC(lasts, struct last, list_last_free,
  * last_add()
  *
  * dodaje wiadomo¶æ do listy ostatnio otrzymanych.
- * 
+ *
  *  - type - rodzaj wiadomo¶ci,
  *  - uid - nadawca,
  *  - t - czas,
@@ -57,16 +57,16 @@ void last_add(int type, const char *uid, time_t t, time_t st, const char *msg) {
 	/* nic nie zapisujemy, je¿eli user sam nie wie czego chce. */
 	if (config_last_size <= 0)
 		return;
-	
-	if (config_last & 2) 
+
+	if (config_last & 2)
 		count = last_count(uid);
 	else
 		count = lasts_count();
-				
+
 	/* usuwamy ostatni± wiadomo¶æ, w razie potrzeby... */
 	if (count >= config_last_size) {
 		time_t tmp_time = 0;
-		
+
 		/* najpierw j± znajdziemy... */
 		for (ll = lasts; ll; ll = ll->next) {
 			if (config_last & 2 && xstrcasecmp(ll->uid, uid))
@@ -74,11 +74,11 @@ void last_add(int type, const char *uid, time_t t, time_t st, const char *msg) {
 
 			if (!tmp_time)
 				tmp_time = ll->time;
-			
+
 			if (ll->time <= tmp_time)
 				tmp_time = ll->time;
 		}
-		
+
 		/* ...by teraz usun±æ */
 		for (ll = lasts; ll; ll = ll->next) {
 			if (ll->time == tmp_time && !xstrcasecmp(ll->uid, uid)) {
@@ -95,7 +95,7 @@ void last_add(int type, const char *uid, time_t t, time_t st, const char *msg) {
 	ll->time = t;
 	ll->sent_time = st;
 	ll->message = xstrdup(msg);
-	
+
 	lasts_add(ll);
 }
 
@@ -140,14 +140,14 @@ int last_count(const char *uid) {
  *
  * However, that ent[] table, like someone already said, was waste of space.
  *
- * Code looks better. (So please don't change to somethink like: if (!ent) q++;) 
+ * Code looks better. (So please don't change to somethink like: if (!ent) q++;)
  *
- * I was thinking about some static pointer, 
+ * I was thinking about some static pointer,
  *	static char buf[2];
  *
  *	buf[0] = znak;
  *	return buf;
- * 
+ *
  * to remove if (ent) and always use strcpy() however it's still only idea.
  */
 

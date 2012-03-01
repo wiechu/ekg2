@@ -43,7 +43,7 @@ char *gg_config_images_dir;
 
 static image_t *image_add_queue(const char *filename, char *data, guint32 size, guint32 crc32);
 
-/* 
+/*
  * gg_changed_images()
  *
  * called when some images_* variables are changed
@@ -56,7 +56,7 @@ void gg_changed_images(const char *var)
 		if (gg_config_image_size < 20)
 			gg_config_image_size = 20;
 
-	if (!in_autoexec) 
+	if (!in_autoexec)
 		print("config_must_reconnect");
 }
 
@@ -86,8 +86,8 @@ COMMAND(gg_command_image)
 		printq("file_doesnt_exist", filename);
 		return -1;
 	}
-	
-	/* finding size of file by seeking to the end and then 
+
+	/* finding size of file by seeking to the end and then
 	   checking where we are */
 	fseek(f, 0, SEEK_END);
 	size = ftell(f);
@@ -101,7 +101,7 @@ COMMAND(gg_command_image)
 	fclose(f);
 
 	crc32 = gg_crc32(0, (unsigned char *) data, size);
-	
+
 	msg.rt.flag=2;
 	msg.rt.length=13;
 	msg.f.position=0;
@@ -110,22 +110,22 @@ COMMAND(gg_command_image)
 	msg.image.size=size;
 	msg.image.crc32=crc32;
 
-	image_add_queue(filename, data, size, crc32); 
+	image_add_queue(filename, data, size, crc32);
 
 	if (gg_send_message_richtext(g->sess, GG_CLASS_MSG, atoi(uid + 3), (const unsigned char *) "", (const unsigned char *) &msg, sizeof(msg)) == -1) {
 		printq("gg_image_error_send");
 		return -1;
 	}
-		
+
 	printq("gg_image_ok_send");
 
 	return 0;
 }
 
-/* 
+/*
  * image_add_queue()
- * 
- * data should be given as already allocated pointer 
+ *
+ * data should be given as already allocated pointer
  */
 static image_t *image_add_queue(const char *filename, char *data, guint32 size, guint32 crc32)
 {
@@ -134,7 +134,7 @@ static image_t *image_add_queue(const char *filename, char *data, guint32 size, 
 	i->filename = xstrdup(filename);
 	i->data = data;
 	i->size = size;
-	i->crc32 = crc32; 
+	i->crc32 = crc32;
 
 	return list_add(&images, i);
 }

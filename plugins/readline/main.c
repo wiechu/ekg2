@@ -19,7 +19,7 @@ int config_ctrld_quits = 1;
 int config_print_line = 1;
 
 /*
- * sigint_handler() //XXX może wywalać 
+ * sigint_handler() //XXX może wywalać
  *
  * obsługuje wciśnięcie Ctrl-C.
  */
@@ -115,14 +115,14 @@ static char *readline_change_string_t_back_to_char(const char *str, const fstr_a
 
 	for (i = 0; i < xstrlen(str); i++) {
 #define ISBOLD(x)	(x & 64)
-#define ISBLINK(x)	(x & 256) 
+#define ISBLINK(x)	(x & 256)
 #define ISUNDERLINE(x)	(x & 512)
 #define ISREVERSE(x)	(x & 1024)
 #define FGCOLOR(x)	((!(x & 128)) ? (x & 7) : -1)
 #define BGCOLOR(x)	-1	/* XXX */
 
 #define prev	attr[i-1]
-#define cur	attr[i] 
+#define cur	attr[i]
 
 		int reset = 1;
 
@@ -134,7 +134,7 @@ static char *readline_change_string_t_back_to_char(const char *str, const fstr_a
 		else if (i && FGCOLOR(cur) == -1 && FGCOLOR(prev) != -1);/* NO FGCOLOR */
 		else if (i && BGCOLOR(cur) == -1 && BGCOLOR(prev) != -1);/* NO BGCOLOR */
 		else reset = 0;
-		
+
 		if (reset) string_append(asc, ("%n"));
 
 		if (ISBOLD(cur)	&& (!i || reset || ISBOLD(cur) != ISBOLD(prev)) && FGCOLOR(cur) == -1)
@@ -295,7 +295,7 @@ EXPORT int readline_plugin_init(int prio) {
 
 	for (w = windows; w; w = w->next)
 		w->priv_data = xmalloc(sizeof(readline_window_t));
-	
+
 	window_refresh();
 
 	rl_readline_name = "ekg2";
@@ -315,7 +315,7 @@ EXPORT int readline_plugin_init(int prio) {
 	rl_set_key("\033OQ", binding_quick_list, emacs_standard_keymap);
 	rl_set_key("\033[12~", binding_quick_list, emacs_standard_keymap);
 	rl_set_key("\033[N", binding_quick_list, emacs_standard_keymap);
-	
+
 	rl_set_key("\033`", bind_debug_window, emacs_standard_keymap);
 
 	rl_bind_key(24, binding_cycle_sessions);	/* Ctrl-X XXX */

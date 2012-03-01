@@ -694,7 +694,7 @@ EXPORT int ncurses_plugin_init(int prio)
 
 	command_add(&ncurses_plugin, ("mark"), "p", cmd_mark, 0, "-a --all");
 	command_add(&ncurses_plugin, ("dump"), "pf pf pf", ncurses_cmd_dump, 0, "-a --append -w --window");
-	command_add(&ncurses_plugin, ("lastlog"), "p? p? p? p? p?", ncurses_cmd_lastlog, 0, 
+	command_add(&ncurses_plugin, ("lastlog"), "p? p? p? p? p?", ncurses_cmd_lastlog, 0,
 		"-c --caseinsensitive -C --CaseSensitive -s --substring -r --regex -R --extended-regex -w --window");
 
 #ifdef HAVE_LIBASPELL
@@ -721,7 +721,7 @@ EXPORT int ncurses_plugin_init(int prio)
 	variable_add(&ncurses_plugin, ("contacts_size"), VAR_INT, 1, &config_contacts_size, ncurses_contacts_changed, NULL, dd_contacts);
 	variable_add(&ncurses_plugin, ("contacts_wrap"), VAR_BOOL, 1, &config_contacts_wrap, ncurses_contacts_changed, NULL, dd_contacts);
 
-	variable_add(&ncurses_plugin, ("lastlog_display_all"), VAR_INT, 1, &config_lastlog_display_all, NULL, variable_map(3, 
+	variable_add(&ncurses_plugin, ("lastlog_display_all"), VAR_INT, 1, &config_lastlog_display_all, NULL, variable_map(3,
 			0, 0, "current window",
 			1, 2, "current window + configured",
 			2, 1, "all windows + configured"), NULL);

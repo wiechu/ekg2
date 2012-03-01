@@ -17,7 +17,7 @@
 HANDLE win32_fork(thread_func_t addr, void *data) {
 	HANDLE ret	= (HANDLE) -1;
 	DWORD thread_id = 0;
-	
+
 	ret = CreateThread(NULL, 0, (void *) addr, data, 0, &thread_id);
 	debug_function("NO_POSIX_SYSTEM: win32_fork() ADDR=0x%x data=0x%x; thread_id = %d result = %d\n", addr, data, thread_id, ret);
 
@@ -80,7 +80,7 @@ int ioctl(int fd, int request, void *flags) {
 
 
 /* code of (gettimeofday && friends) in windows ripped from http://www.tcpdump.org/lists/workers/2005/12/msg00003.html
- *    (c) Gisle Vanem 
+ *    (c) Gisle Vanem
  */
 
 #if defined(_MSC_VER) || defined(_MSC_EXTENSIONS) || defined(__WATCOMC__)

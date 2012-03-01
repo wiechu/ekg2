@@ -34,7 +34,7 @@ extern "C" {
 
 extern int config_use_unicode;	/* not everyone want to include stuff.h */
 
-#define CHAR_T wchar_t	
+#define CHAR_T wchar_t
 #define TEXT(x) (wchar_t *) L##x
 #define CHAR(x) (wchar_t)   L##x
 #define STRING_FORMAT "%ls"

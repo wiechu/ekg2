@@ -33,7 +33,7 @@
  * gg_status_to_text()
  *
  * zamienia stan GG na enum ekg2 (dawniej: tekst, stad nazwa).
- *  
+ *
  *  - status
  */
 int gg_status_to_text(int status)
@@ -50,7 +50,7 @@ int gg_status_to_text(int status)
 		case GG_STATUS_BUSY:
 		case GG_STATUS_BUSY_DESCR:
 			return EKG_STATUS_AWAY;
-				
+
 		case GG_STATUS_INVISIBLE:
 		case GG_STATUS_INVISIBLE_DESCR:
 			return EKG_STATUS_INVISIBLE;
@@ -106,10 +106,10 @@ char gg_userlist_type(userlist_t *u)
 {
 	if (u && ekg_group_member(u, "__blocked"))
 		return GG_USER_BLOCKED;
-	
+
 	if (u && ekg_group_member(u, "__offline"))
 		return GG_USER_OFFLINE;
-	
+
 	return GG_USER_NORMAL;
 }
 
@@ -163,7 +163,7 @@ int gg_blocked_add(session_t *s, const char *uid)
 
 	if (u && ekg_group_member(u, "__blocked"))
 		return -1;
-	
+
 	if (!u)
 		u = userlist_add(s, uid, NULL);
 	else {
@@ -175,7 +175,7 @@ int gg_blocked_add(session_t *s, const char *uid)
 
 	if (g->sess && g->sess->state == GG_STATE_CONNECTED)
 		gg_add_notify_ex(g->sess, atoi(u->uid + 3), gg_userlist_type(u));
-	
+
 	return 0;
 }
 
@@ -227,7 +227,7 @@ int gg_userlist_send(struct gg_session *s, userlist_t *userlist) {
 
 	if (!count)
 		return gg_notify(s, NULL, 0);
-	
+
 	uins = xmalloc(count * sizeof(uin_t));
 	types = xmalloc(count * sizeof(char));
 

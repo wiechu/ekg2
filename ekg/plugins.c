@@ -165,7 +165,7 @@ static void *ekg2_dlsym(GModule *plugin, char *name) {
  * plugin_load()
  *
  * ³aduje wtyczkê o podanej nazwie.
- * 
+ *
  * 0/-1
  */
 int plugin_load(const char *name, int prio, int quiet)
@@ -183,7 +183,7 @@ int plugin_load(const char *name, int prio, int quiet)
 
 	g_assert(name);
 	if (plugin_find(name)) {
-		printq("plugin_already_loaded", name); 
+		printq("plugin_already_loaded", name);
 		return -1;
 	}
 
@@ -345,7 +345,7 @@ plugin_t *plugin_find(const char *name)
  * plugin_find_uid()
  *
  * Find <i>PLUGIN_PROTOCOL</i> plugin which can handle @a uid
- * 
+ *
  * @todo used only by session_add() in session.c move it there?
  *
  * @sa valid_plugin_uid() - For function to check if given plugin can handle given uid
@@ -375,7 +375,7 @@ plugin_t *plugin_find_uid(const char *uid) {
  */
 int plugin_unload(plugin_t *p)
 {
-	char *name; 
+	char *name;
 	list_t l;
 
 	if (!p)
@@ -387,7 +387,7 @@ int plugin_unload(plugin_t *p)
 		int unloadable = 0;
 		for (pl = plugins; pl; pl = pl->next) {
 			const plugin_t *plug = pl->data;
-			if (plug->pclass == PLUGIN_UI && plug != p) 
+			if (plug->pclass == PLUGIN_UI && plug != p)
 				unloadable = 1;
 		}
 		if (!unloadable) {
@@ -704,7 +704,7 @@ static int query_emit_inner(query_t *g, va_list ap) {
 
 	g->count++;
 	/*
-	 * pc and amd64: va_arg remove var from va_list when you use va_arg, 
+	 * pc and amd64: va_arg remove var from va_list when you use va_arg,
 	 * so we must keep orig va_list for next plugins
 	 */
 	nested++;;
@@ -769,7 +769,7 @@ void queries_reconnect() {
  *
  * Check if we have loaded plugin from @a pclass
  *
- * @param pclass 
+ * @param pclass
  *
  * @return	1 - If such plugin was founded<br>
  *		else 0

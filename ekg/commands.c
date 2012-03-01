@@ -151,7 +151,7 @@ void tabnick_add(const char *nick)
 	memmove(&send_nicks[1], &send_nicks[0], send_nicks_count * sizeof(send_nicks[0]) );
 
 	send_nicks_count++;
-	
+
 	send_nicks[0] = xstrdup(nick);
 }
 
@@ -235,7 +235,7 @@ COMMAND(cmd_add) {
 	int params_free = 0;	/* zmienili¶my params[] i trzeba zwolniæ */
 	int result = 0;
 	userlist_t *u = NULL;
-	
+
 	/* XXX, just in case? */
 	if (!target)
 		target = window_current->target;
@@ -246,8 +246,8 @@ COMMAND(cmd_add) {
 
 	if (!session)
 		return -1;
-	
-	/* If we didn't have params[1] and we params[0] isn't option (for example not --find) and we have target 
+
+	/* If we didn't have params[1] and we params[0] isn't option (for example not --find) and we have target
 	 *	get uid from current window, get nickname from params[0]
 	 *
 	 *	Code for getting more options from params[1] && params[2] were senseless, cause we have !params[1] ;(
@@ -277,7 +277,7 @@ COMMAND(cmd_add) {
 
 		nickname = last_search_nickname ? strip_spaces(last_search_nickname) : params[1];
 
-		if (nickname && nickname[0] == '\0') 
+		if (nickname && nickname[0] == '\0')
 			nickname = params[1];
 
 		if (!nickname) {
@@ -291,8 +291,8 @@ COMMAND(cmd_add) {
 		params[0] = last_search_uid;
 		params[1] = nickname;
 		/* construct params[2] -f FIRST_NAME -l LAST_NAME */
-		params[2] = saprintf("-f \"%s\" -l \"%s\"", 
-				((last_search_first_name) ? last_search_first_name : ("")), 
+		params[2] = saprintf("-f \"%s\" -l \"%s\"",
+				((last_search_first_name) ? last_search_first_name : ("")),
 				((last_search_last_name) ? last_search_last_name : ("")));
 /*		params[3] = NULL; */
 	}
@@ -392,7 +392,7 @@ static COMMAND(cmd_alias) {
 		config_changed = 1;
 		return 0;
 	}
-	
+
 	if (!params[0] || match_arg(params[0], 'l', ("list"), 2) || params[0][0] != '-') {
 		const char *aname;
 		int count = 0;
@@ -407,7 +407,7 @@ static COMMAND(cmd_alias) {
 			list_t m;
 			int first = 1;
 			char *tmp;
-			
+
 			if (aname && xstrcasecmp(aname, a->name))
 				continue;
 
@@ -467,7 +467,7 @@ static COMMAND(cmd_status) {
 		query_emit(s->plugin, "status-show", &s->uid);
 
 		/* when we connected [s->connected != 0] to server or when we lost last connection [s->connected == 0] [time from s->last_conn] */
-		if (s->last_conn) { 
+		if (s->last_conn) {
 			char buf[100] = { '\0' };
 
 			t = localtime(&s->last_conn);
@@ -498,7 +498,7 @@ static COMMAND(cmd_del)
 
 	if (!session)
 		return -1;
-	
+
 	if (!params[0]) {
 		printq("not_enough_params", name);
 		return -1;
@@ -511,7 +511,7 @@ static COMMAND(cmd_del)
 			userlist_t *next = ul->next;
 			char *p0;
 			char *tmp;
-	
+
 			p0 = xstrdup(u->nickname);
 			tmp = xstrdup(u->uid);
 			query_emit(NULL, "userlist-removed", &p0, &tmp);
@@ -549,7 +549,7 @@ static COMMAND(cmd_del)
 	query_emit(NULL, "remove-notify", &session->uid, &tmp);
 
 	xfree(tmp);
-	
+
 	return 0;
 }
 
@@ -652,7 +652,7 @@ COMMAND(cmd_exec)
 				printq("invalid_params", name, args[0]);
 				return -1;
 			}
-		} 
+		}
 
 		{
 #ifndef NO_POSIX_SYSTEM
@@ -681,7 +681,7 @@ COMMAND(cmd_exec)
 		}
 
 		i = g_slice_new(cmd_exec_info_t);
-		
+
 		i->quiet = quiet;
 		i->target = g_strdup(__target);
 		i->cmdexec = g_strdup(cmdexec);
@@ -726,7 +726,7 @@ static COMMAND(cmd_eval) {
 	char **argv;
 
 	argv = array_make(params[0], (" "), 0, 1, 1);
-	
+
 	for (i = 0; argv[i]; i++)
 		command_exec(NULL, session, argv[i], 0);
 
@@ -739,8 +739,8 @@ static COMMAND(cmd_for)
 {
 	int for_all = 0;
 
-	if (!xstrcmp(params[1], "*")) 
-		for_all = 1; 
+	if (!xstrcmp(params[1], "*"))
+		for_all = 1;
 
 	if (match_arg(params[0], 's', ("sessions"), 2)) {
 		char *param = (char *) params[2];
@@ -754,18 +754,18 @@ static COMMAND(cmd_for)
 
 		if (for_all) {
 			session_t *s;
-			
+
 			if (!sessions) {
 				printq("session_list_empty");
 				return -2;
 			}
-				
+
 			for (s = sessions; s; s = s->next) {
 				char *for_command;
-				
+
 				if (!s || !s->uid)
 					continue;
-				
+
 				if (!next_is_for)
 					for_command = format_string(params[2], session_alias_uid(s), s->uid);
 				else
@@ -778,9 +778,9 @@ static COMMAND(cmd_for)
 			char **tmp = array_make(params[1], ",", 0, 0, 0);
 			int i;
 			session_t **s;
-	
+
 			s = xmalloc(sizeof(session_t *) * g_strv_length(tmp));
-			
+
 			/* first we are checking all of the parametrs */
 			for (i = 0; tmp[i]; i++) {
 				if (!(s[i] = session_find(tmp[i]))) {
@@ -789,14 +789,14 @@ static COMMAND(cmd_for)
 					g_strfreev(tmp);
 					return -1;
 				}
-			}		
-			
+			}
+
 			for (i = 0; tmp[i]; i++) {
 				char *for_command;
-				
+
 				if (!s[i] || !s[i]->uid)
 					continue;
-				
+
 				if (!next_is_for)
 					for_command = format_string(params[2], session_alias_uid(s[i]), s[i]->uid);
 				else
@@ -817,7 +817,7 @@ static COMMAND(cmd_for)
 
 		if (!xstrncasecmp(param, name, xstrlen(name)))
 			next_is_for = 1;
-				
+
 		if (!session) {
 			return -1;
 		}
@@ -836,7 +836,7 @@ static COMMAND(cmd_for)
 
 				if (!u || !u->uid)
 					continue;
-				
+
 				if (!next_is_for)
 					for_command = format_string(params[2], (u->nickname) ? u->nickname : u->uid, u->uid);
 				else
@@ -845,7 +845,7 @@ static COMMAND(cmd_for)
 				command_exec(NULL, session, for_command, 0);
 				xfree(for_command);
 			}
-				
+
 		} else {
 			char **tmp = array_make(params[1], ",", 0, 0, 0);
 			int i;
@@ -976,7 +976,7 @@ static COMMAND(cmd_help)
 			plen = (int)(xstrchr(session->uid, ':') - session->uid) + 1;
 		else
 			plen = 0;
-	
+
 		for (cl = commands; cl; cl = cl->next) {
 			command_t *c = cl->data;
 			if (!xstrcasecmp(c->name, p) && (c->flags & COMMAND_ISALIAS)) {
@@ -988,11 +988,11 @@ static COMMAND(cmd_help)
 				return -1;
 			}
 
-			if (!(c->flags & COMMAND_ISALIAS) && 
-					(!xstrcasecmp(c->name, p) || 
+			if (!(c->flags & COMMAND_ISALIAS) &&
+					(!xstrcasecmp(c->name, p) ||
 					(session && !xstrncmp(c->name, session->uid, plen) && !xstrcasecmp(c->name + plen, p))))
 			{
-				GDataInputStream *f; 
+				GDataInputStream *f;
 				gchar *params_help = NULL, *params_help_s, *brief = NULL, *tmp = NULL;
 				const gchar *line, *seeking_name;
 				string_t s;
@@ -1071,23 +1071,23 @@ static COMMAND(cmd_help)
 				while ((line = read_line(f))) {
 					if (line[0] != ('\t'))
 						break;
-					
+
 					if (!xstrncmp(line, ("\t- "), 3) && xstrcmp(s->str, (""))) {
 						print("help_command_body", line);
 						string_clear(s);
 					}
-					
+
 					if (!xstrncmp(line, ("\t"), 1) && xstrlen(line) == 1) {
 						string_append(s, "\n\r");
 						continue;
 					}
-					
+
 					string_append(s, line + 1);
 
 					if (line[xstrlen(line) - 1] != ' ')
 						string_append_c(s, ' ');
 				}
-				
+
 				if (xstrcmp(s->str, (""))) {
 					char *tmp = format_string(s->str);
 					printq("help_command_body", tmp);
@@ -1117,7 +1117,7 @@ static COMMAND(cmd_help)
 				tmp2 = xstrchr(c->name, (':'));
 				if (!tmp2)
 					seeking_name = c->name;
-				else 
+				else
 					seeking_name = tmp2 + 1;
 			} else {
 				if (!(f = help_open("commands", NULL))) continue;
@@ -1138,13 +1138,13 @@ static COMMAND(cmd_help)
 			}
 
 			line = read_line(f);
-		
+
 			if ((tmp = xstrstr(line, (": "))))
 			       params_help = xstrdup(tmp + 2);
 			else
 			       params_help = xstrdup((""));
 
-			params_help_s = strip_spaces(params_help);	
+			params_help_s = strip_spaces(params_help);
 
 			line = read_line(f);
 
@@ -1256,7 +1256,7 @@ static COMMAND(cmd_ignore)
 		if (params[0][0] == '#') {
 			return command_exec_format(NULL, NULL, quiet, ("/conference --unignore %s"), params[0]);
 		}
-		
+
 		if (!unignore_all && !(uid = get_uid(session, params[0]))) {
 			printq("user_not_found", params[0]);
 			return -1;
@@ -1265,7 +1265,7 @@ static COMMAND(cmd_ignore)
 		if (unignore_all) {
 			userlist_t *ul;
 			int x = 0;
-			
+
 			for (ul = session->userlist; ul; ) {
 				userlist_t *u = ul;
 				userlist_t *next = ul->next;
@@ -1283,7 +1283,7 @@ static COMMAND(cmd_ignore)
 				printq("ignored_list_empty");
 				return -1;
 			}
-			
+
 			return 0;
 		}
 
@@ -1294,7 +1294,7 @@ static COMMAND(cmd_ignore)
 			printq("error_not_ignored", format_user(session, params[0]));
 			return -1;
 		}
-	
+
 	}
 	return 0;
 }
@@ -1310,7 +1310,7 @@ COMMAND(cmd_list)
 	const char *__first_name, *__last_name;
 	int __ip, __port, __last_ip, __last_port;
 
-	if (!params0 && window_current->target) { 
+	if (!params0 && window_current->target) {
 		params0 = window_current->target;
 	}
 
@@ -1320,7 +1320,7 @@ COMMAND(cmd_list)
 		userlist_t *u;
 		ekg_resource_t *rl;
 		int invert = 0;
-		
+
 		/* list !@grupa */
 		if (group[0] == '!' && group[1] == '@') {
 			group++;
@@ -1332,7 +1332,7 @@ COMMAND(cmd_list)
 			string_t members = string_init(NULL);
 			char *__group;
 			int count = 0;
-			
+
 			for (ul = session->userlist; ul; ul = ul->next) {
 				u = ul;
 
@@ -1344,7 +1344,7 @@ COMMAND(cmd_list)
 					}
 				}
 			}
-			
+
 			__group = saprintf("%s%s", ((invert) ? "!" : ""), group + 1);
 
 			if (count)
@@ -1355,16 +1355,16 @@ COMMAND(cmd_list)
 			xfree(__group);
 
 			string_free(members, 1);
-			
+
 			return 0;
 		}
 
 		if (params0 && (tmp = xstrrchr(params0, '/'))) {
 			char *session_name = xstrndup(params0, xstrlen(params0) - xstrlen(tmp));
-	
+
 			if (!session_find(session_name))
 				goto next;
-	
+
 			tmp++;
 			session = session_find(session_name);
 			if (!(u = userlist_find(session, tmp)) || !u->nickname) {
@@ -1372,7 +1372,7 @@ COMMAND(cmd_list)
 				xfree(session_name);
 				return -1;
 			}
-	
+
 			xfree(session_name);
 			goto list_user;
 		}
@@ -1381,14 +1381,14 @@ next:
 		/* list _metacontact */
 		if (params0 && (m = metacontact_find(params0))) {
 			metacontact_item_t *i;
-	
+
 			i = metacontact_find_prio(m);
 
 			if (!i) {
 				printq("metacontact_item_list_empty");
 				return -1;
-			} 
-		
+			}
+
 			u = userlist_find_n(i->s_uid, i->name);
 
 			status = format_string(format_find(ekg_status_label(u->status, u->descr, "metacontact_info_")), get_user_name(u), u->descr);
@@ -1400,24 +1400,24 @@ next:
 			xfree(status);
 			return 0;
 		}
-	
+
 		if (!(u = userlist_find(session, params0)) || !u->nickname) {
 			printq("user_not_found", params0);
 			return -1;
 		}
 
 list_user:
-		status = format_string(format_find(ekg_status_label(u->status, u->descr, "user_info_")), 
+		status = format_string(format_find(ekg_status_label(u->status, u->descr, "user_info_")),
 				get_user_name(u), u->descr);
 
 		printq("user_info_header", u->nickname, u->uid);
-		if (u->nickname && xstrcmp(u->nickname, u->nickname)) 
+		if (u->nickname && xstrcmp(u->nickname, u->nickname))
 			printq("user_info_nickname", u->nickname);
 
 		printq("user_info_status", status);
 		if (u->status_time && EKG_STATUS_IS_NA(u->status)) {
 			struct tm *status_time;
-			char buf[100];		
+			char buf[100];
 
 			status_time = localtime(&(u->status_time));
 			if (!strftime(buf, sizeof(buf), format_find("user_info_status_time_format") ,status_time) && format_exists("user_info_status_time_format"))
@@ -1427,7 +1427,7 @@ list_user:
 		}
 
 		if (u->last_status) {
-			char *last_status = format_string(format_find(ekg_status_label(u->last_status, u->last_descr, "user_info_")), 
+			char *last_status = format_string(format_find(ekg_status_label(u->last_status, u->last_descr, "user_info_")),
 							get_user_name(u), u->last_descr);
 			printq("user_info_last_status", last_status);
 			xfree(last_status);
@@ -1435,9 +1435,9 @@ list_user:
 
 		for (rl = u->resources; rl; rl = rl->next) {
 			ekg_resource_t *r = rl;
-			char *resstatus; 
+			char *resstatus;
 
-			resstatus = format_string(format_find(ekg_status_label(r->status, r->descr, /* resource_info? senseless */ "user_info_")), 
+			resstatus = format_string(format_find(ekg_status_label(r->status, r->descr, /* resource_info? senseless */ "user_info_")),
 					/* here r->name ? */
 					 get_user_name(u), r->descr);
 			printq("resource_info_status", r->name, resstatus, ekg_itoa(r->prio));
@@ -1502,7 +1502,7 @@ list_user:
 		if (EKG_STATUS_IS_NA(u->status)) {
 			char buf[100];
 			struct tm *last_seen_time;
-			
+
 			if (u->last_seen) {
 				last_seen_time = localtime(&(u->last_seen));
 				if (!strftime(buf, sizeof(buf), format_find("user_info_last_seen_time"), last_seen_time) && format_exists("user_info_last_seen_time"))
@@ -1511,13 +1511,13 @@ list_user:
 			} else
 				printq("user_info_never_seen");
 		}
-			
+
 		printq("user_info_footer", u->nickname, u->uid);
-		
+
 		xfree(status);
 		return 0;
 	}
-	
+
 	/* list --active | --away | --blocked | --description | --inactive | --invisible | --member | --notavail | --offline | --online */
 
 	for (i = 0; params[i]; i++) {
@@ -1577,7 +1577,7 @@ list_user:
 			SHOW_IF_S(inactive, NA)
 			SHOW_IF_S(invisible, INVISIBLE)
 			SHOW_IF_S(blocked, BLOCKED)
-#undef SHOW_IF_S		
+#undef SHOW_IF_S
 			/* XXX nie chcialo mi sie zmiennej robic */
 			if (u->status == EKG_STATUS_ERROR)
 				show = 1;
@@ -1654,7 +1654,7 @@ static COMMAND(cmd_set)
 		if (arg)
 			val = params[1];
 	}
-	
+
 	if (arg && arg[0] == '-') {
 		unset = 1;
 		arg++;
@@ -1674,7 +1674,7 @@ static COMMAND(cmd_set)
 		for (vl = variables; vl; vl = vl->next) {
 			variable_t *v = vl->data;
 			int found = 0;
-			
+
 			if (arg) {
 				if (xstrcmp(name, ("set"))) {
 					found = !xstrcasecmp(arg, v->name);
@@ -1705,11 +1705,11 @@ static COMMAND(cmd_set)
 		if (!unset && !xstrcasecmp(value, ("t"))) {
 			if (v && v->type == VAR_BOOL) {
 				int t_value = *(int*)(v->ptr);
-			
+
 				xfree(value);
 				value = (t_value) ? xstrdup(("0")) : xstrdup(("1"));
 			}
-		} 
+		}
 
 		switch (variable_set(arg, (unset) ? NULL : value)) {
 			case 0:
@@ -1735,7 +1735,7 @@ static COMMAND(cmd_set)
 				break;
 		}
 	}
-	
+
 	xfree(value);
 
 	return res;
@@ -1745,7 +1745,7 @@ static COMMAND(cmd_quit)
 {
 	char *reason;
 	session_t *s;
-	
+
 	reason = xstrdup(params[0]);
 	query_emit(NULL, "quitting", &reason);
 	xfree(reason);
@@ -1913,9 +1913,9 @@ static COMMAND(cmd_debug_watches)
 {
 	char buf[256];
 	list_t l;
-	
+
 	printq("generic_bold", ("fd	wa   plugin  pers tout	started     rm"));
-	
+
 	for (l = watches; l; l = l->next) {
 		char *plugin;
 		char wa[4];
@@ -1946,10 +1946,10 @@ static COMMAND(cmd_debug_watches)
 static COMMAND(cmd_debug_queries)
 {
         query_t **kk, *g;
-	
+
 	printq("generic", ("name			     | plugin	   | count"));
 	printq("generic", ("---------------------------------|-------------|------"));
-	
+
         for (kk = queries; kk < &queries[QUERIES_BUCKETS]; ++kk) {
                 for (g = *kk; g; g = g->next) {
                         char buf[256];
@@ -2056,7 +2056,7 @@ static COMMAND(cmd_test_mem) {
 			{
 				printq("generic_error", ("Internal error, GiM's fault"));
 				return -1;
-			} 
+			}
 			p = xstrstr(buf, "VmSize");
 			if (p) {
 				sscanf(p, "VmSize:     %d kB", &rozmiar);
@@ -2087,7 +2087,7 @@ static COMMAND(cmd_test_mem) {
 			kp = kvm_getprocs(kd, KERN_PROC_PID, getpid(), &nentries);
 			if (!kp || nentries != 1) {
 				printq("generic_error", ("Internal error! (kvm_getprocs)"));
-				return -1; 
+				return -1;
 			}
 #ifdef HAVE_STRUCT_KINFO_PROC_KI_SIZE
 			rozmiar = (u_long) kp->ki_size/1024; /* freebsd5 */
@@ -2125,7 +2125,7 @@ static COMMAND(cmd_test_fds)
 	struct stat st;
 	char buf[PATH_MAX+1000];
 	int i;
-	
+
 	for (i = 0; i < 2048; i++) {
 		if (fstat(i, &st) == -1)
 			continue;
@@ -2206,10 +2206,10 @@ static COMMAND(cmd_test_fds)
 				}
 			}
 		}
-		
+
 		if (S_ISDIR(st.st_mode))
 			xstrcat(buf, "directory");
-		
+
 		if (S_ISCHR(st.st_mode))
 			xstrcat(buf, "char");
 
@@ -2237,7 +2237,7 @@ static COMMAND(cmd_test_fds)
  * Beep by emiting <i>UI_BEEP</i> event
  *
  * @note UI-PLUGINS should connect to this event, and when they succesfully beep, returns -1.
- *	 Cause we may have more than 1 UI-PLUGIN, and I really don't like idea, when after /beep 
+ *	 Cause we may have more than 1 UI-PLUGIN, and I really don't like idea, when after /beep
  *	 I hear 2 or more beeps.
  *
  * @return 0
@@ -2305,7 +2305,7 @@ static COMMAND(cmd_query) {
 
 	if (params[0][0] == '@' || xstrchr(params[0], ',')) {	/* you want to talk with lot people? let's create conference ! */
 		struct conference *c = conference_create(session, params[0]);
-		
+
 		if (!c)
 			return -1;
 
@@ -2336,7 +2336,7 @@ static COMMAND(cmd_query) {
 		session = sess_tmp;
 
 		tmp++;
-	
+
 		if (!get_uid(session, tmp)) {
 			printq("invalid_session");
 			return -1;
@@ -2353,7 +2353,7 @@ next:
 			printq("metacontact_item_list_empty");
 			return -1;
 		}
-		
+
 		par0 = i->name;
 		session = session_find(i->s_uid);
 	}
@@ -2456,7 +2456,7 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 	/* in a chat window, and there is no leading slash */
 	if (target && *xline != '/') {
 		int correct_command = 0;
-	
+
 		/* detection of commands entered by mistake */
 		if (config_query_commands) {
 			for (cl = commands; cl; cl = cl->next) {
@@ -2465,12 +2465,12 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 
 				if (l < 3 || xstrncasecmp(xline, c->name, l))
 					continue;
-				
+
 				if (!xline[l] || xisspace(xline[l])) {
 					correct_command = 1;
 					break;
 				}
-			}		
+			}
 		}
 
 		if (!correct_command)
@@ -2483,11 +2483,11 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 		char *p = strchr(xline + 1, '/');
 		char *s = strchr(xline + 1, ' ');
 
-		if (p && (!s || p < s)) 
+		if (p && (!s || p < s))
 			return command_exec_format(target, session, quiet, ("/ %s"), xline);
 	}
 
-	
+
 	send_nicks_index = 0;
 	line = line_save = xstrdup(xline);
 
@@ -2528,7 +2528,7 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 		session = session_current;
 	if (session && session->uid) {
 		int prefix_len = (int)(xstrchr(session->uid, ':') - session->uid) + 1;
-		
+
 		for (cl = commands; cl; cl = cl->next) {
 			command_t *c = cl->data;
 			/* Consider commands prefixed with current session's prefix. */
@@ -2549,7 +2549,7 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 				/* TODO: document what this does */
 				if (last_command_plugin && abbrs_plugins == 1)
 					break;
-			} 
+			}
 		}
 	}
 	/* If needed, fall back to non-session-specific commands. */
@@ -2561,7 +2561,7 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 				abbrs = 1;
 				exact = 1;
 				/* if this is exact_match we should zero those below, they won't be used */
-				abbrs_plugins = 0; 
+				abbrs_plugins = 0;
 				last_command_plugin = NULL;
 				break;
 			}
@@ -2572,7 +2572,7 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 				if (last_command && abbrs == 1)
 					break;
 			}
-		} 
+		}
 	}
 /*	debug("%x %x\n", last_command, last_command_plugin);	*/
 
@@ -2585,12 +2585,12 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 		int last_alias	   = 0;
 		int res		   = 0;
 
-		if (exact) 
+		if (exact)
 			last_alias = (last_command->flags & COMMAND_ISALIAS || last_command->flags & COMMAND_ISSCRIPT) ? 1 : 0;
-		
+
 		if (!last_alias && (tmp = xstrchr(last_name, ':')))
 			last_name = tmp + 1;
-		
+
 		/* sprawdzamy czy session istnieje - je¶li nie to nie mamy po co robiæ czego¶ dalej ... */
 		/* nie obsolete ? nie robi tego samego co `session_t *s = session ? session : window_current->session;` (?) */
 		if (last_command->flags & SESSION_MUSTHAS) {
@@ -2607,13 +2607,13 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 		}
 		if (!res && (last_command->flags & SESSION_MUSTBECONNECTED)) {
 			if (!session_connected_get(s)) {
-				printq("not_connected", session_name(s));	
+				printq("not_connected", session_name(s));
 				res = -1;
 			}
 		}
 		if (!res && (last_command->flags & SESSION_MUSTBELONG)) {
 			/* if in future of ekg2, there'll be need of this, please feel free to change thoese if's.
-			 * it's correct.. but for now, i don't see much sense of doing it cause. we don't have 
+			 * it's correct.. but for now, i don't see much sense of doing it cause. we don't have
 			 * two plugins which handle for example irc: or gg:
 			 * if we'll have/ or maybe you have then write to use.
 			 * thx.
@@ -2674,7 +2674,7 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 			if (!res) {
 				window_t *w;
 				char *uid;
-				
+
 				uid = xstrdup(target);
 				w = window_find_sa(s, uid, 0);
 
@@ -2682,7 +2682,7 @@ int command_exec(const char *target, session_t *session, const char *xline, int 
 				res = (last_command->function)(last_name, (const char **) parsed_params, s, uid, (quiet & 1));
 				if (window_find_ptr(w) || (w == window_find_sa(s, uid, 0)))
 					window_lock_dec(w);
-				else { 
+				else {
 					window_t *w;
 					debug("[WINDOW LOCKING] INTERNAL ERROR SETTING ALL WINDOW LOCKS TO 0 [wtarget=%s command=%s]\n", __(uid), __(last_name));
 					/* may be faultly */
@@ -2726,7 +2726,7 @@ int command_exec_params(const char *target, session_t *session, int quiet, const
 	char *tmp;
 	int res;
 
-	if (!command) 
+	if (!command)
 		return 0;
 
 	/* XXX, it will work like command_exec_format(). we need to:
@@ -2735,7 +2735,7 @@ int command_exec_params(const char *target, session_t *session, int quiet, const
 	command_with_params = string_init(command);
 
 /* XXX, later: array_add() */
-	
+
 	va_start(ap, command);
 	while ((tmp = va_arg(ap, char *))) {
 		char ch = '"';
@@ -2753,7 +2753,7 @@ int command_exec_params(const char *target, session_t *session, int quiet, const
 	}
 
 	va_end(ap);
-	
+
 	res = command_exec(target, session, command_with_params->str, quiet);
 	string_free(command_with_params, 1);
 	return res;
@@ -2783,12 +2783,12 @@ int command_exec_format(const char *target, session_t *session, int quiet, const
 	char *command;
 	va_list ap;
 	int res;
-	
+
 	va_start(ap, format);
 	command = vsaprintf(format, ap);
 	va_end(ap);
-	
-	if (!command) 
+
+	if (!command)
 		return 0;
 /*	debug("[command_exec_format] %s\n", command); */
 	res = command_exec(target, session, command, quiet); /* segvuje na tym ? wtf ?! */
@@ -2797,7 +2797,7 @@ int command_exec_format(const char *target, session_t *session, int quiet, const
 }
 
 COMMAND(cmd_alias_exec)
-{	
+{
 	list_t tmp = NULL, m = NULL;
 	alias_t *a;
 	int need_args = 0;
@@ -2837,7 +2837,7 @@ COMMAND(cmd_alias_exec)
 
 		list_add(&m, xstrdup(tmp->data));
 	}
-	
+
 	for (tmp = m; tmp; tmp = tmp->next) {
 		string_t str;
 
@@ -2847,7 +2847,7 @@ COMMAND(cmd_alias_exec)
 			str = string_init(("/"));
 
 		if (need_args) {
-			char *args[9], **arr, *s; 
+			char *args[9], **arr, *s;
 			int i;
 
 			if (!params[0]) {
@@ -2882,7 +2882,7 @@ COMMAND(cmd_alias_exec)
 
 		} else {
 			string_append(str, tmp->data);
-			
+
 			if (params[0]) {
 				string_append(str, (" "));
 				string_append(str, params[0]);
@@ -2892,19 +2892,19 @@ COMMAND(cmd_alias_exec)
 		command_exec(target, session, str->str, quiet);
 		string_free(str, 1);
 	}
-	
+
 	list_destroy(m, 1);
-		
+
 	return 0;
 }
 
-static COMMAND(cmd_conference) 
+static COMMAND(cmd_conference)
 {
 	if (!params[0] || match_arg(params[0], 'l', ("list"), 2) || params[0][0] == '#') {
 		list_t r;
 		int count = 0;
 		const char *cname = NULL;
-	
+
 		if (params[0] && match_arg(params[0], 'l', ("list"), 2))
 			cname = params[1];
 		else if (params[0])
@@ -2914,12 +2914,12 @@ static COMMAND(cmd_conference)
 			newconference_t *c;
 
 			for (c = newconferences; c; c = c->next) {
-/* XXX, 
+/* XXX,
  *	::: konferencje:
  *		-- konferencja1/sesja
- *			USER1:		[query_emit(NULL/pl, "conference-member-info", &c, &u)] 
+ *			USER1:		[query_emit(NULL/pl, "conference-member-info", &c, &u)]
  *			USER2:		[....]
- *			query_emit(NULL/pl, "conference-info", &c); 
+ *			query_emit(NULL/pl, "conference-info", &c);
  *	albo jak /names w ircu, albo jak?
  *	XXX
  */
@@ -2940,7 +2940,7 @@ static COMMAND(cmd_conference)
 
 				if (cname && xstrcasecmp(cname, c->name))
 					continue;
-				
+
 				for (r = c->recipients; r; r = r->next) {
 					char *uid = r->data;
 					userlist_t *u = userlist_find(session, uid);
@@ -2952,7 +2952,7 @@ static COMMAND(cmd_conference)
 
 					if (first++)
 						string_append_c(recipients, ',');
-					
+
 					string_append(recipients, recipient);
 
 					count++;
@@ -3064,7 +3064,7 @@ static COMMAND(cmd_conference)
 
 		return 0;
 	}
-	
+
 	if (match_arg(params[0], 'i', ("ignore"), 2)) {
 		if (!params[1]) {
 			printq("not_enough_params", name);
@@ -3166,7 +3166,7 @@ static COMMAND(cmd_last)
 		}
 
 		return 0;
-	}		
+	}
 
 	if (params[0]) {
 		show_sent = match_arg(params[0], 's', ("stime"), 2);
@@ -3178,11 +3178,11 @@ static COMMAND(cmd_last)
 			arr = array_make(params[1], " \t", 0, 1, 0);
 
 			nick = arr[0];
-			
+
 			if (match_arg(params[0], 'n', ("number"), 2)) {
 				last_n = strtol(arr[0], NULL, 0);
 				nick = arr[1];
-				
+
 				if (arr[1] && (show_sent = match_arg(arr[1], 's', ("stime"), 2)))
 					nick = arr[2];
 			}
@@ -3204,7 +3204,7 @@ static COMMAND(cmd_last)
 	}
 
 	g_strfreev(arr);
-		
+
 	if (!((uid) ? (count = last_count(uid)) : (count = LIST_COUNT2(lasts)))) {
 		if (uid) {
 			printq("last_list_empty_nick", format_user(session, uid));
@@ -3266,7 +3266,7 @@ static COMMAND(cmd_queue) {
 	msg_queue_t *m;
 	int isempty = 1;
 	const char *queue_list_timestamp_f;	/* cached result of format_find("queue_list_timestamp") */
-	
+
 	if (match_arg(params[0], 'c', ("clear"), 2)) {
 		if (!msgs_queue) {
 			printq("queue_empty");
@@ -3323,9 +3323,9 @@ COMMAND(cmd_dcc)
 		for (d = dccs; d; d = d->next) {
 			if (d->active)
 				continue;
-			
+
 			empty = 0;
-			
+
 			if (!passed++)
 				printq("dcc_show_pending_header");
 
@@ -3357,11 +3357,11 @@ COMMAND(cmd_dcc)
 
 			switch (d->type) {
 				case DCC_SEND:
-					printq("dcc_show_active_send", ekg_itoa(d->id), format_user(session, d->uid), d->filename, ekg_itoa(d->offset), ekg_itoa(d->size), 
+					printq("dcc_show_active_send", ekg_itoa(d->id), format_user(session, d->uid), d->filename, ekg_itoa(d->offset), ekg_itoa(d->size),
 							(d->size) ? ekg_itoa(d->offset * 100 / d->size) : "?");
 					break;
 				case DCC_GET:
-					printq("dcc_show_active_get", ekg_itoa(d->id), format_user(session, d->uid), d->filename, ekg_itoa(d->offset), ekg_itoa(d->size), 
+					printq("dcc_show_active_get", ekg_itoa(d->id), format_user(session, d->uid), d->filename, ekg_itoa(d->offset), ekg_itoa(d->size),
 							(d->size) ? ekg_itoa(d->offset * 100 / d->size) : "?");
 					break;
 				case DCC_VOICE:
@@ -3374,7 +3374,7 @@ COMMAND(cmd_dcc)
 
 		if (empty)
 			printq("dcc_show_empty");
-		
+
 		return 0;
 	}
 
@@ -3388,7 +3388,7 @@ COMMAND(cmd_dcc)
 			return -1;
 		}
 			/* XXX, get_uid() */
-		uid = get_uid(session, params[1]);		
+		uid = get_uid(session, params[1]);
 
 		for (D = dccs; D; D = D->next) {
 			if (params[1][0] == '#' && atoi(params[1] + 1) == D->id) {
@@ -3475,7 +3475,7 @@ static COMMAND(cmd_plugin) {
 		}
 
 		queries_reconnect();
-		changed_theme(NULL); 
+		changed_theme(NULL);
 		return 0;
 	}
 
@@ -3497,7 +3497,7 @@ static COMMAND(cmd_plugin) {
 
 	if (params[1] && (pl = plugin_find(params[0]))) {
 		plugins_unlink(pl);
-		plugin_register(pl, atoi(params[1])); 
+		plugin_register(pl, atoi(params[1]));
 
 		queries_reconnect();
 		config_changed = 1;
@@ -3526,7 +3526,7 @@ static COMMAND(cmd_plugin) {
 
 static COMMAND(cmd_desc) {
 	const char *cmd;
-	
+
 	session_unidle(session);
 	cmd = ekg_status_string(session->status, 1);
 
@@ -3543,7 +3543,7 @@ static COMMAND(cmd_me)
 		return -1;
 	}
 
-	return command_exec_format(target, session, 0, "/ /me %s", params[0]?params[0]:"");	
+	return command_exec_format(target, session, 0, "/ /me %s", params[0]?params[0]:"");
 }
 
 /**
@@ -3580,7 +3580,7 @@ static COMMAND(cmd_me)
 command_t *command_add(plugin_t *plugin, const char *name, char *params, command_func_t function, command_flags_t flags, char *possibilities) {
 	command_t *c;
 
-	if (!name) 
+	if (!name)
 		return NULL;
 
 	c = xmalloc(sizeof(command_t));
@@ -3623,7 +3623,7 @@ int command_remove(plugin_t *plugin, const char *name)
 /*
  * rodzaje parametrów komend:
  *
- * '?' - it means nothing 
+ * '?' - it means nothing
  * 'U' - uid typed by hand, sender of message
  * 'u' - name or uid from the contact list
  * 'C' - name of conference
@@ -3638,16 +3638,16 @@ int command_remove(plugin_t *plugin, const char *name)
  * 'I' - ignored level
  * 's' - session name
  * 'S' - session variable name
- * 'r' - session description 
+ * 'r' - session description
  * 'o' - directory
  * 'm' - metacontact
  * 'w' - window name
- * 
+ *
  * je¿eli parametr == 'p' to 6 argument funkcji command_add() przyjmuje jako argument
- * tablicê z mo¿liwymi uzupe³nieniami 
- * 
+ * tablicê z mo¿liwymi uzupe³nieniami
+ *
  * parametry te¿ s± tablic±, dlatego u¿ywamy makr possibilities() i params() - najlepiej
- * przeanalizowaæ przyk³ady 
+ * przeanalizowaæ przyk³ady
  */
 
 /*
@@ -3664,7 +3664,7 @@ void command_init()
 	command_add(NULL, ("_addtab"), "!", cmd_test_addtab, COMMAND_ENABLEREQPARAMS, NULL);
 
 	command_add(NULL, ("_debug"), "!", cmd_test_debug, COMMAND_ENABLEREQPARAMS, NULL);
- 
+
 	command_add(NULL, ("_debug_dump"), NULL, cmd_test_debug_dump, 0, NULL);
 
 	command_add(NULL, ("_deltab"), "!", cmd_test_deltab, COMMAND_ENABLEREQPARAMS, NULL);
@@ -3683,7 +3683,7 @@ void command_init()
 
 	command_add(NULL, ("_queries"), NULL, cmd_debug_queries, 0, NULL);
 
-	command_add(NULL, ("_query"), "? ? ? ? ? ? ? ? ? ?", cmd_debug_query, 0,NULL); 
+	command_add(NULL, ("_query"), "? ? ? ? ? ? ? ? ? ?", cmd_debug_query, 0,NULL);
 
 	command_add(NULL, ("_segv"), NULL, cmd_test_segv, 0, NULL);
 
@@ -3698,7 +3698,7 @@ void command_init()
 	command_add(NULL, ("alias"), "p ?", cmd_alias, 0,
 	 "-a --add -A --append -d --del -l --list");
 
-	command_add(NULL, ("at"), "p ? ? c", cmd_at, 0, 
+	command_add(NULL, ("at"), "p ? ? c", cmd_at, 0,
 	 "-a --add -d --del -l --list");
 
 	command_add(NULL, ("beep"), NULL, cmd_beep, 0, NULL);
@@ -3707,30 +3707,30 @@ void command_init()
 	 "-a --add -d --del -e --exec -l --list -L --list-default -S --set");
 
 	command_add(NULL, ("clear"), NULL, cmd_window, 0,	NULL);
- 
+
 	command_add(NULL, ("conference"), "p C uU", cmd_conference, SESSION_MUSTHAS,
 	  "-a --add -j --join -d --del -i --ignore -u --unignore -r --rename -f --find -l --list");
- 
+
 	command_add(NULL, ("dcc"), "p u f ?", cmd_dcc, 0,
 	  "send rsend get resumce rvoice voice close list");
 
 	command_add(NULL, ("del"), "u ?", cmd_del, 0, NULL);
 
 	command_add(NULL, ("echo"), "?", cmd_echo, 0, NULL);
-	  
+
 	command_add(NULL, ("eval"), "!", cmd_eval, COMMAND_ENABLEREQPARAMS, NULL);
 
 	command_add(NULL, ("exec"), "p UuC ?", cmd_exec, 0,
 	  "-m --msg -b --bmsg");
- 
+
 	command_add(NULL, ("for"), "!p !? !c", cmd_for, COMMAND_ENABLEREQPARAMS,
 	  "-s --sessions -u --users -w --windows");
- 
+
 	command_add(NULL, ("help"), "c vS", cmd_help, 0, NULL);
-	  
+
 	command_add(NULL, ("ignore"), "uUC I", cmd_ignore, 0,
 	  "status descr notify msg dcc events *");
-	  
+
 	command_add(NULL, ("last"), "CpuU CuU", cmd_last, SESSION_MUSTHAS,
 	  "-c --clear -s --stime -n --number");
 
@@ -3741,10 +3741,10 @@ void command_init()
 
 	command_add(NULL, ("metacontact"), "mp m s uU ?", cmd_metacontact, 0,
 	  "-a --add -d --del -i --add-item -r --del-item -l --list");
-	  
+
 	command_add(NULL, ("on"), "p e ? UuC c", cmd_on, SESSION_MUSTHAS,
 	  "-a --add -d --del -l --list" );
-	
+
 	command_add(NULL, ("play"), "!f", cmd_play, COMMAND_ENABLEREQPARAMS, NULL);
 
 	command_add(NULL, ("plugin"), "P ?", cmd_plugin, 0, NULL);
@@ -3752,23 +3752,23 @@ void command_init()
 	command_add(NULL, ("query"), "!uUCms ?", cmd_query, SESSION_MUSTHAS | COMMAND_ENABLEREQPARAMS,
 	  "-c --clear");
 
-	command_add(NULL, ("queue"), "puUC uUC", cmd_queue, 0, 
+	command_add(NULL, ("queue"), "puUC uUC", cmd_queue, 0,
 	  "-c --clear");
 
 	command_add(NULL, ("quit"), "r", cmd_quit, 0, NULL);
-	  
+
 	command_add(NULL, ("reload"), NULL, cmd_reload, 0, NULL);
-	  
+
 	command_add(NULL, ("save"), NULL, cmd_save, 0, NULL);
 
 	command_add(NULL, ("say"), "!", cmd_say, COMMAND_ENABLEREQPARAMS,
 	  "-c --clear");
 
-	command_add(NULL, ("script")	    , ("p ?"),	cmd_script, 0, 
+	command_add(NULL, ("script")	    , ("p ?"),	cmd_script, 0,
 	  "--list --load --unload --varlist --reset"); /* todo	?!!? */
 
 	command_add(NULL, ("script:autorun"), ("?"),	cmd_script, 0, "");
-	  
+
 	command_add(NULL, ("script:list")   , ("?"),	cmd_script, 0, "");
 
 	command_add(NULL, ("script:load")   , ("f"),	cmd_script, 0, "");
@@ -3793,9 +3793,9 @@ void command_init()
 	  "-a --add -d --del -l --list");
 
 	command_add(NULL, ("unignore"), "i ?", cmd_ignore, 0, NULL);
-	  
+
 	command_add(NULL, ("version"), NULL, cmd_version, 0, NULL);
-	  
+
 	command_add(NULL, ("window"), "p ? p", cmd_window, 0,
 	  "active clear kill last list move new next prev switch refresh left right");
 }

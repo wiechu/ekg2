@@ -42,20 +42,20 @@ COMMAND(perl_command_list)
 COMMAND(perl_command_eval)
 {
 	char *code = saprintf("use Ekg2; %s", params[0]);
-	
+
 	eval_pv(code, TRUE);
 	xfree(code);
-	
+
 	return 0;
 }
 
 COMMAND(perl_command_test)
 {
 	char *code = saprintf("use Ekg2;\nuse Ekg2::%s Ekg2::debug(\"%s\n\");", params[0], params[1]);
-	
+
 	eval_pv(code, TRUE);
 	xfree(code);
-	
+
 	return 0;
 }
 

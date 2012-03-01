@@ -60,7 +60,7 @@ SV *ekg2_bless(perl_bless_t flag, int flag2, void *object);
 
 #define bless_timer(timer)\
 	(SV *) ekg2_bless(BLESS_TIMER, 0, timer)
-	
+
 #define bless_user(user)\
 	(SV *) ekg2_bless(BLESS_USER, 0, user)
 #define bless_list(ptr, id)\

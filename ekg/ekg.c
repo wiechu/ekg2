@@ -94,7 +94,7 @@ int no_mouse = 0;
  *
  *
  * less important things which don't need to be checked every main loop iteration
- * e.g. autoaways 
+ * e.g. autoaways
  *
  * executed each second.
  */
@@ -183,7 +183,7 @@ void ekg_loop() {
 
 				if (w->fd == 0) {
 					session_t *s;
-					for (s = sessions; s; s = s->next) 
+					for (s = sessions; s; s = s->next)
 					{
 						if (!s->connected || !s->autoaway)
 							continue;
@@ -329,12 +329,12 @@ static WATCHER_LINE(handle_stderr)	/* sta³y */
  * debug message [if config_debug set] coming direct from libgadu (by libgadu_debug_handler())
  * or by debug() or by debug_ext()<br>
  * XXX, doc more. But function now is ok.
- * 
+ *
  * @sa debug_ext()
  *
  * @bug It can happen than internal string_t @a line will be not freed.
  *
- * @param level 
+ * @param level
  * @param format
  * @param ap
  *
@@ -630,8 +630,8 @@ int main(int argc, char **argv)
 	queries_init();
 
 	mesg_startup = mesg_set(MESG_CHECK);
-#ifdef DEFAULT_THEME 
-	if (theme_read(DEFAULT_THEME, 1) == -1) 
+#ifdef DEFAULT_THEME
+	if (theme_read(DEFAULT_THEME, 1) == -1)
 #endif
 		theme_init();
 
@@ -788,7 +788,7 @@ int main(int argc, char **argv)
 	timer_add(NULL, "autoaway", 1, 1, ekg_autoaway_timer, NULL);
 
 	ekg2_reason_changed = 0;
-	/* jesli jest emit: ui-loop (plugin-side) to dajemy mu kontrole, jesli nie 
+	/* jesli jest emit: ui-loop (plugin-side) to dajemy mu kontrole, jesli nie
 	 * to wywolujemy normalnie sami ekg_loop() w petelce */
 	if (query_emit(NULL, "ui-loop") != -1) {
 

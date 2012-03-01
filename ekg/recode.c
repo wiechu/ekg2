@@ -18,12 +18,12 @@
 
 
 /* NOTES/THINK/BUGS:
- * 	- do we need any #define? 
+ * 	- do we need any #define?
  * 	- if we stop using ekg_convert_string_init() in plugins this file could be smaller.
  * 	- don't use gg_*() funcs, always use iconv? lite iconv in compat/ ?
  * 	- create:
  * 		static struct ekg_converter same_enc;
- * 		
+ *
  * 		we should know if iconv_open() failed, or we have good console_charset..
  * 		give info to user, if this first happen.
  *
@@ -51,7 +51,7 @@ struct ekg_encoding_pair {
  * @param from		- input encoding (will be duped; if NULL, console_charset will be assumed).
  * @param to		- output encoding (will be duped; if NULL, console_charset will be assumed).
  * @param rev		- pointer to assign reverse conversion into; if NULL, no reverse converter will be initialized.
- * 
+ *
  * @return	Pointer that should be passed to other ekg_convert_string_*(), even if it's NULL.
  *
  * @sa ekg_convert_string_destroy()	- deinits charset conversion.

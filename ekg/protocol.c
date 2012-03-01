@@ -91,7 +91,7 @@ void protocol_init() {
 static QUERY(protocol_userlist_changed) {
 	char **p1 = va_arg(ap, char**);
 	char **p2 = va_arg(ap, char**);
-	
+
 	window_t *w;
 
 	for (w = windows; w; w = w->next) {
@@ -149,14 +149,14 @@ static TIMER_SESSION(protocol_reconnect_handler) {
  *		- <i>EKG_DISCONNECT_NETWORK</i>	- when smth is wrong with network... (read: when recv() fail, or send() or SSL wrappers for rcving/sending data fail with -1 and with bad errno)
  *						[<b>with reason</b> describiny why we fail (strerror() is good here)][<b>with reconnection</b>]<br>
  *		- <i>EKG_DISCONNECT_FORCED</i>	- when server force us to disconnection. [<b>without reason</b>][<b>without reconnection</b>]<br>
- *		- <i>EKG_DISCONNECT_FAILURE</i> - when we fail to connect to server (read: when we fail connect session, after /connect) 
+ *		- <i>EKG_DISCONNECT_FAILURE</i> - when we fail to connect to server (read: when we fail connect session, after /connect)
  *						[<b>with reason</b> describiny why we fail (strerror() is good here)][<b>with reconnection</b>]<br>
  *		- <i>EKG_DISCONNECT_STOPPED</i> - when user do /disconnect during connection [<b>without reason</b>] [<b>without reconnection</b>]<br>
  *
  * @param ap 1st param: <i>(char *) </i><b>session</b> - session uid which goes disconnect
- * @param ap 2nd param: <i>(char *) </i><b>reason</b>  - reason why session goes disconnect.. It's reason specifed by user if EKG_DISCONNECT_USER, else 
+ * @param ap 2nd param: <i>(char *) </i><b>reason</b>  - reason why session goes disconnect.. It's reason specifed by user if EKG_DISCONNECT_USER, else
  *								string with error description like from: strerror().. [if EKG_DISCONNECT_FAILURE]
- * @param ap 3rd param: <i>(int) </i><b>type</b> - type of disconnection one of: 
+ * @param ap 3rd param: <i>(int) </i><b>type</b> - type of disconnection one of:
  *					[EKG_DISCONNECT_USER, EKG_DISCONNECT_NETWORK, EKG_DISCONNECT_FORCED, EKG_DISCONNECT_FAILURE, EKG_DISCONNECT_STOPPED]
  *
  * @param data NULL
@@ -220,7 +220,7 @@ static QUERY(protocol_disconnected) {
 		case EKG_DISCONNECT_FORCED:
 			print("conn_disconnected", session_name(s));
 			break;
-			
+
 		case EKG_DISCONNECT_STOPPED:
 			print("conn_stopped", session_name(s));
 			break;
@@ -265,7 +265,7 @@ static QUERY(protocol_connected) {
 
 	session_t *s = session_find(session);
 	const char *descr = session_descr_get(s);
-	
+
 	ekg_update_status(s);
 
 	if (descr)
@@ -325,7 +325,7 @@ static QUERY(protocol_status)
 
 	if (!(s = session_find(session)))
 		return 0;
-	
+
 	sess_notify = session_int_get(s, "display_notify");
 	/* we are checking who user we know */
 	if (!(u = userlist_find(s, uid))) {
@@ -356,7 +356,7 @@ static QUERY(protocol_status)
 	/* znajdz resource... */
 	if (u->resources) {
 		char *res = xstrchr(uid, '/');	/* resource ? */
-		if (res) r = userlist_resource_find(u, res+1); 
+		if (res) r = userlist_resource_find(u, res+1);
 	}
 
 	/* status && descr ? */
@@ -369,7 +369,7 @@ static QUERY(protocol_status)
 	}
 
 	/* je¶li te same stany...  i te same opisy (lub brak opisu), ignoruj */
-	if ((status == st) && !xstrcmp(descr, de)) 
+	if ((status == st) && !xstrcmp(descr, de))
 		return 0;
 
 	/* je¶li kto¶ nam znika, zapamiêtajmy kiedy go widziano */
@@ -377,7 +377,7 @@ static QUERY(protocol_status)
 		u->last_seen = when ? when : time(NULL);
 
 	/* XXX dodaæ events_delay */
-	
+
 	/* je¶li dostêpny lub zajêty, dopisz to taba. je¶li niedostêpny, usuñ */
 	if (EKG_STATUS_IS_AVAIL(status) && config_completion_notify && u->nickname)
 		tabnick_add(u->nickname);
@@ -389,9 +389,9 @@ static QUERY(protocol_status)
 
 	/* je¶li ma³o wa¿na zmiana stanu...
 	 * XXX someone can tell me what this should do, 'cos I can't understand the way it's written? */
-	
+
 	/* z dokumentacji, co powinno robic:
-	 *	warto¶æ 2 wy¶wietla tylko zmiany z niedostêpnego na dostêpny i na odwrót. 
+	 *	warto¶æ 2 wy¶wietla tylko zmiany z niedostêpnego na dostêpny i na odwrót.
 	 */
 
 	if (((sess_notify == -1 ? config_display_notify : sess_notify) & 2)
@@ -467,10 +467,10 @@ notify_plugins:
 		xfree(u->descr1line);
 		u->descr1line = de;
 
-		if (!u->resources || u->resources == r) 
+		if (!u->resources || u->resources == r)
 			u->status_time = when ? when : time(NULL);
 	}
-	
+
 	query_emit(NULL, "userlist-changed", __session, __uid);
 
 	/* Currently it behaves like event means grouped statuses,
@@ -607,7 +607,7 @@ char *message_print(const char *session, const char *sender, const char **rcpts,
 
 			if (text[i] == '%')
 				string_append_c(s, '%');
-			
+
 			string_append_c(s, text[i]);
 		}
 
@@ -650,19 +650,19 @@ char *message_print(const char *session, const char *sender, const char **rcpts,
 			if (!c) {
 				string_t tmp = string_init(NULL);
 				int first = 0, i;
-	
+
 				for (i = 0; i < recipients_count; i++) {
 					if (first++)
 						string_append_c(tmp, ',');
-	
+
 					string_append(tmp, rcpts[i]);
 				}
-	
+
 				string_append_c(tmp, ' ');
 				string_append(tmp, sender);
-	
+
 				c = conference_create(s, tmp->str);
-	
+
 				string_free(tmp, 1);
 			} else if (c->ignore) {
 				xfree(text);
@@ -683,7 +683,7 @@ char *message_print(const char *session, const char *sender, const char **rcpts,
 
 		if (config_beep && config_beep_chat && dobeep)
 			query_emit(NULL, "ui-beep");
-	
+
 		if (config_sound_chat_file && dobeep)
 			play_sound(config_sound_chat_file);
 
@@ -696,10 +696,10 @@ char *message_print(const char *session, const char *sender, const char **rcpts,
 
 	} else if (mclass == EKG_MSGCLASS_SYSTEM && config_sound_sysmsg_file)
 			play_sound(config_sound_sysmsg_file);
-	
+
 	if (config_last & 3 && (mclass < EKG_MSGCLASS_SENT))
 		last_add(0, sender, now, sent, text);
-	
+
 	user = (mclass < EKG_MSGCLASS_SENT) ? format_user(s, sender) : session_format_n(sender);
 
 	if (config_emoticons && text) {
@@ -711,13 +711,13 @@ char *message_print(const char *session, const char *sender, const char **rcpts,
 	if (empty_theme)
 		class_str = "empty";
 
-	if (secure) 
+	if (secure)
 		securestr = format_string(format_find("secure"));
 
 	if (mclass == EKG_MSGCLASS_LOG || mclass == EKG_MSGCLASS_SENT_LOG)
 		separate = 1;
 
-	if ( (mclass == EKG_MSGCLASS_CHAT || mclass == EKG_MSGCLASS_SENT_CHAT) || 
+	if ( (mclass == EKG_MSGCLASS_CHAT || mclass == EKG_MSGCLASS_SENT_CHAT) ||
 		  (!(config_make_window & 4) && (mclass == EKG_MSGCLASS_MESSAGE || mclass == EKG_MSGCLASS_SENT)) ) {
 		activity = to_me ? EKG_WINACT_IMPORTANT : EKG_WINACT_MSG;
 		separate = 1;
@@ -766,14 +766,14 @@ static QUERY(protocol_message)
 	if (config_display_blinking && userlist && (mclass < EKG_MSGCLASS_SENT) && (!rcpts || !rcpts[0])) {
 		int oldstate = userlist->blink;
 
-		if (config_make_window && xstrcmp(get_uid(session_class, window_current->target), get_uid(session_class, uid))) 
+		if (config_make_window && xstrcmp(get_uid(session_class, window_current->target), get_uid(session_class, uid)))
 			userlist->blink = 1;
 		else if (!config_make_window) {
 			window_t *w;
 
 			/*
 			 * now we are checking if there is some window with query for this
-			 * user 
+			 * user
 			 */
 			w = window_find_s(session_class, uid);
 
@@ -784,7 +784,7 @@ static QUERY(protocol_message)
 		if (oldstate != userlist->blink)
 			query_emit(NULL, "userlist-changed", &session, &uid);
 	}
-	
+
 	if (mclass & EKG_NO_THEMEBIT) {
 		mclass &= ~EKG_NO_THEMEBIT;
 		empty_theme = 1;
@@ -826,7 +826,7 @@ static QUERY(protocol_message)
 	}
 
 	/* je¿eli nie mamy podanego uid'u w li¶cie kontaktów to trzeba go dopisaæ do listy dope³nianych */
-	if (!userlist && !our_msg)	/* don't add us to tabnick */ 
+	if (!userlist && !our_msg)	/* don't add us to tabnick */
 		tabnick_add(uid);
 
 	if (!userlist && xstrcasecmp(session_class->uid, uid) && session_int_get(session_class, "auto_find") >= 1) {
@@ -916,7 +916,7 @@ static QUERY(protocol_message_ack) {
 	const char *target = (u && u->nickname) ? u->nickname : rcpt;
 
 	msg_queue_remove_seq(seq);
-	
+
 	if ((__status >= 0) && (__status < EKG_ACK_MAX) && (config_display_ack & (1 << __status)))
 		print_info(target, s, ackformats[__status], format_user(s, rcpt));
 
@@ -1006,7 +1006,7 @@ static LIST_FREE_ITEM(dcc_free_item, dcc_t *) {
 	xfree(data->uid); xfree(data->filename);
 }
 
-DYNSTUFF_LIST_DECLARE(dccs, dcc_t, dcc_free_item, 
+DYNSTUFF_LIST_DECLARE(dccs, dcc_t, dcc_free_item,
 	static __DYNSTUFF_LIST_ADD,			/* dccs_add() */
 	static __DYNSTUFF_LIST_REMOVE_SAFE,		/* dccs_remove() */
 	__DYNSTUFF_NODESTROY)				/* XXX dccs_destroy() XXX, we don't care? */

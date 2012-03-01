@@ -528,7 +528,7 @@ static COMMAND(polchat_command_part) {
 	polchat_send_target_msg(session, target, "/part %s", reason);
 
 	xfree(t);
-	
+
 	return 0;
 }
 

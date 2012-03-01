@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-/** 
+/**
  * userlist_t is used to manage all info about user.<br>
  * It's used not only to manage contacts in roster, but also to manage people in chat or conference
  *
@@ -59,18 +59,18 @@ typedef struct userlist {
 	struct ekg_group *groups;	/**< list_t with ekg_group<br>
 					 *	Groups to which this user belongs like: work, friends, family..<br>
 					 *	It's also used internally by ekg2, for example when user is ignore he has group with name: __ignore */
-	
+
 	status_t	status;		/**< current status */
 	char		*descr;		/**< description of status. */
 	char		*descr1line;	/**< description of status without \r\n. */
 	struct ekg_resource *resources;	/**< list_t with ekg_resource_t<br>It's used to handle Jabber resources, and also by irc friendlist. */
 
 	time_t		last_seen;	/**< Last time when user was available [when u->status was > notavail] */
-	
+
 	char		*foreign;	/**< For compatilibity with ekg1 userlist. */
 
 	void		*priv;		/**< Private data for protocol plugin. */
-	
+
 	unsigned int	blink	: 1;	/**< Blink userlist entry (message) */
 	unsigned int	typing	: 1;	/**< User is composing */
 
@@ -106,7 +106,7 @@ typedef enum {
 							 *	and char** with value (will be duplicated) */
 } userlist_privhandler_func_t;
 
-/** 
+/**
  * ekg_resource_t is used to manage userlist_t resources.<br>
  * For example jabber resources, or irc friendlist
  */
@@ -140,7 +140,7 @@ typedef enum {
 	IGNORE_NOTIFY		= 0x20,
 	IGNORE_XOSD		= 0x40,
 	IGNORE_LOG		= 0x80,
-	
+
 	IGNORE_ALL		= 0xFF
 } ignore_t;
 

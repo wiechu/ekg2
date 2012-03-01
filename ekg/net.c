@@ -97,7 +97,7 @@ static int ekg_resolver_split(char *hostname, const int defport) {
 	return defport;
 }
 
-/* 
+/*
  * with main part changed
  *
  * proto_port is used for srv resolver, since e.g.
@@ -316,7 +316,7 @@ static int ekg_build_sin(const char *data, const int defport, struct sockaddr **
 
 static WATCHER(ekg_connect_handler) {
 	struct ekg_connect_data *c = (struct ekg_connect_data*) data;
-	int res = 0; 
+	int res = 0;
 	socklen_t res_size = sizeof(res);
 	session_t *s;
 
@@ -341,7 +341,7 @@ static WATCHER(ekg_connect_handler) {
 		close(fd);
 
 		return -1;
-	} 
+	}
 
 	if (s && c->async(type, fd, WATCH_WRITE, s) > 0) {
 		debug_error("ekg_connect_handler(), looks like caller didn't like our job.\n");
@@ -495,7 +495,7 @@ watch_t *ekg_connect(session_t *session, const char *server, const int proto_por
 /*
  * ekg_resolver2()
  *
- * Resolver copied from jabber plugin, 
+ * Resolver copied from jabber plugin,
  * it uses gethostbyname()
  *
  *  - async	- watch handler.
@@ -506,7 +506,7 @@ watch_t *ekg_connect(session_t *session, const char *server, const int proto_por
  *
  *  NOTE, EKG2-RESOLVER-API IS NOT STABLE.
  *	IT'S JUST COPY-PASTE OF SOME FUNCTION FROM OTHER PLUGINS, TO AVOID DUPLICATION OF CODE (ALSO CLEANUP CODE A LITTLE)
- *	AND TO AVOID REGRESSION. 
+ *	AND TO AVOID REGRESSION.
  *  THX.
  */
 

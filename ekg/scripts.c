@@ -12,9 +12,9 @@
 
 #include "scripts.h"
 
-/* TODO && BUGS 
+/* TODO && BUGS
  * - cleanup.
- * - multiple handler for commands && var_changed. 
+ * - multiple handler for commands && var_changed.
  * - memleaks ?
  */
 
@@ -54,9 +54,9 @@ scriptlang_t *scriptlang_from_ext(char *name)
 {
 	scriptlang_t *s;
 	char *ext = xrindex(name, '.');
-	
+
 	if (!ext) return NULL;
-	
+
 	for (s = scriptlang; s; s = s->next) {
 		if (!xstrcmp(ext, s->ext))
 			return s;
@@ -69,7 +69,7 @@ int scriptlang_register(scriptlang_t *s)
 	scriptlang_add(s);
 
 	s->init();
-	
+
 	if (!in_autoexec)
 		scripts_autoload(s);
 	return 0;
@@ -80,13 +80,13 @@ int scriptlang_unregister(scriptlang_t *s)
 	script_unload_lang(s);
 	s->deinit();
 	scriptlang_unlink(s);
-	
+
 	return 0;
 }
 
 /**************************************************************************************/
 
-int script_autorun(char *scriptname, 
+int script_autorun(char *scriptname,
 		   int isautorun /* 0 - turn off ; 1 - turn on ; -1 off->on  on->off */) {
 /*
  * yeah i know it could be faster, better and so on, but it was written for special event and it look's like like it look... ;>
@@ -110,7 +110,7 @@ int script_autorun(char *scriptname,
 		if (!(xrindex(scriptname, '.')))
 			ext = xrindex(path, '.');
 
-/* TODO: maybe we should check if (ext) belongs to any scriptlang... ? and in script_find_path() ? 
+/* TODO: maybe we should check if (ext) belongs to any scriptlang... ? and in script_find_path() ?
  * to avoid stupid user mistakes... but i don't think ;>
  */
 
@@ -154,7 +154,7 @@ int script_autorun(char *scriptname,
 	}
 	if (!ret)
 		print("script_autorun_succ", scriptname, (isautorun == 1) ? "added to" : "removed from");
-	else if (isautorun == -1) 
+	else if (isautorun == -1)
 		print("script_autorun_unkn", scriptname, "", strerror(errno)); /* i think only when there isn't such a file but i'm not sure */
 	else
 		print("script_autorun_fail", scriptname, (isautorun == 1) ? "to add to" : "to remove from", strerror(errno));
@@ -164,11 +164,11 @@ int script_autorun(char *scriptname,
 int script_reset(scriptlang_t *scr)
 {
 	scriptlang_t *s;
-	
+
 	for (s = scriptlang; s; s = s->next) {
 		script_unload_lang(s);
 		s->deinit();
-		
+
 		s->init();
 		scripts_autoload(s);
 	}
@@ -180,14 +180,14 @@ int script_list(scriptlang_t *s)
 	script_t *scr;
 	scriptlang_t *lang;
 	int i = 0;
-	
+
 	for (scr = scripts; scr; scr = scr->next) {
 		lang = scr->lang;
 		if (!s || scr->lang == s) {
 			print("script_list", scr->name, scr->path, lang->name);
 			i++;
 		}
-	
+
 	}
 	if (!i)
 		print("script_list_empty");
@@ -280,12 +280,12 @@ int script_unload(script_t *scr)
 	for (l = script_watches; l;)  { t = l->data; l = l->next; if (!t) continue;
 		if (s(t)->scr == scr) { script_watch_unbind(t, 1); } }
 #undef s
-	
+
 	if (slang->script_unload(scr))
 		return -1;
 
 	print("script_removed", scr->name, scr->path, slang->name);
-	
+
 	scripts_remove(scr);
 
 	return 0;
@@ -305,7 +305,7 @@ int script_unload_name(scriptlang_t *s, char *name)
 		return -1;
 	}
 	scr = script_find(s, name);
-	
+
 	if (!scr) {
 		print("script_not_found", name);
 		return -1;
@@ -314,7 +314,7 @@ int script_unload_name(scriptlang_t *s, char *name)
 		/* error */
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -325,7 +325,7 @@ int script_unload_lang(scriptlang_t *s)
 
 	for (scr = scripts; scr;) {
 		script_t *next	= scr->next;
-		
+
 		lang = scr->lang;
 		if (!s || scr->lang == s) {
 			script_unload(scr);
@@ -352,7 +352,7 @@ int script_load(scriptlang_t *s, char *tname)
 	if (s && !xrindex(tname, '.'))
 		name = saprintf("%s%s", tname, s->ext);
 	else	name = xstrdup(tname);
-	
+
 	if ((path = script_find_path(name))) {
 		if (stat(path, &st) || S_ISDIR(st.st_mode)) {
 			/* scripts_loaddir(path) (?) */
@@ -389,13 +389,13 @@ int script_load(scriptlang_t *s, char *tname)
 		scr->name = name2;
 		scr->lang = slang;
 		scr->inited = 1;
-		
+
 		scripts_add(scr);	/* BUG: this should be before `script_loaded`...  */
 
 		ret = slang->script_load(scr);
 
 /*		debug("[script] script_load ret == %d\n", ret); */
-		
+
 		if (ret < 1) {
 			if (ret == -1)
 				print("script_incorrect", scr->name, scr->path, slang->name);
@@ -408,9 +408,9 @@ int script_load(scriptlang_t *s, char *tname)
 		}
 		print("script_loaded", scr->name, scr->path, slang->name);
 	}
-	else 
+	else
 		print("script_not_found", name);
-	
+
 	xfree(path);
 	xfree(name);
 	return 0;
@@ -424,7 +424,7 @@ int script_variables_read() {
 		debug("Error opening script variable file..\n");
 		return -1;
 	}
-	
+
 	while ((line = read_line(f))) {
 		if (line[0] == '#' || line[0] == ';' || (line[0] == '/' && line[1] == '/'))
 			continue;
@@ -438,10 +438,10 @@ int script_variables_read() {
 
 void script_variables_free() {
 	list_t l;
-	
+
 	for (l = script_vars; l; l = l->next) {
 		script_var_t *v = l->data;
-		
+
 /*		xfree(v->value); variables_free() free it. */
 		xfree(v->priv_data); /* should be NULL here. */
 		xfree(v->name);
@@ -456,12 +456,12 @@ void script_variables_write() {
 	list_t l;
 	GOutputStream *f = G_OUTPUT_STREAM(config_open("scripts-var", "w"));
 
-	if (!f) 
+	if (!f)
 		return;
 
 	for (l = script_vars; l; l = l->next) {
 		script_var_t *v = l->data;
-		
+
 		ekg_fprintf(f, "%s\n", v->name);
 	}
 }
@@ -474,7 +474,7 @@ script_command_t *script_command_find(const char *name)
 		temp = l->data;
 		if (!xstrcmp(name, temp->self->name))
 			return temp;
-	
+
 	}
 	return NULL;
 }
@@ -485,7 +485,7 @@ script_var_t *script_var_find(const char *name)
 #if 0 /* i don't remember that code... */
 	if (!variable_find(name))
 		return NULL;
-#endif	
+#endif
 	for (l = script_vars; l; l = l->next) {
 		script_var_t *v = l->data;
 		if (!xstrcasecmp(v->name, name)) {
@@ -510,7 +510,7 @@ int script_command_unbind(script_command_t *temp, int free)
 int script_query_unbind(script_query_t *temp, int free)
 {
 	SCRIPT_UNBIND_HANDLER(SCRIPT_QUERYTYPE, temp->priv_data);
-	query_free(temp->self);	
+	query_free(temp->self);
 	return list_remove(&script_queries, temp, 1);
 }
 
@@ -532,7 +532,7 @@ int script_plugin_destroy(/* plugin_t *p */ )
 	xfree(temp->self->name);
 	xfree(temp->self);
 	return list_remove(&script_plugins, temp, 1);
-}								
+}
 
 int script_timer_unbind(script_timer_t *temp, int remove)
 {
@@ -558,7 +558,7 @@ int script_watch_unbind(script_watch_t *temp, int remove)
 int script_var_unbind(script_var_t *temp, int free)
 {
 	SCRIPT_UNBIND_HANDLER(SCRIPT_VARTYPE, temp->priv_data);
-	temp->scr = NULL; 
+	temp->scr = NULL;
 	temp->priv_data = NULL;
 	return 0;
 }
@@ -604,8 +604,8 @@ script_var_t *script_var_add_full(scriptlang_t *s, script_t *scr, char *name, in
 
 		temp->self = variable_add(NULL, name, type, 1, pVar, &script_var_changed, NULL, NULL);
 		SCRIPT_BIND_FOOTER(script_vars);
-	} 
-	
+	}
+
 	return tmp;
 }
 
@@ -614,7 +614,7 @@ script_var_t *script_var_add(scriptlang_t *s, script_t *scr, char *name, char *v
 	return script_var_add_full(s, scr, name, VAR_STR, value, handler);
 }
 
-script_command_t *script_command_bind(scriptlang_t *s, script_t *scr, char *command, char *params, char *possibilities, void *handler) 
+script_command_t *script_command_bind(scriptlang_t *s, script_t *scr, char *command, char *params, char *possibilities, void *handler)
 {
 	SCRIPT_BIND_HEADER(script_command_t);
 	temp->self = command_add(NULL, command, params, script_command_handlers, COMMAND_ISSCRIPT, possibilities);
@@ -628,8 +628,8 @@ script_plugin_t *script_plugin_init(scriptlang_t *s, script_t *scr, char *name, 
 	temp->self->name = xstrdup(name);
 	temp->self->pclass = pclass;
 	temp->self->destroy = script_plugin_destroy;
-	temp->self->theme_init = script_plugin_theme_init; 
-	plugin_register(temp->self, -254 /* default */);							
+	temp->self->theme_init = script_plugin_theme_init;
+	plugin_register(temp->self, -254 /* default */);
 	SCRIPT_BIND_FOOTER(script_plugins);
 }
 
@@ -641,7 +641,7 @@ script_timer_t *script_timer_bind(scriptlang_t *s, script_t *scr, int freq, void
 	temp->self = timer_add(NULL, (const char *) tempname, freq, 1, &script_timer_handlers, (void *) temp);
 	xfree(tempname);
 	SCRIPT_BIND_FOOTER(script_timers);
-} 
+}
 
 script_watch_t *script_watch_add(scriptlang_t *s, script_t *scr, int fd, int type, void *handler, void *data)
 {
@@ -732,7 +732,7 @@ static COMMAND(script_command_handlers)
 	return ret;
 }
 
-static int script_plugin_theme_init( /* plugin_t *p */ ) 
+static int script_plugin_theme_init( /* plugin_t *p */ )
 {
 /* TODO: it will be slow! foreach scriptplugin call format initializer.  (?) */
 	return 0;
@@ -767,7 +767,7 @@ static QUERY(script_query_handlers)
 	memset(args, -1, sizeof(args));
 	memset(args2, -1, sizeof(args2));
 
-	for (i=0; i < temp->real_argc; i++) 
+	for (i=0; i < temp->real_argc; i++)
 		args2[i] = args[i] = (void *) va_arg(ap, void *);
 
 	if (temp->hack)
@@ -776,13 +776,13 @@ static QUERY(script_query_handlers)
 	switch (temp->hack) {
 		case 0:	break;			/* without hack, thats gr8! */
 
-		case 1:				/* scripts protocol-disconnected (v 1.0) 
+		case 1:				/* scripts protocol-disconnected (v 1.0)
 							- takes only (reason) */
 			temp->argv_type[0] = QUERY_ARG_CHARP;	/* OK */
 			temp->argc = 1;
 			break;
-		case 2:				/* scripts protocol-status (v 1.0) 
-							- takes (session, uid, status, descr) 
+		case 2:				/* scripts protocol-status (v 1.0)
+							- takes (session, uid, status, descr)
 							- takes char *status, instead of int status */
 			{
 				temp->argc = 4;
@@ -800,7 +800,7 @@ static QUERY(script_query_handlers)
 			}
 		case 3:
 		case 4:
-		case 5:				/* scripts protocol-message, protocol-message-post, protocol-message-received (v 1.0) 
+		case 5:				/* scripts protocol-message, protocol-message-post, protocol-message-received (v 1.0)
 							- ts (session, uid, mclass, text, sent_time, ignore_level)
 							- vs (session, uid, rcpts, text, format, sent, mclass, seq, secure) [protocol-message-post, protocol-message-recv]
 							- vs (session, uid, rcpts, text, format, sent, mclass, seq, dobeep, secure) [protocol-message]
@@ -854,7 +854,7 @@ static QUERY(script_query_handlers)
 
 /********************************************************************************/
 
-/* from python.c  python_autorun() 
+/* from python.c  python_autorun()
  *  load  scripts from `path`
  */
 
@@ -877,7 +877,7 @@ static int scripts_loaddir(scriptlang_t *s, const char *path)
 			xfree(tmp);
 			continue;
 		}
-		if (!(slang = scriptlang_from_ext(tmp)) || (s != NULL && s != slang) ) { 
+		if (!(slang = scriptlang_from_ext(tmp)) || (s != NULL && s != slang) ) {
 			xfree(tmp);
 			continue;
 		}
@@ -897,7 +897,7 @@ COMMAND(cmd_script)
 	char	     *param0 = NULL;
 
 	if (xstrcmp(name, ("script"))) { /* script:*	*/
-		tmp = (char *) name; 
+		tmp = (char *) name;
 		param0 = (char *) params[0];
 	} else if (params[0]) {        /* script --*  */
 		tmp = (char *) params[0]+2;
@@ -906,7 +906,7 @@ COMMAND(cmd_script)
 /*	s = param0 ? */
 
 	if (xstrlen(tmp) < 1)
-		return script_list(NULL); 
+		return script_list(NULL);
 	else {
 		if (xstrlen(params[0]) > 0) { /* somethink like we have in /plugin ;> e.g /script +dns /script -irc */
 			if (params[0][0] == '+')
@@ -915,7 +915,7 @@ COMMAND(cmd_script)
 				return script_unload_name(NULL, (char *) params[0]+1);
 		}
 
-		if (!xstrcmp(tmp, "load")) 
+		if (!xstrcmp(tmp, "load"))
 			return script_load(NULL, param0);
 		else if (!xstrcmp(tmp, "unload"))
 			return script_unload_name(NULL, param0);

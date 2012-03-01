@@ -217,7 +217,7 @@ void icq_set_security(session_t *s) {
 
 	/* SNAC(15,02)/07D0/0C3A CLI_SET_FULLINFO Save info tlv-based request
 	 *
-	 * This is client tlv-based set personal info request. This snac contain tlv chain and this 
+	 * This is client tlv-based set personal info request. This snac contain tlv chain and this
 	 * chain may contain several TLVs of same type (for example 3 tlv(0x186) - language codes).
 	 * Client can change all its information via single packet.
 	 * Server should respond with SNAC(15,03)/07DA/0C3F - which contain result flag.
@@ -682,7 +682,7 @@ void icq_connect(session_t *session, const char *server, int port) {
 
 	GSocketClient *sock		= g_socket_client_new();
 	ekg_connection_starter_t cs	= ekg_connection_starter_new(port);
-	
+
 	ekg_connection_starter_set_servers(cs, server);
 
 	ekg_connection_starter_run(cs, sock, icq_handle_connect, icq_handle_connect_failure, session);

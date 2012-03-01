@@ -89,7 +89,7 @@ static int ncurses_ui_window_lastlog(window_t *lastlog_w, window_t *w) {
 		} else {				/* substring */
 			if (local_config_lastlog_case)
 				found = !!xstrstr(bl->line->str, lastlog->expression);
-			else	
+			else
 				found = !!xstrcasestr(bl->line->str, lastlog->expression);
 		}
 
@@ -221,7 +221,7 @@ COMMAND(ncurses_cmd_lastlog) {
 	/* parse configuration */
 	for (i = 0; params[i]; i++) {
 		/* XXX: now they're all PCREs */
-		if (match_arg(params[i], 'r', "regex", 2)) 
+		if (match_arg(params[i], 'r', "regex", 2))
 			isregex = 1;
 		else if (match_arg(params[i], 'R', "extended-regex", 2))
 			isregex = 2;
@@ -233,7 +233,7 @@ COMMAND(ncurses_cmd_lastlog) {
 			iscase = 0;
 		else if (match_arg(params[i], 'w', "window", 2) && params[i+1]) {
 			w = window_exist(atoi(params[++i]));
-					
+
 			if (!w) {
 				printq("window_doesnt_exist", params[i]);
 				return -1;
@@ -253,7 +253,7 @@ COMMAND(ncurses_cmd_lastlog) {
 
 	lastlog = w ? window_current->lastlog : &lastlog_current_static;
 
-	if (!lastlog) 
+	if (!lastlog)
 		lastlog = xmalloc(sizeof(window_lastlog_t));
 
 	if (w || lastlog_current) {
@@ -290,7 +290,7 @@ COMMAND(ncurses_cmd_lastlog) {
 
 	if (w)	window_current->lastlog	= lastlog;
 	else	lastlog_current		= lastlog;
-			
+
 	if (!(w = window_exist(WINDOW_LASTLOG_ID)))
 		w = window_new("__lastlog", NULL, WINDOW_LASTLOG_ID);
 

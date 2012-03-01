@@ -50,7 +50,7 @@ static void variables_add(variable_t *v) {
  *
  * funkcje informuj±ce, czy dana grupa zmiennych ma zostaæ wy¶wietlona.
  * równie dobrze mo¿na by³o przekazaæ wska¼nik do zmiennej, która musi
- * byæ ró¿na od zera, ale dziêki funkcjom nie trzeba bêdzie mieszaæ w 
+ * byæ ró¿na od zera, ale dziêki funkcjom nie trzeba bêdzie mieszaæ w
  * przysz³o¶ci.
  */
 static int dd_sound(const char *name) { return (config_sound_app != NULL); }
@@ -75,7 +75,7 @@ void variable_init() {
 	variable_add(NULL, ("completion_notify"), VAR_MAP, 1, &config_completion_notify, NULL, variable_map(4, 0, 0, "none", 1, 2, "add", 2, 1, "addremove", 4, 0, "away"), NULL);
 		/* It's very, very special variable; shouldn't be used by user */
 	variable_add(NULL, ("config_version"), VAR_INT, 2, &config_version, NULL, NULL, NULL);
-	variable_add(NULL, ("dcc_dir"), VAR_STR, 1, &config_dcc_dir, NULL, NULL, NULL); 
+	variable_add(NULL, ("dcc_dir"), VAR_STR, 1, &config_dcc_dir, NULL, NULL, NULL);
 	variable_add(NULL, ("debug"), VAR_BOOL, 1, &config_debug, NULL, NULL, NULL);
 /*	variable_add(NULL, ("default_protocol"), VAR_STR, 1, &config_default_protocol, NULL, NULL, NULL); */
 	variable_add(NULL, ("default_status_window"), VAR_BOOL, 1, &config_default_status_window, NULL, NULL, NULL);
@@ -199,7 +199,7 @@ variable_map_t *variable_map(int count, ...) {
 	int i;
 
 	res = xcalloc(count + 1, sizeof(variable_map_t));
-	
+
 	va_start(ap, count);
 
 	for (i = 0; i < count; i++) {
@@ -207,7 +207,7 @@ variable_map_t *variable_map(int count, ...) {
 		res[i].conflicts = va_arg(ap, int);
 		res[i].label = xstrdup(va_arg(ap, char*));
 	}
-	
+
 	va_end(ap);
 
 	return res;
@@ -274,7 +274,7 @@ int variable_remove(plugin_t *plugin, const char *name) {
 		variable_t *v = vl->data;
 		if (!v->name)
 			continue;
-		
+
 		if (hash == v->name_hash && plugin == v->plugin && !xstrcasecmp(name, v->name)) {
 			variables_remove(v);
 			return 0;
@@ -388,14 +388,14 @@ int variable_set(const char *name, const char *value) {
 			}
 
 			p = value;
-				
+
 			if ((hex = !xstrncasecmp(p, "0x", 2)))
 				p += 2;
 
 			while (*p && *p != ' ') {
 				if (hex && !xisxdigit(*p))
 					return -2;
-				
+
 				if (!hex && !xisdigit(*p))
 					return -2;
 				p++;
@@ -421,10 +421,10 @@ int variable_set(const char *name, const char *value) {
 		case VAR_BOOL:
 		{
 			int tmp;
-		
+
 			if (!value)
 				return -2;
-		
+
 			if ((tmp = on_off(value)) == -1)
 				return -2;
 
@@ -449,7 +449,7 @@ int variable_set(const char *name, const char *value) {
 					*tmp = xstrdup(value);
 			} else
 				*tmp = NULL;
-	
+
 			changed = xstrcmp(oldval, *tmp);
 			xfree(oldval);
 			break;
@@ -467,7 +467,7 @@ int variable_set(const char *name, const char *value) {
 	tmpname = xstrdup(v->name);
 	query_emit(NULL, "variable-changed", &tmpname);
 	xfree(tmpname);
-			
+
 	return 0;
 }
 
@@ -518,7 +518,7 @@ void variables_destroy(void) {
  * name - name of the variable
  */
 void variable_help(const char *name) {
-	GDataInputStream *f; 
+	GDataInputStream *f;
 	gchar *type = NULL, *def = NULL, *tmp;
 	const gchar *line, *seeking_name;
 	string_t s;
@@ -548,7 +548,7 @@ void variable_help(const char *name) {
 			print("help_set_file_not_found");
 			return;
 		}
-		
+
 		seeking_name = name;
 	}
 
@@ -566,12 +566,12 @@ void variable_help(const char *name) {
 	}
 
 	line = read_line(f);
-	
+
 	if ((tmp = xstrstr(line, (": "))))
 		type = xstrdup(tmp + 2);
 	else
 		type = xstrdup(("?"));
-	
+
 	line = read_line(f);
 	if ((tmp = xstrstr(line, (": "))))
 		def = xstrdup(tmp + 2);
@@ -599,7 +599,7 @@ void variable_help(const char *name) {
 			string_append(s, ("\n\r"));
 			continue;
 		}
-	
+
 		string_append(s, line + 1);
 
 		if (line[xstrlen(line) - 1] != ' ')
@@ -610,7 +610,7 @@ void variable_help(const char *name) {
 		print("help_set_body", s->str);
 
 	string_free(s, 1);
-	
+
 	if (format_exists("help_set_footer"))
 		print("help_set_footer", name);
 

@@ -79,7 +79,7 @@ WATCHER(jabber_dcc_handle_recv) {
 						return 0;
 					}
 					case (SOCKS5_AUTH): {
-						jabber_write(p->session, 
+						jabber_write(p->session,
 							"<iq type=\"result\" to=\"%s\" id=\"%s\">"
 							"<query xmlns=\"http://jabber.org/protocol/bytestreams\">"
 							"<streamhost-used jid=\"%s\"/>"
@@ -94,7 +94,7 @@ WATCHER(jabber_dcc_handle_recv) {
 					return -1;
 				}
 			}
-			
+
 			len = read(fd, &buf, sizeof(buf)-1);
 			if (len == 0) { close(fd); return -1; }
 			buf[len] = 0;
@@ -124,7 +124,7 @@ WATCHER(jabber_dcc_handle_recv) {
 WATCHER(jabber_dcc_handle_send) {  /* XXX, try merge with jabber_dcc_handle_recv() */
 	dcc_t *d = data;
 	jabber_dcc_t *p = d->priv;
- 
+
 	char buf[16384];
 	int flen, len;
 
@@ -148,7 +148,7 @@ WATCHER(jabber_dcc_handle_send) {  /* XXX, try merge with jabber_dcc_handle_recv
 		debug_error("jabber_dcc_handle_send() p->fd == NULL\n");
 		return -1;
 	}
-	
+
 	if (p->sfd != fd) {
 		debug_error("jabber_dcc_handle_send() p->sfd != fd\n");
 		return -1;
@@ -167,7 +167,7 @@ WATCHER(jabber_dcc_handle_send) {  /* XXX, try merge with jabber_dcc_handle_recv
 		return -1;
 	}
 	d->offset += len;
-	
+
 	if (d->offset == d->size) {
 		if (!feof(p->fd)) debug_error("d->offset > d->size... file changes size?\n");
 		print("dcc_done_send", format_user(p->session, d->uid), d->filename);
@@ -186,7 +186,7 @@ WATCHER(jabber_dcc_handle_accepted) { /* XXX, try merge with jabber_dcc_handle_r
 
 	if (type)
 		return -1;
-	
+
 	len = read(fd, &buf, sizeof(buf)-1);
 
 	if (len < 1) return -1;
@@ -261,7 +261,7 @@ WATCHER(jabber_dcc_handle_accepted) { /* XXX, try merge with jabber_dcc_handle_r
 	/* SHA1 HASH: */
 		for (i=0; i < 40; i++) req[5+i] = sha1[i];
 	/* PORT: */
-		req[45] = 0x00; 
+		req[45] = 0x00;
 		req[46] = 0x00;
 	/* LET'S SEND IWIL (OK, AUTH NOT IWIL) PACKET: */
 		write(fd, (char *) &req, sizeof(req));
@@ -341,10 +341,10 @@ void jabber_dcc_close_handler(struct dcc_s *d) {
 	if (!d->active && d->type == DCC_GET) {
 		session_t *s = p->session;
 		jabber_private_t *j;
-		
+
 		if (!s || !(j= session_private_get(s))) return;
 
-		watch_write(j->send_watch, "<iq type=\"error\" to=\"%s\" id=\"%s\"><error code=\"403\">Declined</error></iq>", 
+		watch_write(j->send_watch, "<iq type=\"error\" to=\"%s\" id=\"%s\"><error code=\"403\">Declined</error></iq>",
 			d->uid+5, p->req);
 	}
 
@@ -392,7 +392,7 @@ QUERY(jabber_dcc_postinit) {
 	if (jabber_dcc_fd == -1) dcc_watch = NULL;
 
 	if (jabber_dcc && !dcc_watch)
-		dcc_watch = jabber_dcc_init(JABBER_DEFAULT_DCC_PORT); 
+		dcc_watch = jabber_dcc_init(JABBER_DEFAULT_DCC_PORT);
 	else if (!jabber_dcc) {
 		watch_free(dcc_watch);
 		dcc_watch = NULL;

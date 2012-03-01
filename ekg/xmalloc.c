@@ -22,10 +22,10 @@
  * Dodane s± tutaj funkcje opakowuj±ce, które maj± zapobiec problemoom
  * z dostarczeniem do funkcji argumentu o warto¶ci NULL. W niektórych
  * systemach doprowadza to do segmeentation fault.
- * 
- * Problem zostaje rozwi±zany poprzez zamienienie warto¶ci NULL 
+ *
+ * Problem zostaje rozwi±zany poprzez zamienienie warto¶ci NULL
  * warto¶ci± "", która jest ju¿ prawid³ow± dan± wej¶ciow±.
- * Makro fix(s) zosta³o w³a¶nie stworzone w tym celu 
+ * Makro fix(s) zosta³o w³a¶nie stworzone w tym celu
  */
 
 #include "ekg2.h"
@@ -65,8 +65,8 @@ void *xcalloc(size_t nmemb, size_t size)
 	return g_malloc0(nmemb * size);
 }
 
-/** 
- * xmalloc() 
+/**
+ * xmalloc()
  *
  * Allocate memory for @a size bytes, clears it [set it with \\0], and returns pointer to allocated memory.
  * If malloc() fails with NULL, ekg_oom_handler() kills program.<br>
@@ -77,7 +77,7 @@ void *xcalloc(size_t nmemb, size_t size)
  *
  * @param size - the same as in malloc()
  *
- * @return pointer to allocated memory 
+ * @return pointer to allocated memory
  *
  * @note Deprecated, please use g_malloc(), g_malloc0(), g_new(),
  * g_new0(), g_slice_new() or g_slice_new0() instead.
@@ -88,7 +88,7 @@ void *xmalloc(size_t size)
 	return g_malloc0(size);
 }
 
-/** 
+/**
  * xfree()
  *
  * Free memory pointed by @a ptr
@@ -176,7 +176,7 @@ char *vsaprintf(const char *format, va_list ap)
 
 char *xstrstr(const char *haystack, const char *needle)
 {
-	return strstr(fix(haystack), fix(needle));		
+	return strstr(fix(haystack), fix(needle));
 }
 
 char *xstrcasestr(const char *haystack, const char *needle)
@@ -184,17 +184,17 @@ char *xstrcasestr(const char *haystack, const char *needle)
 	return strcasestr(fix(haystack), fix(needle));
 }
 
-int xstrcasecmp(const char *s1, const char *s2) 
+int xstrcasecmp(const char *s1, const char *s2)
 {
 	return strcasecmp(fix(s1), fix(s2));
 }
 
-char *xstrcat(char *dest, const char *src) 
+char *xstrcat(char *dest, const char *src)
 {
 	return strcat(dest, fix(src));
 }
 
-char *xstrchr(const char *s, int c) 
+char *xstrchr(const char *s, int c)
 {
 	return strchr(fix(s), c);
 }
@@ -210,7 +210,7 @@ int xstrcoll(const char *s1, const char *s2)
 	return strcoll(fix(s1), fix(s2));
 }
 
-char *xstrcpy(char *dest, const char *src) 
+char *xstrcpy(char *dest, const char *src)
 {
 	return strcpy(dest, fix(src));
 }
@@ -250,12 +250,12 @@ int xstrncasecmp(const char *s1, const char *s2, size_t n)
 	return strncasecmp(fix(s1), fix(s2), n);
 }
 
-char *xstrpbrk(const char *s, const char *accept) 
+char *xstrpbrk(const char *s, const char *accept)
 {
 	return strpbrk(fix(s), fix(accept));
 }
 
-char *xstrrchr(const char *s, int c) 
+char *xstrrchr(const char *s, int c)
 {
 	return strrchr(fix(s), c);
 }

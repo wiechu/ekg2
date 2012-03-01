@@ -69,11 +69,11 @@ static void command_generator(const char *text, int len)
 			without_sess_id = xstrchr(c->name, ':');
 
 		if (!xstrncasecmp(text, c->name, len) && !array_item_contains(completions, c->name, 1))
-			array_add_check(&completions, 
+			array_add_check(&completions,
 					saprintf(("%s%s%s"), slash, dash, c->name),
 					1);
 		else if (without_sess_id && !array_item_contains(completions, without_sess_id + 1, 1) && !xstrncasecmp(text, without_sess_id + 1, len))
-			array_add_check(&completions, 
+			array_add_check(&completions,
 					saprintf(("%s%s%s"), slash, dash, without_sess_id + 1),
 					1);
 	}
@@ -114,7 +114,7 @@ static void ignorelevels_generator(const char *text, int len)
 static void unknown_uin_generator(const char *text, int len)
 {
 	int i;
-	
+
 	for (i = 0; i < send_nicks_count; i++) {
 		if (send_nicks[i] && xstrchr(send_nicks[i], ':') && xisdigit(xstrchr(send_nicks[i], ':')[1]) && !xstrncasecmp(text, send_nicks[i], len)) {
 			array_add_check(&completions, xstrdup(send_nicks[i]), 1);
@@ -129,7 +129,7 @@ static void known_uin_generator(const char *text, int len)
 	session_t *s;
 	char *tmp = NULL, *session_name = NULL;
 	int tmp_len = 0;
-	newconference_t *c; 
+	newconference_t *c;
 
 	if (!session_current)
 		return;
@@ -151,8 +151,8 @@ static void known_uin_generator(const char *text, int len)
 			array_add_check(&completions, xstrdup(u->nickname), 1);
 			done = 1;
 		}
-		
-		if (u->nickname && tmp && !xstrncasecmp(tmp, u->nickname, tmp_len)) { 
+
+		if (u->nickname && tmp && !xstrncasecmp(tmp, u->nickname, tmp_len)) {
 			array_add_check(&completions, saprintf(("%s/%s"), session_name, u->nickname), 1);
 			done = 1;
 		}
@@ -164,11 +164,11 @@ static void known_uin_generator(const char *text, int len)
 		if (!done && !xstrncasecmp(text, u->uid, len)) {
 			array_add_check(&completions, xstrdup(u->uid), 1);
 		}
-		if (!done && tmp && !xstrncasecmp(tmp, u->uid, tmp_len)) 
+		if (!done && tmp && !xstrncasecmp(tmp, u->uid, tmp_len))
 		       array_add_check(&completions, saprintf(("%s/%s"), session_name, u->uid), 1);
 	}
 
-	if (!window_current) 
+	if (!window_current)
 		goto end;
 
 	if ((c = newconference_find(window_current->session, window_current->target)))	ul = c->participants;
@@ -184,7 +184,7 @@ static void known_uin_generator(const char *text, int len)
 		if (u->nickname && !xstrncasecmp(text, u->nickname, len)) {
 			array_add_check(&completions, xstrdup(u->nickname), 1);
 		}
-	} 
+	}
 
 end:
 	if (session_name)
@@ -227,7 +227,7 @@ static void variable_generator(const char *text, int len)
 			continue;
 		if (*text == '-') {
 			if (!xstrncasecmp(text + 1, v->name, len - 1))
-				array_add_check(&completions, 
+				array_add_check(&completions,
 				saprintf("-%s", v->name),
 				1);
 		} else {
@@ -521,7 +521,7 @@ static void theme_generator_adding(const char *text, int len, const char *dname,
 		}
 
 		tmp2 = xstrndup(name, xstrlen(name) - xstrlen(xstrstr(name, ".theme")));
-		
+
 		if (!xstrncmp(text, name, len) || (!xstrncmp(text, tmp2, len) && !themes_only) )
 			array_add_check(&completions, tmp2, 1);
 		else	xfree(tmp2);
@@ -591,7 +591,7 @@ static void metacontacts_generator(const char *text, int len)
 	metacontact_t *m;
 
 	for (m = metacontacts; m; m = m->next) {
-		if (!xstrncasecmp(text, m->name, len)) 
+		if (!xstrncasecmp(text, m->name, len))
 			array_add_check(&completions, xstrdup(m->name), 1);
 	}
 }
@@ -657,7 +657,7 @@ static struct {
 	{ 'r', reason_generator },
 	{ 't', theme_generator },
 	{ 'o', dir_generator },
-	{ 'm', metacontacts_generator }, 
+	{ 'm', metacontacts_generator },
 	{ 0, NULL }
 };
 
@@ -687,16 +687,16 @@ int ekg2_complete(int *line_start, int *line_index, char *line, int line_maxlen)
 	int i, count, word, j, words_count, word_current, open_quote;
 	size_t linelen;
 
-	/* 
-	 * sprawdzamy czy mamy kontynuowaæ dope³nianie (przeskakiwaæ miêdzy dope³nianymi wyrazami 
-	 * dzia³a to tylko gdy jeste¶my na koñcu linijki, gdy¿ nie ma sensu robiæ takiego przeskakiwania 
-	 * w ¶rodku linii - wtedy sama lista jest wystarczaj±ca 
+	/*
+	 * sprawdzamy czy mamy kontynuowaæ dope³nianie (przeskakiwaæ miêdzy dope³nianymi wyrazami
+	 * dzia³a to tylko gdy jeste¶my na koñcu linijki, gdy¿ nie ma sensu robiæ takiego przeskakiwania
+	 * w ¶rodku linii - wtedy sama lista jest wystarczaj±ca
 	 */
 	if (xstrcmp(last_line, line) || last_pos != *line_index || *line_index != xstrlen(line)) {
 		continue_complete = 0;
 		continue_complete_count = 0;
 	}
-	
+
 	/*
 	 * je¶li uzbierano ju¿ co¶ to próbujemy wy¶wietliæ wszystkie mo¿liwo¶ci
 	 */
@@ -781,7 +781,7 @@ int ekg2_complete(int *line_start, int *line_index, char *line, int line_maxlen)
 	for (i = 0, j = 0; i < linelen; i++, j++) {
 		if(line[i] == '"')  {
 			for(i++; i < linelen && line[i] != '"'; i++);
-			if(i < linelen) 
+			if(i < linelen)
 				separators[j] = line[i + 1];
 		} else {
 			for(; i < linelen && !xisspace(line[i]) && line[i] != ','; i++);
@@ -794,11 +794,11 @@ int ekg2_complete(int *line_start, int *line_index, char *line, int line_maxlen)
 
 	if (separators)
 		separators[j] = '\0'; // koniec ciagu
-	
+
 	/* aktualny wyraz bez uwzgledniania przecinkow */
 	for (i = 0, words_count = 0, word_current = 0; i < linelen; i++, words_count++) {
 		for(; i < linelen && !xisspace(line[i]); i++)
-			if(line[i] == '"') 
+			if(line[i] == '"')
 				for(i++; i < linelen && line[i] != '"'; i++);
 		for(i++; i < linelen && xisspace(line[i]); i++);
 		if(i >= linelen) {
@@ -846,7 +846,7 @@ int ekg2_complete(int *line_start, int *line_index, char *line, int line_maxlen)
 			continue_complete_count++;
 		if (!completions[cnt]) /* nigdy nie powinno siê zdarzyæ, ale na wszelki ... */
 			goto cleanup;
-			
+
 		for(i = 0; i < words_count; i++) {
 			if(i == word) {
 				if(xstrchr(completions[cnt],  ('\001'))) {
@@ -860,16 +860,16 @@ int ekg2_complete(int *line_start, int *line_index, char *line, int line_maxlen)
 				*line_index = linelen + 1;
 			} else {
 				if(xstrchr(words[i], (' '))) {
-					char *tmp = 
+					char *tmp =
 						saprintf(("\"%s\""), words[i]);
 					xstrcat(line, tmp);
 					xfree(tmp);
-				} else 
+				} else
 					xstrcat(line, words[i]);
 			}
 			if((i == words_count - 1 && line[xstrlen(line) - 1] != ' ' ))
 				xstrcat(line, (" "));
-			else if (line[xstrlen(line) - 1] != ' ') 
+			else if (line[xstrlen(line) - 1] != ' ')
 				xstrncat(line, separators + i, 1);
 		}
 		/* ustawiamy dane potrzebne do nastêpnego dope³nienia */
@@ -913,7 +913,7 @@ int ekg2_complete(int *line_start, int *line_index, char *line, int line_maxlen)
 
 				for (j = 0; completions[j]; j++) {
 					string_t s;
-	
+
 					if ((nick_count == 1) || (!xstrchr(completions[j], ('"')) && !xstrchr(completions[j], ('\\')) && !xstrchr(completions[j], (' ')))) {
 						if (completion_char) {
 							s = string_init((""));
@@ -973,7 +973,7 @@ int ekg2_complete(int *line_start, int *line_index, char *line, int line_maxlen)
 			}
 		}
 
-exact_match: 
+exact_match:
 		/* for /set maybe we want to complete the file path */
 		if (!xstrncmp(cmd, "set", 3) && words[1] && words[2] && word_current == 3) {
 			variable_t *v;
@@ -996,7 +996,7 @@ exact_match:
 
 		}
 
-		if (word_current > g_strv_length(params) + 1) 
+		if (word_current > g_strv_length(params) + 1)
 			word_current = g_strv_length(params) + 2;
 
 		if (params && params[word_current - 2]) {
@@ -1014,26 +1014,26 @@ exact_match:
 						generators[i].generate(words[word], xstrlen(words[word]));
 					}
 				}
-			}		
+			}
 		}
-	
+
 		if (completions) {
 			for (j = 0; completions[j]; j++) {
 				string_t s;
-	
+
 				if (!xstrchr(completions[j], ('"')) && !xstrchr(completions[j], ('\\')) && !xstrchr(completions[j], (' ')))
 					continue;
 				s = string_init(("\""));
-				string_append(s, completions[j]);				
+				string_append(s, completions[j]);
 				string_append_c(s, ('\"'));
 				xfree(completions[j]);
 				completions[j] = string_free(s, 0);
 			}
-		}	 
+		}
 	}
 	count = g_strv_length(completions);
-	
-	/* 
+
+	/*
 	 * je¶li jest tylko jedna mo¿lwio¶æ na dope³nienie to drukujemy co mamy,
 	 * ewentualnie bierzemy czê¶æ wyrazów w cudzys³owia ...
 	 * i uwa¿amy oczywi¶cie na \001 (patrz funkcje wy¿ej
@@ -1052,7 +1052,7 @@ exact_match:
 				*line_index = xstrlen(line) + 1;
 			} else {
 				if (xstrchr(words[i], (' '))) {
-					char *tmp = 
+					char *tmp =
 						saprintf(("\"%s\""), words[i]);
 					xstrcat(line, tmp);
 					xfree(tmp);
@@ -1066,7 +1066,7 @@ exact_match:
 		}
 		g_strfreev(completions);
 		completions = NULL;
-	} else 
+	} else
 
 	/*
 	 * gdy jest wiêcej mo¿liwo¶ci to robimy podobnie jak wy¿ej tyle, ¿e czasem
@@ -1088,7 +1088,7 @@ exact_match:
 		/* for(i = 0; completions[i]; i++)
 			debug("completions[i] = %s\n", completions[i]); */
 		/*
-		 * mo¿e nie za ³adne programowanie, ale skuteczne i w sumie jedyne w 100% spe³niaj±ce	
+		 * mo¿e nie za ³adne programowanie, ale skuteczne i w sumie jedyne w 100% spe³niaj±ce
 		 * wymagania dope³niania (uwzglêdnianie cudzyws³owiów itp...)
 		 */
 		for (i=1; s1[common]; i++, common++) {
@@ -1107,7 +1107,7 @@ exact_match:
 			if (tmp)
 				break;
 		}
-	
+
 		/* debug("common :%d\t\n", common); */
 		{
 			/* that's the one _after_ last matching byte */
@@ -1132,12 +1132,12 @@ exact_match:
 			line[0] = '\0';
 			for(i = 0; i < words_count; i++) {
 				if (i == word) {
-					if (quotes == 1 && completions[0][0] != '"') 
+					if (quotes == 1 && completions[0][0] != '"')
 						xstrcat(line, ("\""));
 
 					if (completions[0][0] == '"')
 						common++;
-						
+
 					if (completions[0][common - 1] == '"')
 						common--;
 
@@ -1147,7 +1147,7 @@ exact_match:
 					*line_index = xstrlen(line);
 				} else {
 					if (xstrchr(words[i], (' '))) {
-						char *tmp = 
+						char *tmp =
 							saprintf(("\"%s\""), words[i]);
 						xstrcat(line, tmp);
 						xfree(tmp);
@@ -1155,7 +1155,7 @@ exact_match:
 						xstrcat(line, words[i]);
 				}
 
-				if(separators[i]) 
+				if(separators[i])
 					xstrncat(line, separators + i, 1);
 			}
 		}

@@ -21,7 +21,7 @@
 #define __TOKEN_H
 
 #ifdef HAVE_LIBJPEG
-const int token_char_height = 12; 
+const int token_char_height = 12;
 const char token_id_char[] = {"0123456789abcdef"};
 const char token_id[][15] = {
 "..###..",

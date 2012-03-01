@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define BINDING_FUNCTION(x) void x(const char *arg) 
+#define BINDING_FUNCTION(x) void x(const char *arg)
 
 struct binding {
 	struct binding	*next;

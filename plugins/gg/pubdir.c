@@ -65,8 +65,8 @@ static WATCHER(gg_handle_register)	/* tymczasowy */
 
 	if (h->state != GG_STATE_DONE) {
 		watch_t *w;
-		if (watch == h->check && h->fd == fd) { 
-			if ((w = watch_find(&gg_plugin, fd, watch))) 
+		if (watch == h->check && h->fd == fd) {
+			if ((w = watch_find(&gg_plugin, fd, watch)))
 				watch_timeout_set(w, h->timeout);
 			else debug("[gg] watches managment went to hell?\n");
 			return 0;
@@ -107,12 +107,12 @@ COMMAND(gg_command_register)
 		printq("registered_today");
 		return -1;
 	}
-	
+
 	if (!params[0] || !params[1]) {
 		printq("not_enough_params", name);
 		return -1;
 	}
-	
+
 	if (gg_registers) {
 		printq("register_pending");
 		return -1;
@@ -131,7 +131,7 @@ COMMAND(gg_command_register)
 			return -1;
 
 	passwd = ekg_locale_to_cp_dup(passwd_b);
-	
+
 	if (!(h = gg_register3(params[0], passwd, last_tokenid, params[1], 1))) {
 		xfree(passwd);
 		xfree(passwd_b);
@@ -142,7 +142,7 @@ COMMAND(gg_command_register)
 	xfree(last_tokenid);	last_tokenid = NULL;
 	xfree(passwd);
 
-	w = watch_add(&gg_plugin, h->fd, h->check, gg_handle_register, h); 
+	w = watch_add(&gg_plugin, h->fd, h->check, gg_handle_register, h);
 	watch_timeout_set(w, h->timeout);
 
 	list_add(&gg_registers, h);
@@ -229,7 +229,7 @@ COMMAND(gg_command_unregister)
 	xfree(last_tokenid);	last_tokenid = NULL;
 
 	xfree(passwd);
-	w = watch_add(&gg_plugin, h->fd, h->check, gg_handle_unregister, h); 
+	w = watch_add(&gg_plugin, h->fd, h->check, gg_handle_unregister, h);
 	watch_timeout_set(w, h->timeout);
 
 	list_add(&gg_unregisters, h);
@@ -279,7 +279,7 @@ static WATCHER(gg_handle_passwd) {
 
 		w = watch_add(&gg_plugin, h->fd, h->check, gg_handle_passwd, h);
 		watch_timeout_set(w, h->timeout);
-		
+
 		return -1;
 	}
 
@@ -367,11 +367,11 @@ COMMAND(gg_command_passwd) {
 
 	oldpasswd = ekg_locale_to_cp_dup(session_get(session, "password"));
 
-#ifdef HAVE_GG_CHANGE_PASSWD4 
+#ifdef HAVE_GG_CHANGE_PASSWD4
 	if (!(h = gg_change_passwd4(atoi(session->uid + 3), config_email, (oldpasswd) ? oldpasswd : "", newpasswd, last_tokenid, params[1] ? params[1] : params[0], 1)))
-#else 
+#else
 	if (!(h = gg_change_passwd3(atoi(session->uid + 3), (oldpasswd) ? oldpasswd : "", newpasswd, "", 1)))
-#endif 
+#endif
 	{
 		xfree(newpasswd);
 		xfree(oldpasswd);
@@ -385,7 +385,7 @@ COMMAND(gg_command_passwd) {
 
 	session_set(session, "__new_password", params[0]);
 
-	w = watch_add(&gg_plugin, h->fd, h->check, gg_handle_passwd, h); 
+	w = watch_add(&gg_plugin, h->fd, h->check, gg_handle_passwd, h);
 	watch_timeout_set(w, h->timeout);
 
 	list_add(&g->passwds, h);
@@ -491,7 +491,7 @@ COMMAND(gg_command_remind)
 
 	if (!(h = gg_remind_passwd3(uin, config_email, last_tokenid, token_eval, 1)))
 #else
-	if (!(h = gg_remind_passwd(uin, 1))) 
+	if (!(h = gg_remind_passwd(uin, 1)))
 #endif
 	{
 		printq("remind_failed", strerror(errno));
@@ -501,7 +501,7 @@ COMMAND(gg_command_remind)
 	xfree(last_tokenid);	last_tokenid = NULL;
 #endif
 
-	w = watch_add(&gg_plugin, h->fd, h->check, gg_handle_remind, h); 
+	w = watch_add(&gg_plugin, h->fd, h->check, gg_handle_remind, h);
 	watch_timeout_set(w, h->timeout);
 
 	list_add(&gg_reminds, h);
@@ -553,8 +553,8 @@ static char *gg_userlist_dump(session_t *session)
 		const char *__mobile = user_private_item_get(u, "mobile");
 
 		groups = group_to_string(u->groups, 1, 0);
-		
-		string_append_format(s, 
+
+		string_append_format(s,
 			"%s;%s;%s;%s;%s;%s;%s%s\r\n",
 			__first_name ? __first_name : "",
 			__last_name ? __last_name : "",
@@ -566,7 +566,7 @@ static char *gg_userlist_dump(session_t *session)
 			(u->foreign) ? u->foreign : "");
 
 		xfree(groups);
-	}	
+	}
 
 	return string_free(s, 0);
 }
@@ -609,7 +609,7 @@ COMMAND(gg_command_list)
 		session_int_set(session, "__userlist_put_config", 2);
 		return 0;
 	}
-	
+
 	/* list --put */
 	if (params[0] && (match_arg(params[0], 'p', ("put"), 2))) {
 		char *contacts;

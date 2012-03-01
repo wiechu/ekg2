@@ -158,7 +158,7 @@ void windows_save() {
 	if (config_windows_save) {
 		string_t s = string_init(NULL);
 		int maxid = 0, i;
-		
+
 		for (w = windows; w; w = w->next) {
 			if (!w->floating && w->id > maxid)
 				maxid = w->id;
@@ -167,7 +167,7 @@ void windows_save() {
 		for (i = 1; i <= maxid; i++) {
 			const char *target = "-";
 			const char *session_name = NULL;
-			
+
 			for (w = windows; w; w = w->next) {
 				if (w->id == i) {
 					target = w->target;
@@ -176,7 +176,7 @@ void windows_save() {
 					break;
 				}
 			}
-		
+
 			if (session_name && target) {
 				string_append(s, session_name);
 				string_append_c(s, '/');
@@ -243,7 +243,7 @@ int alias_add(const char *string, int quiet, int append)
 				return -1;
 			} else {
 				list_add(&a->commands, xstrdup(cmd));
-				
+
 				/* przy wielu komendach trudno dope³niaæ, bo wg. której? */
 				for (cl = commands; cl; cl = cl->next) {
 					command_t *c = cl->data;
@@ -253,7 +253,7 @@ int alias_add(const char *string, int quiet, int append)
 						break;
 					}
 				}
-			
+
 				printq("aliases_append", string);
 
 				return 0;
@@ -273,7 +273,7 @@ int alias_add(const char *string, int quiet, int append)
 			if (i) {
 				if ((tmp = xstrchr(cname, ':')))
 					cname = tmp+1;
-				else  
+				else
 					continue;
 			}
 
@@ -300,7 +300,7 @@ int alias_add(const char *string, int quiet, int append)
 	array = (params) ? g_strjoinv(" ", params) : xstrdup(("?"));
 	command_add(NULL, a->name, array, cmd_alias_exec, COMMAND_ISALIAS, NULL);
 	xfree(array);
-	
+
 	printq("aliases_add", a->name, (""));
 
 	return 0;
@@ -326,7 +326,7 @@ int alias_remove(const char *name, int quiet)
 			if (name)
 				printq("aliases_del", name);
 			command_remove(NULL, a->name);
-			
+
 			a = aliases_removei(a);
 			removed = 1;
 		}
@@ -375,7 +375,7 @@ static void buffer_add_common(struct buffer_info *type, const char *target, cons
 		int n;
 bac_countupd:
 		n = type->count - type->max_lines + 1;
-		
+
 		if (n > 0) { /* list slice removal */
 			b = buffers_get_nth(type->data, n);		/* last element to remove */
 			if (!b) { /* count has been broken */
@@ -464,7 +464,7 @@ int buffer_add_str(struct buffer_info *type, const char *target, const char *str
  * buffer_tail()
  *
  * Return oldest b->line, free b->target and remove whole buffer_t from list
- * 
+ *
  * @param type	- pointer to buffer beginning ptr
  *
  * @return First b->line on the list, or NULL, if no items on list.
@@ -483,7 +483,7 @@ char *buffer_tail(struct buffer_info *type) {
 
 	(void) buffers_removei(&(type->data), b);
 
-	if (type->last == b) 
+	if (type->last == b)
 		type->last = NULL;
 
 	type->count--;
@@ -498,7 +498,7 @@ char *buffer_tail(struct buffer_info *type) {
  * After it set *type to NULL
  *
  * @param type - pointer to buffer beginning ptr
- * 
+ *
  */
 
 void buffer_free(struct buffer_info *type) {
@@ -627,7 +627,7 @@ void changed_config_timestamp(const char *var) {
  * Return compilation date, and time..<br>
  * Used by <i>/version command</i> and <i>ekg2 --version</i>
  *
- * @return	__DATE__" "__TIME__<br> 
+ * @return	__DATE__" "__TIME__<br>
  *		For example: <b>"Jun 21 1987" " " "22:06:47"</b>
  */
 
@@ -674,7 +674,7 @@ int newconference_member_remove(newconference_t *conf, userlist_t *u) {
 
 newconference_t *newconference_find(session_t *s, const char *name) {
 	newconference_t *c;
-	
+
 	for (c = newconferences; c; c = c->next) {
 		if ((!s || !xstrcmp(s->uid, c->session)) && !xstrcmp(name, c->name)) return c;
 	}
@@ -696,13 +696,13 @@ newconference_t *newconference_create(session_t *s, const char *name, int create
 	c		= xmalloc(sizeof(newconference_t));
 	c->session	= xstrdup(s->uid);
 	c->name		= xstrdup(name);
-	
+
 	newconferences_add(c);
 	return c;
 }
 
 void newconference_destroy(newconference_t *conf, int kill_wnd) {
-	window_t *w = NULL; 
+	window_t *w = NULL;
 	if (!conf) return;
 	if (kill_wnd) w = window_find_s(session_find(conf->session), conf->name);
 
@@ -754,7 +754,7 @@ struct conference *conference_add(session_t *session, const char *name, const ch
 			char *gname = xstrdup(nicks[i] + 1);
 			int first = 0;
 			int nig = 0; /* nicks in group */
-		
+
 			for (s = sessions; s; s = s->next) {
 				userlist_t *ul;
 				for (ul = s->userlist; ul; ul = ul->next) {
@@ -872,7 +872,7 @@ int conference_remove(const char *name, int quiet)
 			printq("conferences_noexist", name);
 		else
 			printq("conferences_list_empty");
-		
+
 		return -1;
 	}
 
@@ -910,7 +910,7 @@ struct conference *conference_create(session_t *session, const char *nicks)
  *
  *  - name - nazwa konferencji.
  */
-struct conference *conference_find(const char *name) 
+struct conference *conference_find(const char *name)
 {
 	struct conference *c;
 
@@ -918,7 +918,7 @@ struct conference *conference_find(const char *name)
 		if (!xstrcmp(c->name, name))
 			return c;
 	}
-	
+
 	return NULL;
 }
 
@@ -935,7 +935,7 @@ struct conference *conference_find(const char *name)
 int conference_participant(struct conference *c, const char *uid)
 {
 	list_t l;
-	
+
 	for (l = c->recipients; l; l = l->next) {
 		char *u = l->data;
 
@@ -953,13 +953,13 @@ int conference_participant(struct conference *c, const char *uid)
  * znajduje konferencjê, do której nale¿± podane uiny. je¿eli nie znaleziono,
  * zwracany jest NULL. je¶li numerów jest wiêcej, zostan± dodane do
  * konferencji, bo najwyra¼niej kto¶ do niej do³±czy³.
- * 
+ *
  *  - from - kto jest nadawc± wiadomo¶ci,
  *  - recipients - tablica numerów nale¿±cych do konferencji,
  *  - count - ilo¶æ numerów,
  *  - quiet.
  */
-struct conference *conference_find_by_uids(session_t *s, const char *from, const char **recipients, int count, int quiet) 
+struct conference *conference_find_by_uids(session_t *s, const char *from, const char **recipients, int count, int quiet)
 {
 	int i;
 	struct conference *c;
@@ -985,12 +985,12 @@ struct conference *conference_find_by_uids(session_t *s, const char *from, const
 
 				comma++;
 				string_append(new, format_user(s, from));
-			} 
+			}
 
 			for (i = 0; i < count; i++) {
 				if (xstrcasecmp(recipients[i], s->uid) && !conference_participant(c, recipients[i])) {
 					list_add(&c->recipients, g_memdup(&recipients[i], sizeof(recipients[0])));
-			
+
 					if (comma++)
 						string_append(new, ", ");
 					string_append(new, format_user(s, recipients[i]));
@@ -1040,7 +1040,7 @@ int conference_set_ignore(const char *name, int flag, int quiet)
  * conference_rename()
  *
  * zmienia nazwê instniej±cej konferencji.
- * 
+ *
  *  - oldname - stara nazwa,
  *  - newname - nowa nazwa,
  *  - quiet.
@@ -1050,7 +1050,7 @@ int conference_set_ignore(const char *name, int flag, int quiet)
 int conference_rename(const char *oldname, const char *newname, int quiet)
 {
 	struct conference *c;
-	
+
 	if (conference_find(newname)) {
 		printq("conferences_exist", newname);
 		return -1;
@@ -1065,7 +1065,7 @@ int conference_rename(const char *oldname, const char *newname, int quiet)
 
 	tabnick_remove(oldname);
 	tabnick_add(newname);
-	
+
 	printq("conferences_rename", oldname, newname);
 
 	query_emit(NULL, "conference-renamed", &oldname, &newname);	/* XXX READ-ONLY QUERY */
@@ -1082,7 +1082,7 @@ int conference_rename(const char *oldname, const char *newname, int quiet)
  * @param plugin - plugin name or NULL if core help is requested.
  *
  * @return Open GDataInputStream with utf8 encoding or NULL if no file was
- * found. It should be unreferenced with g_object_unref(). 
+ * found. It should be unreferenced with g_object_unref().
  */
 GDataInputStream *help_open(const gchar *name, const gchar *plugin) {
 	const gchar* const *p;
@@ -1163,7 +1163,7 @@ int ekg_hash(const char *name) {
  * w³±cza/wy³±cza/sprawdza mo¿liwo¶æ pisania do naszego terminala.
  *
  *  - what - MESG_ON, MESG_OFF lub MESG_CHECK
- * 
+ *
  * -1 je¶li b³ad, lub aktualny stan: MESG_ON/MESG_OFF
 */
 int mesg_set(int what)
@@ -1187,7 +1187,7 @@ int mesg_set(int what)
 		case MESG_CHECK:
 			return ((s.st_mode & S_IWGRP) ? MESG_ON : MESG_OFF);
 	}
-	
+
 	return 0;
 #else
 	return -1;
@@ -1212,14 +1212,14 @@ char *strip_spaces(char *line) {
 	char *buf;
 
 	if (!(linelen = xstrlen(line))) return line;
-	
+
 	for (buf = line; xisspace(*buf); buf++);
 
 	while (linelen > 0 && xisspace(line[linelen - 1])) {
 		line[linelen - 1] = 0;
 		linelen--;
 	}
-	
+
 	return buf;
 }
 
@@ -1327,7 +1327,7 @@ int mkdir_recursive(const char *pathname, int isdir) {
 /**
  * prepare_pathf()
  *
- * Return path to configdir/profiledir (~/.ekg2 or ~/.ekg2/$PROFILE) and append @a filename (formated using vsnprintf()) 
+ * Return path to configdir/profiledir (~/.ekg2 or ~/.ekg2/$PROFILE) and append @a filename (formated using vsnprintf())
  * If length of this string is larger than PATH_MAX (4096 on Linux) than unlike prepare_path() it'll return NULL
  */
 
@@ -1398,12 +1398,12 @@ const char *prepare_path(const char *filename, int do_mkdir)
 #endif
 			return NULL;
 	}
-	
+
 	if (!filename || !*filename)
 		snprintf(path, sizeof(path), "%s", config_dir);
 	else
 		snprintf(path, sizeof(path), "%s/%s", config_dir, filename);
-	
+
 	return path;
 }
 
@@ -1442,7 +1442,7 @@ const char *prepare_path_user(const char *path) {
 			} else {
 				struct passwd *p;
 				const char *slash = xstrchr(in, '/');
-				
+
 				if (slash) {
 					char *user = xstrndup(in, slash-in);
 					if ((p = getpwnam(user))) {
@@ -1537,7 +1537,7 @@ static char *random_line(const char *path) {
 
 	if ((f = fopen(path, "r")) == NULL)
 		return NULL;
-	
+
 	while ((line = read_file(f, 0)))
 		max++;
 
@@ -1553,7 +1553,7 @@ static char *random_line(const char *path) {
 			tmp++;
 		}
 	}
-		
+
 	fclose(f);
 	return NULL;
 }
@@ -1618,7 +1618,7 @@ char *read_file_utf(FILE *f, int alloc) {
  * Remove \\r and \\n chars from end of line if needed.
  *
  * @param f	- opened FILE *
- * @param alloc 
+ * @param alloc
  *		- If  0 than it return internal read_file() either xrealloc()'ed or static char with sizeof()==1024,
  *			which you <b>MUST NOT</b> xfree()<br>
  *		- If  1 than it return strdup()'ed string this <b>MUST</b> xfree()<br>
@@ -1710,7 +1710,7 @@ const char *timestamp_time(const char *format, time_t t) {
 	return buf;
 }
 
-/* 
+/*
  * xstrmid()
  *
  * wycina fragment tekstu alokuj±c dla niego pamiêæ.
@@ -1738,9 +1738,9 @@ char *xstrmid(const char *str, int start, int length)
 
 	if (length > xstrlen(str) - start)
 		length = xstrlen(str) - start;
-	
+
 	res = xmalloc(length + 1);
-	
+
 	for (p = str + start, q = res; length; p++, q++, length--)
 		*q = *p;
 
@@ -1773,7 +1773,7 @@ struct color_map color_map_default[26] = {
 	{ 'M', 255, 128, 255, },
 	{ 'B', 128, 128, 255, },
 	{ 'R', 255, 128, 128, },
-	{ 'Y', 255, 255, 128, }, 
+	{ 'Y', 255, 255, 128, },
 	{ 'm', 168, 128, 168, },
 	{ 'c', 128, 168, 168, },
 	{ 'g', 64, 168, 64, },
@@ -1810,7 +1810,7 @@ char color_map(unsigned char r, unsigned char g, unsigned char b)
 
 /*	debug("mindist=%ld, color=%c\n", mindist, ch); */
 
-	return ch;	
+	return ch;
 }
 
 /*
@@ -2009,15 +2009,15 @@ char *base64_decode(const char *buf)
 
 /*
  * split_line()
- * 
+ *
  * podaje kolejn± liniê z bufora tekstowego. niszczy go bezpowrotnie, dziel±c
  * na kolejne stringi. zdarza siê, nie ma potrzeby pisania funkcji dubluj±cej
  * bufor ¿eby tylko mieæ nieruszone dane wej¶ciowe, skoro i tak nie bêd± nam
  * po¼niej potrzebne. obcina `\r\n'.
- * 
+ *
  *  - ptr - wska¼nik do zmiennej, która przechowuje aktualn± pozycjê
  *    w przemiatanym buforze
- * 
+ *
  * wska¼nik do kolejnej linii tekstu lub NULL, je¶li to ju¿ koniec bufora.
  */
 char *split_line(char **ptr)
@@ -2053,7 +2053,7 @@ const char *ekg_status_label(const int status, const char *descr, const char *pr
 {
 	static char buf[100]; /* maybe dynamic buffer would be better? */
 	const char *status_string = ekg_status_string(status, 0);
-	
+
 	snprintf(buf, sizeof(buf), "%s%s%s", (prefix) ? prefix : "", status_string, (descr) ? "_descr" : "");
 
 	return buf;
@@ -2070,7 +2070,7 @@ char *ekg_draw_descr(const int status)
 	const char *value;
 	char file[100];
 	char var[100];
-	variable_t *v;	
+	variable_t *v;
 
 	if (EKG_STATUS_IS_NA(status)) { /* or maybe == NA ? */
 		xstrcpy(var, ("quit_reason"));
@@ -2098,11 +2098,11 @@ char *ekg_draw_descr(const int status)
 	return xstrdup(value);
 }
 
-/* 
+/*
  * ekg_update_status()
  *
- * updates our status, if we are on session contact list 
- * 
+ * updates our status, if we are on session contact list
+ *
  */
 void ekg_update_status(session_t *session)
 {
@@ -2215,7 +2215,7 @@ const char *ekg_status_string(const int status, const int cmd)
 		}
 		return (cmd == 1 ? s->command : s->label);
 	}
-	
+
 	return r;
 }
 
@@ -2266,7 +2266,7 @@ guint32 *ekg_sent_message_format(const char *text)
 
 	if (len == xstrlen(text))
 		return NULL;
-	
+
 	newtext = xmalloc(len + 1);
 	format = xmalloc(len * 4);
 
@@ -2274,13 +2274,13 @@ guint32 *ekg_sent_message_format(const char *text)
 
 	for (p = text, q = newtext, attr = 0; p < end; ) {
 		int j;
-			
+
 		if (*p == 18 || *p == 3) {	/* Ctrl-R, Ctrl-C */
 			p++;
 
 			if (xisdigit(*p)) {
 				int num = atoi(p);
-				
+
 				if (num < 0 || num > 15)
 					num = 0;
 
@@ -2388,7 +2388,7 @@ char *saprintf(const char *format, ...)
  */
 void xstrtr(char *text, char from, char to)
 {
-	
+
 	if (!text || !from)
 		return;
 
@@ -2421,7 +2421,7 @@ inline void ekg_yield_cpu()
  * (You can be notified about state of buffer when you call ekg_write(fd, NULL, -1))
  *
  * @note
- *	This _should_ be used as replacement for write() 
+ *	This _should_ be used as replacement for write()
  */
 
 int ekg_write(int fd, const char *buf, int len) {
@@ -2464,12 +2464,12 @@ int ekg_writef(int fd, const char *format, ...) {
 	va_start(ap, format);
 	text = vsaprintf(format, ap);
 	va_end(ap);
-	
-	textlen = xstrlen(text); 
+
+	textlen = xstrlen(text);
 
 	debug_io("ekg_writef: %s\n", text ? textlen ? text: "[0LENGTH]":"[FAILED]");
 
-	if (!text) 
+	if (!text)
 		return -1;
 
 	res = ekg_write(fd, text, textlen);
@@ -2497,7 +2497,7 @@ int ekg_close(int fd) {
 		watch_t *w = l->data;
 
 		if (w && w->fd == fd) {
-			debug("ekg_close(%d) w->plugin: %s w->session: %s w->type: %d w->buf: %d\n", 
+			debug("ekg_close(%d) w->plugin: %s w->session: %s w->type: %d w->buf: %d\n",
 				fd, w->plugin ? w->plugin->name : "-",
 				w->is_session ? ((session_t *) w->data)->uid : "-",
 				w->type, !!w->buf);
@@ -2629,7 +2629,7 @@ void variable_display(variable_t *v, int quiet) {
 
 	if (quiet || v->display == 2)
 		return;
-	
+
 	value = get_variable_value(v);
 	printq("variable", v->name, value);
 	g_free(value);

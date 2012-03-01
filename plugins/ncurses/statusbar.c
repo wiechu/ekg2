@@ -468,7 +468,7 @@ void update_statusbar(int commit)
 
 			case 1:
 /* XXX */
-				tmp = saprintf(" debug: lines=%d start=(%d,%d) height=%d cleared=%d screen_width=%d", 
+				tmp = saprintf(" debug: lines=%d start=(%d,%d) height=%d cleared=%d screen_width=%d",
 					ncurses_current->backlog->len, ncurses_current->index, ncurses_current->first_row,
 					window_current->height, ncurses_current->cleared, ncurses_screen_width);
 				reprint_statusbar(ncurses_status, y, tmp, formats);

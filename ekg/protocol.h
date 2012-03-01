@@ -53,7 +53,7 @@ enum msgack_t {
 	EKG_ACK_DROPPED,		/* message rejected 'permamently' */
 	EKG_ACK_TEMPFAIL,		/* temporary delivery failure */
 	EKG_ACK_UNKNOWN,		/* delivery status unknown */
-	
+
 	EKG_ACK_MAX			/* we don't want to read after array */
 };
 
@@ -123,7 +123,7 @@ typedef struct dcc_s {
 	dcc_close_handler_t close_handler;	/* obs³uga /dcc close */
 	unsigned int	active		: 1;	/* czy po³±czono? */
 	time_t		started;		/* kiedy utworzono? */
-	
+
 	char		*filename;		/* nazwa pliku */
 	size_t		size;			/* rozmiar pliku */
 	off_t		offset;			/* ile ju¿ wykonano */

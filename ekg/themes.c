@@ -457,12 +457,12 @@ static char *va_format_string(const char *format, va_list ap) {
 				/* hm == 0, means N-th parameter doesn't fit to any of letter specified,
 				 * so we skip this formatee, but first we must fix 'p' to point to proper place
 				 */
-				if (!hm) { 
+				if (!hm) {
 					p = *cnt ? *(cnt+1) ? (cnt+2) : (cnt+1) : cnt;		/* + point 'p' = cnt+2 if it exist
 												 *   ((cnt+2) is after end of formatee
 												 *    (there's X after enclosing '}')
 												 * + or point to '\0' */
-					continue; 
+					continue;
 				}
 				/* N-th param matched a letter, so point 'p' to that free X at the end,
 				 * and correct it with proper formatee letter, and go-on with theme code :)
@@ -488,7 +488,7 @@ static char *va_format_string(const char *format, va_list ap) {
 			else if (config_display_color) {
 				const char *tmp = format_ansi(*p);
 				string_append(buf, tmp);
-			} 
+			}
 
 			if (*p == '@') {
 				char *str = (char*) args[*(p + 1) - '1'];
@@ -686,10 +686,10 @@ fstring_t *fstring_new(const char *str) {
 				continue;
 			}
 		} else if (str[i] == 27) {		/* ESC- */
-			unsigned short par[NPAR]	= { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; 
-			unsigned short parlen[NPAR]	= { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; 
+			unsigned short par[NPAR]	= { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+			unsigned short parlen[NPAR]	= { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-			int npar	= 0; 
+			int npar	= 0;
 
 			if (str[i + 1] != ('['))
 				continue;
@@ -782,7 +782,7 @@ fstring_t *fstring_new(const char *str) {
 		res->attr[j] = attr;
 		j++;
 	}
-/* 
+/*
 	tmpstr[j] = (char) 0;
 	res->attr[j] = 0;
  */
@@ -927,7 +927,7 @@ static void print_window_c(window_t *w, int activity, const char *theme, va_list
  *			- After it we search for window with stripped '/'<br>
  *			- If founded, than done.<br>
  *		If not, we look for user in userlist.. And if not found, than we'll create new window with stripped '/' [only jabber]
- *		
+ *
  *
  * @param target	- target to look for.
  * @param session	- session to look for.
@@ -964,7 +964,7 @@ static window_t *print_window_find(const char *target, session_t *session, int s
 		return w;
 	}
 
-	/* 2) if message is not important (not @a seperate) or we don't want create new windows at all [config_make_window & 3 == 0] 
+	/* 2) if message is not important (not @a seperate) or we don't want create new windows at all [config_make_window & 3 == 0]
 	 *    than get __status window	*/
 
 	if (!separate || (config_make_window & 3) == 0) {
@@ -1030,7 +1030,7 @@ static window_t *print_window_find(const char *target, session_t *session, int s
  *			- After it we search for window with stripped '/'<br>
  *			- If founded, than done.<br>
  *		If not, we look for user in userlist.. And if not found, than we'll create new window with stripped '/' [only jabber]
- *		
+ *
  *
  * @param target	- target to look for.
  * @param session	- session to look for.
@@ -1369,7 +1369,7 @@ int theme_write(const char *filename) {
 
 		for (ff = formats[i]; ff; ff = ff->next) {
 			char *escaped;
-			
+
 			escaped = escape(ff->value);
 			fprintf(f, "%s %s\n", ff->name, escaped);
 			xfree(escaped);

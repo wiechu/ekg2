@@ -105,7 +105,7 @@ int perl_commands(script_t *scr, script_command_t *comm, char **params)
 int perl_watches(script_t *scr, script_watch_t *scr_wat, int type, int fd, long int watch)
 {
 //	if (type) return -1;
-	
+
 	PERL_HANDLER_HEADER((char *) scr_wat->priv_data);
 	XPUSHs(sv_2mortal(newSViv(type)));
 	XPUSHs(sv_2mortal(newSViv(fd)));
@@ -124,7 +124,7 @@ int perl_query(script_t *scr, script_query_t *scr_que, void *args[])
 	SV *perlarg;
 
 	int change = 1;
-	
+
 	PERL_HANDLER_HEADER((char *) scr_que->priv_data);
 	for (i=0; i < scr_que->argc; i++) {
 
@@ -138,7 +138,7 @@ int perl_query(script_t *scr, script_query_t *scr_que, void *args[])
 				break;
 			case (QUERY_ARG_CHARPP): {/* char ** */
 				char *tmp = g_strjoinv(" ", (* (char ***) args[i]));
-				if (xstrlen(tmp)) 
+				if (xstrlen(tmp))
 					perlarg = new_pv(tmp);
 				xfree(tmp);
 				break;
@@ -189,7 +189,7 @@ int perl_load(script_t *scr)
 	XPUSHs(sv_2mortal(new_pv(scr->path)));
 	XPUSHs(sv_2mortal(new_pv(scr->name)));
 	PUTBACK;
-	
+
 	retcount = perl_call_pv("Ekg2::Core::eval_file",
 				G_EVAL|G_SCALAR);
 	SPAGAIN;
@@ -206,13 +206,13 @@ int perl_load(script_t *scr)
 	PUTBACK;
 	FREETMPS;
 	LEAVE;
-	
+
 	p = xmalloc(sizeof(perl_private_t));
-	
+
 	script_private_set(scr, p);
 
 	return mask;
-	
+
 }
 
 static void xs_init(pTHX)
@@ -222,7 +222,7 @@ static void xs_init(pTHX)
 #if PERL_STATIC_LIBS == 1
 	newXS("Irssi::Core::boot_Irssi_Core", boot_Irssi_Core, __FILE__);
 #endif
-*/	
+*/
 	newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, __FILE__);
 }
 
@@ -230,7 +230,7 @@ int perl_initialize()
 {
 	char *args[] = {"", "-e", "0"};
 	char *code = NULL, *sub_code = NULL;
-	
+
 	my_perl = perl_alloc();
 	PL_perl_destruct_level = 1;
 	perl_construct(my_perl);
@@ -241,12 +241,12 @@ int perl_initialize()
 			    "use Ekg2;",		 prepare_path("scripts", 0), prepare_path("scripts", 0), "/usr/local/share/ekg2/scripts");
 */
 	code = saprintf(ekg_core_code, 0, "use Ekg2;");
-	
-	
+
+
 	perl_eval_pv(code, TRUE);
 	xfree(code);
 	xfree(sub_code);
-	return 0;	
+	return 0;
 }
 
 void ekg2_callXS(void (*subaddr)(pTHX_ CV* cv), CV *cv, SV **mark)
@@ -254,7 +254,7 @@ void ekg2_callXS(void (*subaddr)(pTHX_ CV* cv), CV *cv, SV **mark)
 	dSP;
 	PUSHMARK(mark);
 	(*subaddr)(aTHX_ cv);
-	
+
 	PUTBACK;
 }
 
@@ -313,7 +313,7 @@ int perl_bind_free(script_t *scr, void *data, /* niby to jest ale kiedys nie bed
 	va_start(ap, priv_data);
 
 	switch (type) {
-		case(SCRIPT_WATCHTYPE): 
+		case(SCRIPT_WATCHTYPE):
 		    debug("[perl_bind_free] watch = %x\n", watchdata = va_arg(ap, void *));
 		case(SCRIPT_VARTYPE):
 		case(SCRIPT_COMMANDTYPE):

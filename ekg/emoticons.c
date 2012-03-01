@@ -94,20 +94,20 @@ int emoticon_read() {
 
 	while ((buf = read_line(f))) {
 		char **emot;
-	
+
 		if (buf[0] == '#')
 			continue;
 
 		emot = array_make(buf, "\t", 2, 1, 1);
-	
+
 		if (g_strv_length(emot) == 2)
 			emoticon_add(emot[0], emot[1]);
 
 		g_strfreev(emot);
 	}
-	
+
 	g_object_unref(f);
-	
+
 	return 0;
 }
 
@@ -200,7 +200,7 @@ static int emoticon_remove(const char *name)
 			return 0;
 		}
 	}
-	
+
 	return -1;
 }
 #endif

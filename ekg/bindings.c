@@ -9,7 +9,7 @@ binding_added_t *bindings_added;
  *
  * wyświetla listę przypisanych komend.
  */
-void binding_list(int quiet, const char *name, int all) 
+void binding_list(int quiet, const char *name, int all)
 {
 	struct binding *b;
 	int found = 0;
@@ -26,7 +26,7 @@ void binding_list(int quiet, const char *name, int all)
 			continue;
 		}
 
-		if (!b->internal || (all && b->internal)) 
+		if (!b->internal || (all && b->internal))
 			printq("bind_seq_list", b->key, b->action);
 	}
 
@@ -57,7 +57,7 @@ int binding_quick_list(int a, int b)
 
 			if (!u->nickname)
 				continue;
-		
+
 			format = format_find(ekg_status_label(u->status, NULL, "quick_list_"));
 
 			if (format_ok(format)) {
@@ -77,11 +77,11 @@ int binding_quick_list(int a, int b)
 	return 0;
 }
 
-int binding_help(int a, int b)	
+int binding_help(int a, int b)
 {
-	print("help_quick");  
+	print("help_quick");
 
-	return 0;  
+	return 0;
 }
 
 static LIST_FREE_ITEM(binding_free_item, struct binding *) {
@@ -129,11 +129,11 @@ COMMAND(cmd_bind) {
 		query_emit(NULL, "binding-command", (int) 0, params[1], NULL, quiet);
 /*		ncurses_binding_delete(p2, quiet); */
 		return 0;
-	} 
+	}
 	if (match_arg(params[0], 'L', ("list-default"), 5)) {
 		binding_list(quiet, params[1], 1);
 		return 0;
-	} 
+	}
 	if (match_arg(params[0], 'S', ("set"), 2)) {
 		window_lock_dec(window_find_s(session, target)); /* this is interactive command. XXX, what about window_current? */
 

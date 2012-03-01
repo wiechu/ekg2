@@ -23,7 +23,7 @@ typedef enum {
 	SCRIPT_QUERYTYPE,
 	SCRIPT_TIMERTYPE,
 	SCRIPT_WATCHTYPE,
-	SCRIPT_PLUGINTYPE, 
+	SCRIPT_PLUGINTYPE,
 } script_type_t;
 
 typedef struct script {
@@ -42,7 +42,7 @@ typedef struct {
 	ekg_timer_t	self;
 	int		removed;
 	void		*priv_data;
-} script_timer_t; 
+} script_timer_t;
 
 typedef struct {
 	script_t	*scr;
@@ -57,7 +57,7 @@ typedef struct {
 	char		*name;
 	char		*value;
 	void		*priv_data;
-} script_var_t; 
+} script_var_t;
 
 typedef struct {
 	script_t	*scr;
@@ -68,17 +68,17 @@ typedef struct {
 	int		real_argc;
 	void		*priv_data;
 	int		hack;
-} script_query_t; 
+} script_query_t;
 
 typedef struct {
 	script_t	*scr;
 	command_t	*self;
-	void		*priv_data; 
+	void		*priv_data;
 } script_command_t;
 
 typedef struct {
 	script_t	*scr;
-	watch_t		*self; 
+	watch_t		*self;
 	int		removed;
 	void		*data;
 	void		*priv_data;
@@ -115,7 +115,7 @@ typedef struct scriptlang {
 	script_handler_timer_t	*script_handler_timer;
 	script_handler_var_t	*script_handler_var;
 	script_handler_watch_t	*script_handler_watch;
-	
+
 	void *priv_data;
 } scriptlang_t;
 extern scriptlang_t *scriptlang;

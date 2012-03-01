@@ -30,7 +30,7 @@ event_t *events = NULL;
 static LIST_ADD_COMPARE(event_add_compare, event_t *) { return data1->id - data2->id; }
 static LIST_FREE_ITEM(list_event_free, struct event *) { xfree(data->name); xfree(data->action); xfree(data->target); }
 
-DYNSTUFF_LIST_DECLARE_SORTED(events, event_t, event_add_compare, list_event_free, 
+DYNSTUFF_LIST_DECLARE_SORTED(events, event_t, event_add_compare, list_event_free,
 	static __DYNSTUFF_LIST_ADD_SORTED,	/* events_add() */
 	static __DYNSTUFF_LIST_REMOVE_SAFE,	/* events_remove() */
 	static __DYNSTUFF_LIST_DESTROY)		/* events_destroy() */
@@ -57,8 +57,8 @@ static int events_list(int id, int quiet);
 static int event_target_check(char *buf);
 static int event_check(const char *session, const char *name, const char *uid, const char *data);
 
-/* 
- * on function 
+/*
+ * on function
  */
 COMMAND(cmd_on) {
 	if (match_arg(params[0], 'a', ("add"), 2)) {
@@ -74,7 +74,7 @@ COMMAND(cmd_on) {
 			return -1;
 		}
 
-		if (event_add(params[1], prio, params[3], params[4], quiet)) 
+		if (event_add(params[1], prio, params[3], params[4], quiet))
 			return -1;
 
 		config_changed = 1;
@@ -115,11 +115,11 @@ COMMAND(cmd_on) {
 	return -1;
 }
 
-/* 
+/*
  * event_add ()
- * 
+ *
  * adds event to the events list
- * 
+ *
  * it finds id in the same way as in window_new()
  *
  * 0/-1
@@ -133,7 +133,7 @@ int event_add(const char *name, int prio, const char *target, const char *action
 		printq("events_exist", name, target);
 		return -1;
 	}
-	
+
 	while (!done) {
 		done = 1;
 
@@ -175,24 +175,24 @@ int event_add(const char *name, int prio, const char *target, const char *action
 	return 0;
 }
 
-/* 
+/*
  * event_remove ()
- * 
- * it removes event from events 
- * 
+ *
+ * it removes event from events
+ *
  * if (id == 0 ) it removes whole list
- * 
- * 0/-1 
+ *
+ * 0/-1
  */
 static int event_remove(unsigned int id, int quiet) {
 	event_t *ev;
-	
+
 	if (id == 0) {
 		event_free();
 		printq("events_del_all");
 		goto cleanup;
 	}
-	
+
 	if (!(ev = event_find_id(id))) {
 		printq("events_del_noexist", ekg_itoa(id));
 		return -1;
@@ -202,16 +202,16 @@ static int event_remove(unsigned int id, int quiet) {
 
 	printq("events_del", ekg_itoa(id));
 
-cleanup:	
+cleanup:
 /*	  query_emit(NULL, "event-removed", ekg_itoa(id)); */	/* XXX, incorrect. */
 
 	return 0;
 }
 
-/* 
+/*
  * event_free ()
  *
- * it frees whole list 
+ * it frees whole list
  */
 void event_free() {
 	xfree(events_all);
@@ -220,10 +220,10 @@ void event_free() {
 	events_destroy();
 }
 
-/* 
+/*
  * events_list ()
- * 
- * it shows the list of events 
+ *
+ * it shows the list of events
  */
 static int events_list(int id, int quiet) {
 	event_t *ev;
@@ -291,7 +291,7 @@ event_t *event_find(const char *name, const char *target) {
 /*
  * event_find_all ()
  *
- * it finds the event including possibility of * and return (if found) 
+ * it finds the event including possibility of * and return (if found)
  * descriptor to event
  *
  */
@@ -314,8 +314,8 @@ static event_t *event_find_all(const char *name, const char *session, const char
 				for (k = 0; c[k]; k++) {
 					for (m = 0; d[m]; m++) {
 						char *tmp = format_string(a[i], uid, target, data, session);
-						if ((xstrcasecmp(d[m], c[k]) && xstrcasecmp(d[m], ("*"))) || 
-								(!event_target_check(tmp) && xstrcasecmp(a[i], ("*")) && 
+						if ((xstrcasecmp(d[m], c[k]) && xstrcasecmp(d[m], ("*"))) ||
+								(!event_target_check(tmp) && xstrcasecmp(a[i], ("*")) &&
 								 xstrcasecmp(a[i], b[j]))) {
 							xfree(tmp);
 							continue;
@@ -341,7 +341,7 @@ static event_t *event_find_all(const char *name, const char *session, const char
 /*
  * event_find ()
  *
- * it finds the event (by the id) and return (if found) 
+ * it finds the event (by the id) and return (if found)
  * descriptor to event
  *
  */
@@ -403,9 +403,9 @@ static TIMER(ekg_day_timer) {
 	return 0;
 }
 
-/* 
+/*
  * events_init ()
- * 
+ *
  * initializing of events and its handlers
  */
 int events_init() {
@@ -421,10 +421,10 @@ int events_init() {
 	return 0;
 }
 
-/* 
+/*
  * event_protocol_message()
- * 
- * handler for protocol-message 
+ *
+ * handler for protocol-message
  */
 static QUERY(event_protocol_message) {
 	char *session	= *(va_arg(ap, char**));
@@ -510,7 +510,7 @@ static QUERY(event_descr) {
 	char *session	= *(va_arg(ap, char**));
 	char *uid	= *(va_arg(ap, char**));
 	char *descr	= *(va_arg(ap, char**));
-	
+
 	event_check(session, "event-descr", uid, descr);
 	return 0;
 }
@@ -522,7 +522,7 @@ static QUERY(event_misc) {
 
 
 /* event_check ()
- * 
+ *
  * it looks if the given event has a handler
  * if yes it runs it
  * it also check target and if possible uid taken from target
@@ -539,7 +539,7 @@ static int event_check(const char *session, const char *name, const char *uid, c
 
 	if (!events)
 		return 1;
-	
+
 	if (!(__session = session_find(session)))
 		__session = session_current;
 
@@ -720,7 +720,7 @@ static int event_target_check_compare(char *buf) {
 	return 0;
 }
 
-/* 
+/*
  * event_target_check()
  *
  * it has to get as an argument parametr to check
@@ -734,15 +734,15 @@ static int event_target_check(char *buf) {
 	char *separators;
 	char last_returned = 0;
 	int first = 1;
-	
+
 #define s separators[i]
 
 	separators = xmalloc(g_strv_length(params) * sizeof(char) + 1);
-	
+
 	while (*buf) {
 		if (*buf == '&' || *buf == '|') {
 			s = *buf;
-			i++;	
+			i++;
 		}
 		buf++;
 	}
@@ -754,7 +754,7 @@ static int event_target_check(char *buf) {
 			if (returned_now && last_returned)
 				last_returned = 1;
 			else
-				last_returned = 0;	
+				last_returned = 0;
 		} else if (s && s == '|') {
 			if (returned_now || last_returned)
 				last_returned = 1;

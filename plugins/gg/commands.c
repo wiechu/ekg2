@@ -107,7 +107,7 @@ static COMMAND(gg_command_connect) {
 
 		if (!g->sess) {
 			/* don't print message when 'gg:reconnect' */
-			if (!isreconnect) 
+			if (!isreconnect)
 				printq("not_connected", session_name(session));
 
 		} else {
@@ -127,7 +127,7 @@ static COMMAND(gg_command_connect) {
 			xfree(tmp);
 
 			watch_remove(&gg_plugin, g->sess->fd, g->sess->check);
-			
+
 			gg_logoff(g->sess);
 			gg_free_session(g->sess);
 			g->sess = NULL;
@@ -148,7 +148,7 @@ static COMMAND(gg_command_connect) {
 		char *password = (char *) session_get(session, "password");
 
 		if (g->sess) {
-			printq((g->sess->state == GG_STATE_CONNECTED) ? "already_connected" : "during_connect", 
+			printq((g->sess->state == GG_STATE_CONNECTED) ? "already_connected" : "during_connect",
 					session_name(session));
 			return -1;
 		}
@@ -190,11 +190,11 @@ static COMMAND(gg_command_connect) {
 			_status = gg_text_to_status(session_status_get(session), current_descr);
 			xfree(current_descr);
 		}
-		
+
 		/* dcc */
 		if (gg_config_dcc) {
 			gg_dcc_socket_close();
-	
+
 			if (!gg_config_dcc_ip || !xstrcasecmp(gg_config_dcc_ip, "auto")) {
 				gg_dcc_ip = inet_addr("255.255.255.255");
 			} else {
@@ -210,9 +210,9 @@ static COMMAND(gg_command_connect) {
 				p.has_audio = 1;
 
 			gg_dcc_port = gg_config_dcc_port;
-			
+
 			gg_dcc_socket_open(gg_config_dcc_port);
-		} 
+		}
 
 		p.uin = uin;
 		p.password = (char*) password;
@@ -241,7 +241,7 @@ static COMMAND(gg_command_connect) {
 
 		while (realserver) {
 			in_addr_t tmp_in;
-			
+
 #ifdef __GG_LIBGADU_HAVE_OPENSSL
 			if (!xstrcasecmp(realserver, "tls")) {
 				p.tls = 1;
@@ -289,18 +289,18 @@ static COMMAND(gg_command_connect) {
 		gg_proxy_username = NULL;
 		gg_proxy_password = NULL;
 		gg_proxy_port = 0;
-		gg_proxy_enabled = 0;	
+		gg_proxy_enabled = 0;
 
 		if ((tmp = session_get(session, "proxy"))) {
 			char **auth, **userpass = NULL, **hostport = NULL;
-	
+
 			auth = array_make(tmp, "@", 0, 0, 0);
-		
+
 			if (!auth[0] || !xstrcmp(auth[0], "")) {
 				g_strfreev(auth);
 				goto noproxy;
 			}
-	
+
 			gg_proxy_enabled = 1;
 
 			if (auth[0] && auth[1]) {
@@ -308,7 +308,7 @@ static COMMAND(gg_command_connect) {
 				hostport = array_make(auth[1], ":", 0, 0, 0);
 			} else
 				hostport = array_make(auth[0], ":", 0, 0, 0);
-	
+
 			if (userpass && userpass[0] && userpass[1]) {
 				gg_proxy_username = xstrdup(userpass[0]);
 				gg_proxy_password = xstrdup(userpass[1]);
@@ -316,7 +316,7 @@ static COMMAND(gg_command_connect) {
 
 			gg_proxy_host = xstrdup(hostport[0]);
 			gg_proxy_port = (hostport[1]) ? atoi(hostport[1]) : 8080;
-	
+
 			g_strfreev(hostport);
 			g_strfreev(userpass);
 			g_strfreev(auth);
@@ -478,7 +478,7 @@ static COMMAND(gg_command_away) {
 		 */
 		if (autoscroll)
 				descr = saprintf(("<%s"), desk);
-		else 
+		else
 				descr = saprintf(("%s>"), desk);
 		xfree(desk);
 
@@ -541,7 +541,7 @@ static COMMAND(gg_command_away) {
 	xfree(cpdescr);
 	return 0;
 }
-	
+
 static COMMAND(gg_command_msg) {
 	int count, valid = 0, secure = 0, formatlen = 0;
 	char **nicks = NULL, *nick = NULL, **p = NULL, *add_send = NULL;
@@ -565,7 +565,7 @@ static COMMAND(gg_command_msg) {
 			printq("list_empty");
 		return 0;
 	}
-	
+
 	nick = xstrdup(target);
 
 	if ((*nick == '@' || xstrchr(nick, ',')) && chat) {
@@ -575,10 +575,10 @@ static COMMAND(gg_command_msg) {
 		if (c) {
 			xfree(nick);
 			nick = xstrdup(c->name);
-			
-			for (l = c->recipients; l; l = l->next) 
+
+			for (l = c->recipients; l; l = l->next)
 				array_add(&nicks, xstrdup((char *) (l->data)));
-			
+
 			add_send = xstrdup(c->name);
 		}
 	} else if (*nick == '#') {
@@ -593,7 +593,7 @@ static COMMAND(gg_command_msg) {
 
 		for (l = c->recipients; l; l = l->next)
 			array_add(&nicks, xstrdup((char *) (l->data)));
-		
+
 		add_send = xstrdup(c->name);
 	} else {
 		char **tmp = array_make(nick, ",", 0, 0, 0);
@@ -610,7 +610,7 @@ static COMMAND(gg_command_msg) {
 			}
 
 			for (ul = session->userlist; ul; ul = ul->next) {
-				userlist_t *u = ul;			
+				userlist_t *u = ul;
 				struct ekg_group *gl;
 
 				for (gl = u->groups; gl; gl = gl->next) {
@@ -638,13 +638,13 @@ static COMMAND(gg_command_msg) {
 
 	if (gg_config_split_messages && xstrlen(params[1]) > GG_MSG_MAXSIZE) {
 		int i, len = xstrlen(params[1]);
-		
+
 		for (i = 1; i * GG_MSG_MAXSIZE <= len; i++) {
 			char *tmp = (i != len) ? xstrndup(params[1] + (i - 1) * GG_MSG_MAXSIZE, GG_MSG_MAXSIZE) : xstrdup(params[1] + (i - 1) * GG_MSG_MAXSIZE);
 			command_exec_format(target, session, 0, ("/%s %s %s"), name, target, tmp);
 			xfree(tmp);
 		}
-	
+
 		return 0;
 
 	} else if (xstrlen(params[1]) > GG_MSG_MAXSIZE) {
@@ -667,7 +667,7 @@ static COMMAND(gg_command_msg) {
 
 				if (xisdigit(*p)) {
 					int num = atoi((char *) p);
-					
+
 					if (num < 0 || num > 15)
 						num = 0;
 
@@ -744,7 +744,7 @@ static COMMAND(gg_command_msg) {
 			}
 
 			msg[msglen++] = *p;
-			
+
 			p++;
 		}
 
@@ -771,10 +771,10 @@ static COMMAND(gg_command_msg) {
 			printq("user_not_found", *p);
 			continue;
 		}
-		
+
 		u = userlist_find(session, uid);
 
-		if (config_last & 4) 
+		if (config_last & 4)
 			last_add(1, uid, time(NULL), 0, raw_msg);
 
 		if (!chat || count == 1) {
@@ -784,14 +784,14 @@ static COMMAND(gg_command_msg) {
 			uin_t uin = atoi(uid + 3);
 
 			secure = 0;
-			
+
 			query_emit(NULL, "message-encrypt", &sid, &uid_tmp, &__msg, &secure);
 
 			xfree(sid);
 			xfree(uid_tmp);
 
 			if (g->sess)
-				seq = ekg_itoa(gg_send_message_richtext(g->sess, (chat) ? GG_CLASS_CHAT : GG_CLASS_MSG, uin, 
+				seq = ekg_itoa(gg_send_message_richtext(g->sess, (chat) ? GG_CLASS_CHAT : GG_CLASS_MSG, uin,
 						(unsigned char *) __msg, (unsigned char *) format, formatlen));
 			else
 				seq = "offline";
@@ -808,14 +808,14 @@ static COMMAND(gg_command_msg) {
 
 		for (p = nicks; *p; p++) {
 			const char *uid;
-			
+
 			if (!(uid = get_uid(session, *p)))
 				continue;
-			
+
 			uins[realcount++] = atoi(uid + 3);
 		}
 
-		if (g->sess) 
+		if (g->sess)
 			seq = ekg_itoa(gg_send_message_confer_richtext(g->sess, GG_CLASS_CHAT, realcount, uins, (unsigned char *) cpmsg, format, formatlen));
 		else
 			seq = "offline";
@@ -839,7 +839,7 @@ static COMMAND(gg_command_msg) {
 
 	if (valid && !quiet) {
 		char **rcpts = xmalloc(sizeof(char *) * 2);
-		
+
 		rcpts[0] = xstrdup(nick);
 		rcpts[1] = NULL;
 
@@ -863,7 +863,7 @@ static COMMAND(gg_command_msg) {
 static COMMAND(gg_command_inline_msg) {
 	const char *p[2] = { NULL, params[0] };
 
-	if (!target || !params[0]) 
+	if (!target || !params[0])
 		return -1;
 	return gg_command_msg(("chat"), p, session, target, quiet);
 }
@@ -895,7 +895,7 @@ static COMMAND(gg_command_block) {
 
 		for (ul = session->userlist; ul; ul = ul->next) {
 			userlist_t *u = ul;
-				
+
 			if (!ekg_group_member(u, "__blocked"))
 				continue;
 
@@ -904,7 +904,7 @@ static COMMAND(gg_command_block) {
 			printq("blocked_list", format_user(session, u->uid));
 		}
 
-		if (!i) 
+		if (!i)
 			printq("blocked_list_empty");
 
 		return 0;
@@ -954,7 +954,7 @@ static COMMAND(gg_command_unblock) {
 		for (ul = session->userlist; ul; ) {
 			userlist_t *u = ul;
 			userlist_t *next = ul->next;
-			
+
 			if (gg_blocked_remove(session, u->uid) != -1)
 				x = 1;
 
@@ -1003,7 +1003,7 @@ static COMMAND(gg_command_unblock) {
  * token has some colours pallet, in which we have to check pixels (r.g.b)
  * order. Size of pallet in bites pal_sz * 3
  *
- *  - fname - name of the gif file to load 
+ *  - fname - name of the gif file to load
  *  - token - pointer to structure token
  */
 
@@ -1016,9 +1016,9 @@ static int token_gif_load (char *fname, struct token_t *token) {
 		snprintf(errbuf, sizeof(errbuf), "open(%s): %m", fname);
 		goto err;
 	}
-	
+
 	if (!(file = DGifOpenFileHandle(fd))) {
-		snprintf(errbuf, sizeof(errbuf), "DGifOpenFileHandle(): %d", 
+		snprintf(errbuf, sizeof(errbuf), "DGifOpenFileHandle(): %d",
 			GifLastError());
 		goto err2;
 	}
@@ -1027,7 +1027,7 @@ static int token_gif_load (char *fname, struct token_t *token) {
 		snprintf(errbuf, sizeof(errbuf), "Invalid image size: %d,%d", file->SWidth, file->SHeight);
 		goto err3;
 	}
-	
+
 	if (DGifSlurp(file) != GIF_OK) {
 		snprintf(errbuf, sizeof(errbuf), "DGifSlurp(): %d", GifLastError());
 		goto err3;
@@ -1061,13 +1061,13 @@ err:
  * Gets pixel from given position. If the position is out of range it returns
  * given coulour of background.
  *
- *  - token - pointer to structure, describing token 
+ *  - token - pointer to structure, describing token
  *  - x, y - pixel position
  *  - backgr_color - number of background colour
  */
 
 static char token_gif_get_pixel (struct token_t *token, size_t x, size_t y, unsigned char backgr_color) {
-	return (x < 0 || y < 0 || x >= token->sx || y >= token->sy) ? 
+	return (x < 0 || y < 0 || x >= token->sx || y >= token->sy) ?
 	    backgr_color : token->data[y * token->sx + x];
 }
 
@@ -1077,7 +1077,7 @@ static char token_gif_get_pixel (struct token_t *token, size_t x, size_t y, unsi
  * It removes from the image everything that is not needed (lines, single
  * pixel and anyaliasing of the font).
  *
- *  - token - pointer to structure, debribing token 
+ *  - token - pointer to structure, debribing token
  */
 
 static void token_gif_strip (struct token_t *token) {
@@ -1087,12 +1087,12 @@ static void token_gif_strip (struct token_t *token) {
 	unsigned char backgr_color = 0;
 	size_t backgr_counts[256];
 
-	/* Usuwamy wszystkie samotne piksele. Piksel jest uznawany za samotny 
-	 * wtedy, kiedy nie ma w jego najbliszym otoczeniu, obejmujcym 8 
-	 * pikseli dookola niego, przynajmniej trzech pikseli o tym samym 
-	 * kolorze. To usuwa kropki i pojedyncze linie dodawane w celu 
-	 * zaciemnienia obrazu tokena oraz anty-aliasing czcionek w znakach. 
-	 * Otoczenie pikseli brzegowych jest uznawane za kolor ta tak, jakby 
+	/* Usuwamy wszystkie samotne piksele. Piksel jest uznawany za samotny
+	 * wtedy, kiedy nie ma w jego najbliszym otoczeniu, obejmujcym 8
+	 * pikseli dookola niego, przynajmniej trzech pikseli o tym samym
+	 * kolorze. To usuwa kropki i pojedyncze linie dodawane w celu
+	 * zaciemnienia obrazu tokena oraz anty-aliasing czcionek w znakach.
+	 * Otoczenie pikseli brzegowych jest uznawane za kolor ta tak, jakby
 	 * to zostao rozszerzone.
 	 */
 
@@ -1116,14 +1116,14 @@ static void token_gif_strip (struct token_t *token) {
 			if (token->data[y * token->sx + x] != backgr_color) {
 				int num_pixels = 0;
 
-				/* num_pixels przechowuje liczbe pikseli w otoczeniu 
-				 * badanego piksela (wliczajc sam badany piksel) 
+				/* num_pixels przechowuje liczbe pikseli w otoczeniu
+				 * badanego piksela (wliczajc sam badany piksel)
 				 * o tym samym kolorze, co badany piksel.
 				 */
 
 				for (dy = -1; dy <= 1; dy++)
 					for (dx = -1; dx <= 1; dx++)
-						if (token_gif_get_pixel(token, x + dx, y + dy, 
+						if (token_gif_get_pixel(token, x + dx, y + dy,
 						    backgr_color) == token->data[y * token->sx + x])
 							num_pixels++;
 
@@ -1141,7 +1141,7 @@ static void token_gif_strip (struct token_t *token) {
 /*
  * token_gif_strip_txt
  *
- * It removes from given text buffer empty lines up and down. 
+ * It removes from given text buffer empty lines up and down.
  * Return newly allocated buffer.
  *
  *  - buf - buffer to be stripped
@@ -1186,10 +1186,10 @@ static char *token_gif_strip_txt (char *buf) {
 /*
  * token_gif_to_txt()
  *
- * Converts token to text. Returns text buffer with token stripped in that 
+ * Converts token to text. Returns text buffer with token stripped in that
  * way to match the screen.
  *
- *  - token - pointer to token structure 
+ *  - token - pointer to token structure
  */
 
 static char *token_gif_to_txt (struct token_t *token) {
@@ -1211,9 +1211,9 @@ static char *token_gif_to_txt (struct token_t *token) {
 			/* Mamy ju mapowanie dla tego koloru? */
 			if (reg && !mappings[reg]) {
 				mappings[reg] = ++cur_char;
-				/* Podzielenie przez drugi sizeof nie jest 
-				 * potrzebne, ale gdyby kto kiedy chcia 
-				 * wpa�na pomys zmiany typu draw_chars, 
+				/* Podzielenie przez drugi sizeof nie jest
+				 * potrzebne, ale gdyby kto kiedy chcia
+				 * wpa�na pomys zmiany typu draw_chars,
 				 * to dla bezpiecze�twa lepiej da� */
 				cur_char %= sizeof(chars) / sizeof(*chars) - 1;
 			}
@@ -1240,8 +1240,8 @@ static char *token_gif_to_txt (struct token_t *token) {
 /*
  * token_check()
  *
- * function checks if in the given place exists proposed character 
- * 
+ * function checks if in the given place exists proposed character
+ *
  *  - n - number from 0 to 15 (char from 0 to f)
  *  - x, y - coordinates in ocr table
  */
@@ -1274,15 +1274,15 @@ static char *token_ocr(const char *ocr, int width, int height, int length) {
 
 	token = xmalloc(length + 1);
 	memset(token, 0, length + 1);
-		
+
 	for (x = 0; x < width; x++) {
 		for (y = 0; y < height - token_char_height; y++) {
 			int result = 0, token_part = 0;
-		      
+
 			do
 				result = token_check(token_part++, x, y, ocr, width, height);
 			while (!result && token_part < 16);
-			
+
 			if (result && count < length)
 				token[count++] = token_id_char[token_part - 1];
 		}
@@ -1290,7 +1290,7 @@ static char *token_ocr(const char *ocr, int width, int height, int length) {
 
 	if (count == length)
 		return token;
-	
+
 	xfree(token);
 
 	return NULL;
@@ -1317,7 +1317,7 @@ static WATCHER(gg_handle_token)
 
 	if (!h)
 		return -1;
-	
+
        if (type == 2) {
 		debug("[gg] gg_handle_token() timeout\n");
 		print("register_timeout");
@@ -1336,7 +1336,7 @@ static WATCHER(gg_handle_token)
 		watch_t *w;
 		if (fd == h->fd && watch == h->check) return 0;	/* if this is the same watch... we leave it */
 
-		/* otherwise we delete old one (return -1) and create new one .... 
+		/* otherwise we delete old one (return -1) and create new one ....
 		 * XXX, should we copy data from gg_http *h ? and free them in type == 1 ? */
 
 		w = watch_add(&gg_plugin, h->fd, h->check, gg_handle_token, h);
@@ -1424,9 +1424,9 @@ static WATCHER(gg_handle_token)
 
 		size = j.output_width * j.output_components;
 		buf[0] = xmalloc(size);
-		
+
 		token = xmalloc((j.output_width + 1) * j.output_height);
-		
+
 		while (j.output_scanline < j.output_height) {
 			int i;
 
@@ -1434,7 +1434,7 @@ static WATCHER(gg_handle_token)
 
 			for (i = 0; i < j.output_width; i++, h++)
 				token[h] = (buf[0][i*3] + buf[0][i*3+1] + buf[0][i*3+2] < 384) ? '#' : '.';
-			
+
 			token[h++] = 0;
 		}
 
@@ -1455,7 +1455,7 @@ static WATCHER(gg_handle_token)
 
 		xfree(buf[0]);
 		fclose(f);
-		
+
 		unlink(file);
 	} else
 #endif	/* HAVE_LIBJPEG */
@@ -1529,9 +1529,9 @@ static COMMAND(gg_command_modify) {
 		ret = cmd_add(name, params, session, target, quiet);
 		/* if adding fails, quit */
 		if (ret != 0 || !params[1]) return ret;
-	/* params[1] cause of: in commands.c, 
+	/* params[1] cause of: in commands.c,
 	 *		query_emit(NULL, ("userlist-added"), &uid, &params[1], &quiet);
-	 *	and we emulate old behavior (via query handler executing command) with command handler... rewrite ? 
+	 *	and we emulate old behavior (via query handler executing command) with command handler... rewrite ?
 	 */
 		par = &(params[1]);
 	} else	par = params;
@@ -1546,19 +1546,19 @@ static COMMAND(gg_command_modify) {
 		argv = array_make(par[1], " \t", 0, 1, 1);
 
 	for (i = 0; argv && argv[i]; i++) {
-		
+
 		if (match_arg(argv[i], 'f', ("first"), 2) && argv[i + 1]) {
 			user_private_item_set(u, "first_name", xstrdup(argv[++i]));
 			modified = 1;
 			continue;
 		}
-		
+
 		if (match_arg(argv[i], 'l', ("last"), 2) && argv[i + 1]) {
 			user_private_item_set(u, "last_name", xstrdup(argv[++i]));
 			modified = 1;
 			continue;
 		}
-		
+
 		if (match_arg(argv[i], 'n', ("nickname"), 2) && argv[i + 1]) {
 			char *tmp1, *tmp2;
 
@@ -1573,23 +1573,23 @@ static COMMAND(gg_command_modify) {
 
 			query_emit(NULL, "userlist-renamed", &tmp1, &tmp2);
 			xfree(tmp1);
-				
+
 			xfree(u->nickname);
 			u->nickname = tmp2;
 
 			userlist_replace(session, u);
 			query_emit(NULL, "userlist-refresh");
-			
+
 			modified = 1;
 			continue;
 		}
-		
+
 		if ((match_arg(argv[i], 'p', ("phone"), 2) || match_arg(argv[i], 'm', ("mobile"), 2)) && argv[i + 1]) {
 			user_private_item_set(u, "mobile", argv[++i]);
 			modified = 1;
 			continue;
 		}
-		
+
 		if (match_arg(argv[i], 'g', ("group"), 2) && argv[i + 1]) {
 			char **tmp = array_make(argv[++i], ",", 0, 1, 1);
 			int x, off;	/* jeli zaczyna si�od '@', pomijamy pierwszy znak */
@@ -1640,7 +1640,7 @@ static COMMAND(gg_command_modify) {
  			g_strfreev(tmp);
 			continue;
 		}
-		
+
 		if (match_arg(argv[i], 'u', ("uid"), 2) && argv[i + 1]) {
 			userlist_t *existing;
 			char *tmp1, *tmp2;
@@ -1659,7 +1659,7 @@ static COMMAND(gg_command_modify) {
 					return -1;
 				} else {
 					char *egroups = group_to_string(existing->groups, 1, 0);
-					
+
 					if (egroups) {
 						char **arr = array_make(egroups, ",", 0, 0, 0);
 						int i;
@@ -1702,8 +1702,8 @@ static COMMAND(gg_command_modify) {
 			query_emit(NULL, "user-online", &u, &session);
 			modified = 2;
 			continue;
-		} 
-		
+		}
+
 		printq("invalid_params", name, argv[i]);
 		g_strfreev(argv);
 		return -1;
@@ -1753,9 +1753,9 @@ static TIMER(gg_checked_timer_handler)
 					char *host	= NULL;
 					int port	= 0;
 					time_t when	= time(NULL);
-					
+
 					query_emit(NULL, "protocol-status", &session, &uid, &status, &descr, &host, &port, &when, NULL);
-					
+
 					xfree(session);
 					xfree(uid);
 					xfree(descr);
@@ -1764,7 +1764,7 @@ static TIMER(gg_checked_timer_handler)
 				print("gg_user_is_not_connected", session_name(c->session), format_user(c->session, c->uid));
 			xfree(c2->uid);
 			list_remove(&gg_currently_checked, c2, 1);
-			return -1; 
+			return -1;
 		}
 	}
 	return -1; /* timer tymczasowy */
@@ -1781,7 +1781,7 @@ static COMMAND(gg_command_check_conn) {
 	gg_private_t *g = session_private_get(session);
 	gg_currently_checked_t c, *c_timer;
 	list_t l;
- 
+
 	msg.rt.flag = 2;
 	msg.rt.length = 13;
 	msg.f.position = 0;
@@ -1858,10 +1858,10 @@ void gg_register_commands()
 	command_add(&gg_plugin, ("gg:unregister"), "! ! !", gg_command_unregister, COMMAND_ENABLEREQPARAMS, NULL);
 	command_add(&gg_plugin, ("gg:passwd"), "? ?", gg_command_passwd,		GG_ONLY, NULL);
 	command_add(&gg_plugin, ("gg:userlist"), "p ?", gg_command_list,		GG_ONLY, "-c --clear -g --get -p --put");
-	command_add(&gg_plugin, ("gg:find"), "!puUC puUC puUC puUC puUC puUC puUC puUC puUC puUC puUC", 
-							gg_command_find,	GG_FLAGS_TARGET, 
+	command_add(&gg_plugin, ("gg:find"), "!puUC puUC puUC puUC puUC puUC puUC puUC puUC puUC puUC",
+							gg_command_find,	GG_FLAGS_TARGET,
 			"-u --uin -f --first -l --last -n --nick -c --city -b --born -a --active -F --female -M --male -s --start -A --all -S --stop");
-	command_add(&gg_plugin, ("gg:change"), "p", gg_command_change,		GG_ONLY, 
+	command_add(&gg_plugin, ("gg:change"), "p", gg_command_change,		GG_ONLY,
 			"-f --first -l --last -n --nick -b --born -c --city -N --familyname -C --familycity -F --female -M --male");
 	command_add(&gg_plugin, ("gg:dcc"), "p uU f ?", gg_command_dcc,			GG_ONLY, "send rsend get resume rvoice voice close list");
 

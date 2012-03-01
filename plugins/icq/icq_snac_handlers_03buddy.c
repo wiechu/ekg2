@@ -381,7 +381,7 @@ static void icq_get_user_info(session_t *s, userlist_t *u, struct icq_tlv_list *
 			default:
 				if (t->len==4)
 					debug_warn(" %s Unknown TLV(0x%x) len=4 v=%d (0x%x) (%s)\n", u->uid, t->type, t->nr, t->nr, t->nr?timestamp_time("%Y-%m-%d %H:%M:%S", t->nr):"");
-				else 
+				else
 					debug_error(" %s Unknown TLV(0x%x) len=%d\n", u->uid, t->type, t->len);
 		}
 	}

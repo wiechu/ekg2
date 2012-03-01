@@ -51,7 +51,7 @@ char *jabber_openpgp(session_t *s, const char *fromto, enum jabber_opengpg_type_
 		case JABBER_OPENGPG_ENCRYPT:
 			ret = query_emit(NULL, "gpg-message-encrypt", &fromto, &message, &err);	break;
 		case JABBER_OPENGPG_DECRYPT:
-			ret = query_emit(NULL, "gpg-message-decrypt", &s->uid, &message, &err);	break; 
+			ret = query_emit(NULL, "gpg-message-decrypt", &s->uid, &message, &err);	break;
 		case JABBER_OPENGPG_SIGN:
 			ret = query_emit(NULL, "gpg-sign", &s->uid, &message, &err);			break;
 		case JABBER_OPENGPG_VERIFY:
@@ -69,10 +69,10 @@ char *jabber_openpgp(session_t *s, const char *fromto, enum jabber_opengpg_type_
 	if (way == JABBER_OPENGPG_VERIFY && !key && !err)
 		err = xstrdup("wtf?");
 
-	if (err) 
+	if (err)
 		debug_error("jabber_openpgp(): %s\n", err);
 
-	if (error) 
+	if (error)
 		*error = err;
 	else
 		xfree(err);
@@ -103,10 +103,10 @@ char *jabber_zlib_compress(const char *buf, int *len) {
 		debug_error("jabber_zlib_compress() zlib compress() != Z_OK\n");
 		xfree(compressed);
 		return NULL;
-	} 
+	}
 	debug_function("jabber_handle_write() compress ok, retlen: %d orglen: %d\n", destlen, *len);
 	*len = destlen;
-	
+
 	return compressed;
 }
 
@@ -138,7 +138,7 @@ char *jabber_zlib_decompress(const char *buf, int *len) {
 
 		err = inflate(&zlib_stream, Z_NO_FLUSH);
 		if (err != Z_OK && err != Z_STREAM_END) {
-			debug_error("[jabber] jabber_handle_stream() inflate() %d != Z_OK && %d != Z_STREAM_END %s\n", 
+			debug_error("[jabber] jabber_handle_stream() inflate() %d != Z_OK && %d != Z_STREAM_END %s\n",
 					err, err, zlib_stream.msg);
 			break;
 		}
@@ -159,9 +159,9 @@ char *jabber_zlib_decompress(const char *buf, int *len) {
 
 int JABBER_COMMIT_DATA(watch_t *w) {
 #ifdef FIXME_WATCHES_TRANSFER_LIMITS
-	if (w) { 
+	if (w) {
 		w->transfer_limit = 0;
-		return watch_handle_write(w); 
+		return watch_handle_write(w);
 	}
 	return -1;
 #else
@@ -179,13 +179,13 @@ char *jabber_attr(char **atts, const char *att)
 	for (i = 0; atts[i]; i += 2)
 		if (!xstrcmp(atts[i], att))
 			return atts[i + 1];
-		
+
 	return NULL;
 }
 
 /**
  * jabber_escape()
- * 
+ *
  * Convert charset from config_console_charset to "utf-8"<br>
  * Escape xml chars using xml_escape()
  *
@@ -217,7 +217,7 @@ char *jabber_escape(const char *text) {
  * Convert charset from "utf-8" to config_console_charset.<br>
  * xml escaped chars are already changed by expat. so we don't care about them.
  *
- * @note If config_use_unicode is set, this function only xstrdup(@a text) 
+ * @note If config_use_unicode is set, this function only xstrdup(@a text)
  *
  * @param text - text to reencode.
  *
@@ -265,7 +265,7 @@ char *tlen_encode(const char *what) {
 			*ptr++ = '+';
 		else if ((*s < '0' && *s != '-' && *s != '.')
 			 || (*s < 'A' && *s > '9') || (*s > 'Z' && *s < 'a' && *s != '_')
-			 || (*s > 'z')) 
+			 || (*s > 'z'))
 		{
 			sprintf((char*) ptr, "%%%02X", *s);
 			ptr += 3;
@@ -334,10 +334,10 @@ WATCHER_LINE(jabber_handle_write) /* tylko gdy jest wlaczona kompresja lub TLS/S
 		j->send_watch = NULL;
 		return 0;
 	}
-	
+
 	if (
 #ifdef JABBER_HAVE_SSL
-	!j->using_ssl && 
+	!j->using_ssl &&
 #endif
 	!j->using_compress) {
 		/* XXX ? */
@@ -375,7 +375,7 @@ WATCHER_LINE(jabber_handle_write) /* tylko gdy jest wlaczona kompresja lub TLS/S
 
 #ifdef HAVE_LIBSSL		/* OpenSSL */
 		if ((res == 0 && SSL_get_error(j->ssl_session, res) == SSL_ERROR_ZERO_RETURN)); /* connection shut down cleanly */
-		else if (res < 0) 
+		else if (res < 0)
 			res = SSL_get_error(j->ssl_session, res);
 		/* XXX, When an SSL_write() operation has to be repeated because of SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE, it must be repeated with the same arguments. */
 #endif
@@ -419,10 +419,10 @@ int jabber_conversation_find(jabber_private_t *j, const char *uid, const char *s
 	jabber_conversation_t *thr, *prev;
 	const char *resubject = NULL;
 	int i, l = 0;
-	
+
 	if (!thread && subject && !xstrncmp(subject, config_subject_reply_prefix, (l = xstrlen(config_subject_reply_prefix))))
 		resubject = subject + l;
-	
+
 	for (thr = j->conversations, prev = NULL, i = 1;
 		thr && ((thread ? xstrcmp(thr->thread, thread) /* try to match the thread, if avail */
 			: (subject ? xstrcmp(thr->subject, subject) /* else try to match the subject... */
@@ -443,7 +443,7 @@ int jabber_conversation_find(jabber_private_t *j, const char *uid, const char *s
 		else
 			j->conversations	= thr;
 	}
-	
+
 	if (result)
 		*result = thr;
 	return i;
@@ -460,11 +460,11 @@ int jabber_conversation_find(jabber_private_t *j, const char *uid, const char *s
 jabber_conversation_t *jabber_conversation_get(jabber_private_t *j, const int n) {
 	jabber_conversation_t *thr;
 	int i;
-	
+
 	for (thr = j->conversations, i = 1;
 		thr && (i < n);
 		thr = thr->next, i++);
-	
+
 	return thr;
 }
 
@@ -487,7 +487,7 @@ char *jabber_thread_gen(jabber_private_t *j, const char *uid) {
 		n = jabber_conversation_find(j, thread, NULL, uid, NULL, 0);
 		debug("[jabber,thread_gen] i = %d, k = %d, n = %d, t = %s\n", i, n, k, thread);
 	}
-	
+
 	return thread;
 }
 
@@ -495,7 +495,7 @@ static inline guint32 jabber_formatchar(const char c) {
 	if (c == '*')	return EKG_FORMAT_BOLD;
 	if (c == '_')	return EKG_FORMAT_UNDERLINE;
 	if (c == '/')	return EKG_FORMAT_ITALIC;
-	
+
 	return 0;
 }
 

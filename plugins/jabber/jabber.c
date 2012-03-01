@@ -224,7 +224,7 @@ int jabber_privacy_freeone(jabber_private_t *j, jabber_iq_privacy_t *item) {
 
 static LIST_FREE_ITEM(list_jabber_bookmarks_free, jabber_bookmark_t *) {
 	if (data->type == JABBER_BOOKMARK_URL) { xfree(data->priv_data.url->name); xfree(data->priv_data.url->url); }
-	else if (data->type == JABBER_BOOKMARK_CONFERENCE) { 
+	else if (data->type == JABBER_BOOKMARK_CONFERENCE) {
 		xfree(data->priv_data.conf->name); xfree(data->priv_data.conf->jid);
 		xfree(data->priv_data.conf->nick); xfree(data->priv_data.conf->pass);
 	}
@@ -340,9 +340,9 @@ int jabber_write_status(session_t *s) {
 
 		if (session_int_get(s, "__gpg_enabled") == 1) {
 			char *signpresence;
-			
+
 			signpresence = xstrdup(session_descr_get(s));	/* XXX, data in unicode required (?) */
-			if (!signpresence) 
+			if (!signpresence)
 				signpresence = xstrdup("");
 
 			signpresence = jabber_openpgp(s, NULL, JABBER_OPENGPG_SIGN, signpresence, NULL, NULL);
@@ -457,8 +457,8 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 		return;
 	}
 
-	/* XXX, czy tego nie mozna parsowac tak jak wszystko inne w jabber_handle() ? 
-	 *	A tutaj tylko tworzyc drzewo xmlowe? 
+	/* XXX, czy tego nie mozna parsowac tak jak wszystko inne w jabber_handle() ?
+	 *	A tutaj tylko tworzyc drzewo xmlowe?
 	 *	XXX, rtfm expat
 	 */
 
@@ -479,17 +479,17 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 
 			/* XXX,
 			 *	Here if we've got SASL-connection we should do jabber:iq:register only when
-			 *	j->connecting == 1, 
+			 *	j->connecting == 1,
 			 *
 			 *	but i'm not quite sure if s->connected, and j->connecting can be 0	[yeap, i know it would be stupid]
-			 *	So, to avoid regression, we use here j->connecting != 2 
+			 *	So, to avoid regression, we use here j->connecting != 2
 			 */
 
 		if (!j->istlen && !j->sasl_connecting && session_get(s, "__new_account")) {
 			char *epasswd	= jabber_escape(passwd);
-			watch_write(j->send_watch, 
+			watch_write(j->send_watch,
 				"<iq type=\"set\" to=\"%s\" id=\"register%d\">"
-				"<query xmlns=\"jabber:iq:register\"><username>%s</username><password>%s</password></query></iq>", 
+				"<query xmlns=\"jabber:iq:register\"><username>%s</username><password>%s</password></query></iq>",
 				j->server, j->id++, username, epasswd ? epasswd : ("foo"));
 
 			xfree(epasswd);
@@ -533,7 +533,7 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 		if ((n = j->node)) {
 			newnode->parent = n;
 
-			if (!n->children) 
+			if (!n->children)
 				n->children = newnode;
 			else {
 				xmlnode_t *m = n->children;
@@ -604,7 +604,7 @@ static WATCHER_SESSION(jabber_handle_stream) {
 		len = SSL_RECV(j->ssl_session, buf, BUFFER_LEN-1);
 #ifdef HAVE_LIBSSL
 		if ((len == 0 && SSL_get_error(j->ssl_session, len) == SSL_ERROR_ZERO_RETURN)); /* connection shut down cleanly */
-		else if (len < 0) 
+		else if (len < 0)
 			len = SSL_get_error(j->ssl_session, len);
 /* XXX, When an SSL_read() operation has to be repeated because of SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE, it must be repeated with the same arguments. */
 #endif
@@ -659,8 +659,8 @@ static WATCHER_SESSION(jabber_handle_stream) {
 	}
  */
 
-	if (!XML_ParseBuffer(parser, rlen, (rlen == 0))) 
-//	if (!XML_Parse(parser, uncompressed ? uncompressed : buf, rlen, (rlen == 0))) 
+	if (!XML_ParseBuffer(parser, rlen, (rlen == 0)))
+//	if (!XML_Parse(parser, uncompressed ? uncompressed : buf, rlen, (rlen == 0)))
 	{
 		char *tmp;
 
@@ -698,7 +698,7 @@ static TIMER_SESSION(jabber_ping_timer_handler) {
 		watch_write(j->send_watch, "  \t  ");	/* ping according to libtlen */
 		return 0;
 	}
-	
+
 	if (session_int_get(s, "ping_server") == 0) return -1;
 
 		/* XEP-0199 */
@@ -717,14 +717,14 @@ WATCHER(jabber_handle_connect)
 
 	if (type)
 		return -1;
-	
+
 	debug_function("[jabber] socket() = %d\n", fd);
 
 	tlenishub = (j->istlen > 1);
 	j->fd = fd;
 
 	if (tlenishub) {
-		char *req, *esc; 
+		char *req, *esc;
 
 		j->istlen = 1;		/* reset */
 
@@ -752,8 +752,8 @@ WATCHER(jabber_handle_connect)
 		j->send_watch = watch_add_line(&jabber_plugin, fd, WATCH_WRITE_LINE, NULL, NULL);
 #endif
 		if (!(j->istlen)) {
-			watch_write(j->send_watch, 
-					"<?xml version=\"1.0\" encoding=\"utf-8\"?><stream:stream to=\"%s\" xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\"%s>", 
+			watch_write(j->send_watch,
+					"<?xml version=\"1.0\" encoding=\"utf-8\"?><stream:stream to=\"%s\" xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\"%s>",
 					j->server, (session_int_get(s, "disable_sasl") != 2) ? " version=\"1.0\"" : "");
 		} else {
 			watch_write(j->send_watch, "<s v=\'2\'>");
@@ -796,7 +796,7 @@ WATCHER(jabber_handle_connect2) {
 		return -1;
 	}
 #endif
-	
+
 	return jabber_handle_connect(type, fd, watch, data);
 }
 
@@ -812,7 +812,7 @@ static WATCHER(jabber_handle_connect_tlen_hub) {	/* tymczasowy */
 		close(fd);
 		return 0;
 	}
-	
+
 	/* libtlen */
 
 	len = read(fd, buf, sizeof(buf));
@@ -1071,8 +1071,8 @@ handshake_ok:
 		j->parser = jabber_parser_recreate(NULL, XML_GetUserData(j->parser));
 
 	/* reinitialize stream */
-		watch_write(j->send_watch, 
-				"<stream:stream to=\"%s\" xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\">", 
+		watch_write(j->send_watch,
+				"<stream:stream to=\"%s\" xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\">",
 				j->server);
 	} else {
 		// handshake successful
@@ -1090,12 +1090,12 @@ static QUERY(jabber_protocol_ignore) {
 /*
 	int oldlvl	= *(va_arg(ap, int *));
 	int newlvl	= *(va_arg(ap, int *));
-*/ 
+*/
 	session_t *s	= session_find(sesion);
 
 	/* check this just to be sure... */
 	if (session_check(s, 1, "xmpp"))
-		/* SPOT rule, first of all here was code to check sesion, valid user, etc... 
+		/* SPOT rule, first of all here was code to check sesion, valid user, etc...
 		 *	then send jabber:iq:roster request... with all new & old group...
 		 *	but it was code copied from modify command handler... so here it is.
 		 */
@@ -1126,7 +1126,7 @@ static QUERY(jabber_status_show_handle) {
 	xfree(fulluid);
 
 	// nasz status
-	tmp = (s->connected) ? 
+	tmp = (s->connected) ?
 		format_string(format_find(ekg_status_label(s->status, s->descr, "show_status_")),s->descr, "") :
 		format_string(format_find("show_status_notavail"), "");
 
@@ -1142,10 +1142,10 @@ static QUERY(jabber_status_show_handle) {
 
 	if (session_int_get(s, "__gpg_enabled") == 1)
 		print("jabber_gpg_sok", session_name(s), session_get(s, "gpg_key"));
-			
+
 	if (s->connecting)
 		print("show_status_connecting");
-	
+
 	return 0;
 }
 
@@ -1166,7 +1166,7 @@ static int jabber_theme_init() {
 	format_add("jabber_remotecontrols_commited",	_("%> (%1) Remote client: %W%2%n executed command @node: %W%3"), 1);			/* %2 - uid %3 - node */
 	format_add("jabber_remotecontrols_commited_status", _("%> (%1) RC %W%2%n: requested changing status to: %3 %4 with priority: %5"), 1);	/* %3 - status %4 - descr %5 - prio */
 		/* %3 - command+params %4 - sessionname %5 - target %6 - quiet */
-	format_add("jabber_remotecontrols_commited_command",_("%> (%1) RC %W%2%n: requested command: %W%3%n @ session: %4 window: %5 quiet: %6"), 1);	
+	format_add("jabber_remotecontrols_commited_command",_("%> (%1) RC %W%2%n: requested command: %W%3%n @ session: %4 window: %5 quiet: %6"), 1);
 
 	format_add("jabber_form_title",		  "%g,+=%G----- %3 %n(%T%2%n)", 1);
 	format_add("jabber_form_item",		  "%g|| %n%(21)3 (%6) %K|%n --%4 %(20)5", 1);	/* %3 - label %4 - keyname %5 - value %6 - req; optional */
@@ -1178,13 +1178,13 @@ static int jabber_theme_init() {
 	format_add("jabber_form_item_val",	  "%K[%b%3%n %g%4%K]%n", 1);			/* %3 - value %4 - label */
 	format_add("jabber_form_item_sub",	  "%g|| %|%n\t%3", 1);			/* %3 formated jabber_form_item_val */
 
-	format_add("jabber_form_command",	_("%g|| %nType %W/%3 %g%2 %W%4%n"), 1); 
+	format_add("jabber_form_command",	_("%g|| %nType %W/%3 %g%2 %W%4%n"), 1);
 	format_add("jabber_form_instructions",	  "%g|| %n%|%3", 1);
 	format_add("jabber_form_description",	  "%g|| %n%|%3", 1);
 	format_add("jabber_form_end",		_("%g`+=%G----- End of this %3 form ;)%n"), 1);
 
 	format_add("jabber_registration_item",	  "%g|| %n	      --%3 %4%n", 1); /* %3 - keyname %4 - value */ /* XXX, merge */
-	
+
 	/* simple XEP-0071 - XML parsing error */
 	format_add("jabber_msg_xmlsyntaxerr",	_("%! Expat syntax-checking failed on your message: %T%1%n. Please correct your code or use double ^R to disable syntax-checking."), 1);
 	/* %1 - session %2 - message %3 - start %4 - end */
@@ -1309,7 +1309,7 @@ static int jabber_theme_init() {
 	format_add("jabber_userinfo_telephone",		_("%g|| %n   Telephone: %T%2"), 1);
 	format_add("jabber_userinfo_title",		_("%g|| %n       Title: %T%2"), 1);
 	format_add("jabber_userinfo_organization",	_("%g|| %nOrganization: %T%2"), 1);
-	
+
 	format_add("jabber_userinfo_adr",		_("%g|| ,+=%G----- (Next) %2 address"), 1);
 	format_add("jabber_userinfo_adr_street",	_("%g|| || %n     Street: %T%2"), 1);
 	format_add("jabber_userinfo_adr_postalcode",	_("%g|| || %nPostal code: %T%2"), 1);
@@ -1327,7 +1327,7 @@ static int jabber_theme_init() {
 	format_add("jabber_privacy_list_begin",		_("%g,+=%G----- Privacy lists on %T%2%n"), 1);
 	format_add("jabber_privacy_list_item",			_("%g|| %n %3 - %W%4%n"), 1);					/* %3 - lp %4 - itemname */
 	format_add("jabber_privacy_list_item_def",		_("%g|| %g Default:%n %W%4%n"), 1);
-	format_add("jabber_privacy_list_item_act",		_("%g|| %r  Active:%n %W%4%n"), 1); 
+	format_add("jabber_privacy_list_item_act",		_("%g|| %r  Active:%n %W%4%n"), 1);
 	format_add("jabber_privacy_list_end",		_("%g`+=%G----- End of the privacy list%n"), 1);
 	format_add("jabber_privacy_list_noitem",	_("%! No privacy lists in %T%2%n"), 1);
 	format_add("jabber_privacy_item_header",	_("%g,+=%G----- Details for: %T%3%n\n%g||%n JID\t\t\t\t\t  MSG	PIN POUT IQ%n"), 1);
@@ -1408,7 +1408,7 @@ void jabber_gpg_changed(session_t *s, const char *name) {
 	if (error) {
 		session_set(s, "gpg_active", "0");
 		session_set(s, "gpg_password", NULL);
-		print("jabber_gpg_fail", session_name(s), key, error); 
+		print("jabber_gpg_fail", session_name(s), key, error);
 		xfree(error);
 	} else	{
 		session_int_set(s, "__gpg_enabled", 1);
@@ -1450,7 +1450,7 @@ static QUERY(jabber_userlist_info) {
 	int quiet	= *va_arg(ap, int *);
 	jabber_userlist_private_t *up;
 
-	if (!u || valid_plugin_uid(&jabber_plugin, u->uid) != 1 || !(up = jabber_userlist_priv_get(u))) 
+	if (!u || valid_plugin_uid(&jabber_plugin, u->uid) != 1 || !(up = jabber_userlist_priv_get(u)))
 		return 1;
 
 	printq("user_info_auth_type", jabber_authtypes[up->authtype & EKG_JABBER_AUTH_BOTH]);
@@ -1650,7 +1650,7 @@ EXPORT int jabber_plugin_init(int prio) {
 			variable_map(4, 0, 0, "none",
 					EKG_CHATSTATE_COMPOSING, 0, "composing",
 					EKG_CHATSTATE_ACTIVE, 0, "active",
-					EKG_CHATSTATE_GONE, 0, "gone"), NULL); 
+					EKG_CHATSTATE_GONE, 0, "gone"), NULL);
 
 	jabber_register_commands();
 #ifdef JABBER_HAVE_SSL

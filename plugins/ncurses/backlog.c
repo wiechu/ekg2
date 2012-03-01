@@ -35,7 +35,7 @@ static inline int xmbswidth(const char *s, size_t n) {
 	mbtowc(NULL, NULL, 0);
 	for (i = 0; i < n; ) {
 		wchar_t ch;
-		int ch_len; 
+		int ch_len;
 
 		ch_len = mbtowc(&ch, &s[i], n - i);
 		if (ch_len != -1) {
@@ -338,7 +338,7 @@ void ncurses_backlog_scroll(window_t *w, int offset) {
 			n->first_row += offset;
 			return;
 		}
-		
+
 		offset -= (h - n->first_row);
 		while (offset >= 0 && ++n->index < n->backlog->len) {
 			h = ncurses_get_backlog_height(w, bl, n->index);
@@ -390,7 +390,7 @@ backlog_line_t *ncurses_backlog_mouse_click(window_t *w, int click_y) {
 void ncurses_backlog_add_real(window_t *w, /*locale*/ fstring_t *str) {
 	ncurses_window_t *n = w->priv_data;
 	backlog_line_t *b;
-	
+
 	if (!w)
 		return;
 
@@ -470,7 +470,7 @@ void ncurses_backlog_reset_heights(window_t *w, int height) {
 
 	void set_height(gpointer data, gpointer user_data) {
 		backlog_line_t *b = data;
-		
+
 		b->height = height;
 	}
 

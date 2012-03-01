@@ -24,8 +24,8 @@
 #include <stdio.h>
 
 typedef struct {
-	int   logformat; 
-			/* 19:55:24 <@zdzichuBG> wtedy trzeba by jescze jakis callback na zmiane zmiennej logs_format 
+	int   logformat;
+			/* 19:55:24 <@zdzichuBG> wtedy trzeba by jescze jakis callback na zmiane zmiennej logs_format
 			 * callback zmiennych sesyjnych w ekg2 niet. jest cos takiego.
 			 */
 	char *path;	/* path don't free it ! .... */
@@ -45,7 +45,7 @@ typedef enum {
 	LOG_FORMAT_SIMPLE,
 	LOG_FORMAT_XML,
 	LOG_FORMAT_IRSSI,
-	LOG_FORMAT_RAW, 
+	LOG_FORMAT_RAW,
 } log_format_t;
 
 	/* irssi style info messages */
@@ -68,7 +68,7 @@ static void logs_irssi(FILE *file, const char *session, const char *uid, const c
 static void logs_gaim();
 #endif
 
-static list_t log_logs = NULL; 
+static list_t log_logs = NULL;
 
 static int config_logs_log;
 static int config_logs_log_raw;

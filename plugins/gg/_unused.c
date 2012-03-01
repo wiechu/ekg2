@@ -10,7 +10,7 @@
 static void gg_dcc_close_handler(dcc_t *d)
 {
 	struct gg_dcc *g;
-	
+
 	if (!d || !(g = d->priv))
 		return;
 

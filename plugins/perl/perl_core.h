@@ -10,7 +10,7 @@
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
-	    
+
 /* syfffff irssi */
 
 #define new_pv(a) newSVpv(fix(a), xstrlen(a))
@@ -73,8 +73,8 @@ SV *create_sv_ptr(void *object);
 		}\
 	}\
     }
-    
-#else 
+
+#else
 #define RESTORE_ARGS(x) ;
 #endif
 

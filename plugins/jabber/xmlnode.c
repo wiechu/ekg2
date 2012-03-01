@@ -25,7 +25,7 @@ static void xmlnode_free(xmlnode_t *n)
 	g_strfreev(n->atts);
 	xfree(n);
 }
- 
+
 void xmlnode_handle_end(void *data, const char *name)
 {
 	session_t *s = (session_t *) data;

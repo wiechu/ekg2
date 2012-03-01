@@ -122,7 +122,7 @@ window_t *window_find_sa(session_t *session, const char *target, int session_nul
 				continue;
 
 		/* get_uid() was bad here. Because if even it's uid of user but we don't have it in userlist it'll do nothing. */
-			if (!(u = userlist_find(s, target))) 
+			if (!(u = userlist_find(s, target)))
 				continue;
 
 			for (w = windows; w; w = w->next) {
@@ -132,7 +132,7 @@ window_t *window_find_sa(session_t *session, const char *target, int session_nul
 						return w;
 
 					/* XXX, userlist_find() search only for u->nickname or u->uid.. so code below is useless? we can always return w; ?
-					 *	However userlist_find() also strip resources if preset.. here we don't have it. 
+					 *	However userlist_find() also strip resources if preset.. here we don't have it.
 					 *	maybe it's better, maybe not. Must think about it.
 					 *	For now leave this code.
 					 */
@@ -169,7 +169,7 @@ window_t *window_find(const char *target) {
  * window_switch()
  *
  * prze³±cza do podanego okna.
- *  
+ *
  *  - id - numer okna
  */
 void window_switch(int id) {
@@ -183,10 +183,10 @@ void window_switch(int id) {
 
 		if (id != window_current->id)
 			window_last_id = window_current->id;
-		
+
 		if (w->id != 0 && w->session)
 			session_current = w->session;
-	
+
 		window_current = w;
 		query_emit(NULL, "ui-window-switch", &w);	/* XXX */
 
@@ -225,7 +225,7 @@ void window_switch(int id) {
  * @note	If target == "$" than it return current window. [POSSIBLE BUG]
  *		If window with such target [it can also be u->uid/u->nickname combination] exists.
  *		than it'll return it.
- * 
+ *
  * @note	You shouldn't pass @a new_id here. Because it can break UI stuff. don't ask. it's wrong. Just don't use it.
  *		It'll be possible removed... In case you really need it, you
  *		can talk to the devs, and ask for an id from class: 1000 to
@@ -245,28 +245,28 @@ window_t *window_new(const char *target, session_t *session, int new_id) {
 
 	if (target) {
 		window_t *w;
-		
+
 		/* XXX, we don't check new_id here. stupido */
 		if (!xstrcmp(target, "$")) {
 			/* XXX, what about sessions, check if match? */
 			return window_current;
 		}
-		
+
 		w = window_find_s(session, target);
 
 		if (w)
 			return w;
 	}
 	/* XXX, check new_id ? */
-/*	if (new_id != 0 && (w = window_exist(new_id)) 
+/*	if (new_id != 0 && (w = window_exist(new_id))
 		return w; */
 
 	/* if no new_id given, than let's search for window id.. */
 	if (new_id == 0) {
 		window_t *v	= windows;	/* set to the beginning of the window list */
 		int id		= 2;		/* [XXX] set to first valid id? */
-		
-		/* XXX, after it, we exactly know where to put new window to list, without list_add_sorted() we can do list_add_beggining() 
+
+		/* XXX, after it, we exactly know where to put new window to list, without list_add_sorted() we can do list_add_beggining()
 		 * but it'll ugly code. So not doing it :) */
 
 		/* we can do this stuff. because windows are sorted by id */
@@ -412,7 +412,7 @@ void window_kill(window_t *w) {
 
 	if (!w)
 		return;
-	
+
 	id = w->id;
 
 	if (id == 1 && w->target) {
@@ -433,7 +433,7 @@ void window_kill(window_t *w) {
 
 	if (w == window_debug)
 		return;
-	
+
 	if (w == window_current)	/* if it's current window. goto previous one. */
 		window_prev();
 
@@ -457,7 +457,7 @@ void window_kill(window_t *w) {
 /**
  * window_exist()
  *
- * check if window with @a id exist 
+ * check if window with @a id exist
  *
  * @param id - id of window.
  *
@@ -472,7 +472,7 @@ window_t *window_exist(int id) {
 	window_t *w;
 
 	for (w = windows; w; w = w->next) {
-		if (w->id == id) 
+		if (w->id == id)
 			return w;
 	}
 
@@ -481,7 +481,7 @@ window_t *window_exist(int id) {
 
 /**
  * window_move()
- * 
+ *
  * swap windows (swap windows @a id -> change sequence of them in UI)
  *
  * @param first		- 1st window id.
@@ -636,7 +636,7 @@ COMMAND(cmd_window) {
 		else
 			window_switch(atoi(params[1]));
 		return 0;
-	}			
+	}
 
 	if (!xstrncasecmp(params[0], "last", par0_matchlen)) {
 		window_switch(window_last_id);
@@ -672,7 +672,7 @@ COMMAND(cmd_window) {
 		window_next();
 		return 0;
 	}
-	
+
 	if (!xstrncasecmp(params[0], "prev", par0_matchlen)) {
 		window_prev();
 		return 0;
@@ -707,7 +707,7 @@ COMMAND(cmd_window) {
 		}
 
 		/* source is okey, now we are checking destination window */
-		
+
 		if (!xstrcasecmp(params[1], ("left")))
 			dest = source - 1;
 		else if (!xstrcasecmp(params[1], ("right")))
@@ -730,7 +730,7 @@ COMMAND(cmd_window) {
 			return 0;
 
 		if (!xstrncasecmp(params[0], "swap", par0_matchlen)) {
-			if (!window_exist(dest)) 
+			if (!window_exist(dest))
 				window_new(NULL, NULL, dest);
 
 			window_move(source, dest);
@@ -740,7 +740,7 @@ COMMAND(cmd_window) {
 		return 0;
 	}
 
-	
+
 	if (!xstrncasecmp(params[0], "refresh", par0_matchlen)) {
 		query_emit(NULL, "ui-refresh");
 		return 0;
@@ -785,7 +785,7 @@ void window_session_set(window_t *w, session_t *new_session) {
 /**
  * window_session_cycle()
  *
- * Change session of given window to next good one (based on @a config_window_session_allow value) 
+ * Change session of given window to next good one (based on @a config_window_session_allow value)
  *
  * @note	behaviour of window_session_cycle() based on values of config_window_session_allow:
  *		 0 - change session only if w->target == NULL
@@ -796,9 +796,9 @@ void window_session_set(window_t *w, session_t *new_session) {
  * @note	If w->session was changed than UI_WINDOW_TARGET_CHANGED will be emited.
  *		If w == window_current than SESSION_CHANGED will be emited also.
  *
- * @todo	Gdy config_window_session_allow == 2, to najpierw sprobowac znalezc dobra sesje a potem jesli nie to 
+ * @todo	Gdy config_window_session_allow == 2, to najpierw sprobowac znalezc dobra sesje a potem jesli nie to
  *		nastepna?
- * 
+ *
  * @param	w - window
  *
  * @return	 0 - if session of window was changed
@@ -860,8 +860,8 @@ again:
 				break;
 			}
 		}
-	} 
-		
+	}
+
 	if (!new_session && s != sessions) {
 		s = sessions;
 		goto again;

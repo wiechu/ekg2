@@ -31,7 +31,7 @@ static char *rl_strndup(gchar *s, gssize n) {
 	else {
 		gsize len = strlen(rec) + 1;
 		char *out = malloc(len);
-		
+
 		memcpy(out, rec, len);
 		g_free(rec);
 		return out;

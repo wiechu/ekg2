@@ -49,12 +49,12 @@ COMMAND(gg_command_find)
 			gg_pubdir50_free(s);
 			list_remove(&g->searches, s, 0);
 		}
-		
+
 		printq("search_stopped");
 
 		return 0;
 	}
-	
+
 	argv = (char **) params;
 
 	if (target[0] == '#' && (!argv[0] || !argv[1])) {
@@ -84,7 +84,7 @@ COMMAND(gg_command_find)
 
 		argv = &argv[1];	/* skip this param, and go to nextone */
 	}
-	
+
 	uargv = xcalloc(g_strv_length(argv)+1, sizeof(char **));
 
 	for (i = 0; argv[i]; i++)
@@ -92,7 +92,7 @@ COMMAND(gg_command_find)
 
 	for (i = 0; argv[i]; i++) {
 		char *arg = argv[i];
-				
+
 		if (match_arg(arg, 'f', ("first"), 2) && argv[i + 1]) {
 			gg_pubdir50_add(req, GG_PUBDIR50_FIRSTNAME, uargv[++i]);
 			continue;
@@ -107,7 +107,7 @@ COMMAND(gg_command_find)
 			gg_pubdir50_add(req, GG_PUBDIR50_NICKNAME, uargv[++i]);
 			continue;
 		}
-		
+
 		if (match_arg(arg, 'c', ("city"), 2) && argv[i + 1]) {
 			gg_pubdir50_add(req, GG_PUBDIR50_CITY, uargv[++i]);
 			continue;
@@ -117,12 +117,12 @@ COMMAND(gg_command_find)
 			gg_pubdir50_add(req, GG_PUBDIR50_UIN, uargv[++i]);
 			continue;
 		}
-		
+
 		if (match_arg(arg, 's', ("start"), 3) && argv[i + 1]) {
 			gg_pubdir50_add(req, GG_PUBDIR50_START, uargv[++i]);
 			continue;
 		}
-		
+
 		if (match_arg(arg, 'F', ("female"), 2)) {
 			gg_pubdir50_add(req, GG_PUBDIR50_GENDER, GG_PUBDIR50_GENDER_FEMALE);
 			continue;
@@ -140,7 +140,7 @@ COMMAND(gg_command_find)
 
 		if (match_arg(arg, 'b', ("born"), 2) && argv[i + 1]) {
 			char *foo = xstrchr(uargv[++i], ':');
-		
+
 			if (foo)
 				*foo = ' ';
 
@@ -202,7 +202,7 @@ COMMAND(gg_command_change)
 
 	if (xstrcmp(params[0], ("-"))) {
 		char **argv = array_make(params[0], (" \t"), 0, 1, 1);
-		
+
 		for (i = 0; argv[i]; i++)
 			argv[i] = locale_to_gg(session, argv[i]);
 
@@ -216,32 +216,32 @@ COMMAND(gg_command_change)
 				gg_pubdir50_add(req, GG_PUBDIR50_FAMILYNAME, argv[++i]);
 				continue;
 			}
-		
+
 			if (match_arg(argv[i], 'l', ("last"), 2) && argv[i + 1]) {
 				gg_pubdir50_add(req, GG_PUBDIR50_LASTNAME, argv[++i]);
 				continue;
 			}
-		
+
 			if (match_arg(argv[i], 'n', ("nickname"), 2) && argv[i + 1]) {
 				gg_pubdir50_add(req, GG_PUBDIR50_NICKNAME, argv[++i]);
 				continue;
 			}
-			
+
 			if (match_arg(argv[i], 'c', ("city"), 2) && argv[i + 1]) {
 				gg_pubdir50_add(req, GG_PUBDIR50_CITY, argv[++i]);
 				continue;
 			}
-			
+
 			if (match_arg(argv[i], 'C', ("familycity"), 7) && argv[i + 1]) {
 				gg_pubdir50_add(req, GG_PUBDIR50_FAMILYCITY, argv[++i]);
 				continue;
 			}
-			
+
 			if (match_arg(argv[i], 'b', ("born"), 2) && argv[i + 1]) {
 				gg_pubdir50_add(req, GG_PUBDIR50_BIRTHYEAR, argv[++i]);
 				continue;
 			}
-			
+
 			if (match_arg(argv[i], 'F', ("female"), 2)) {
 				gg_pubdir50_add(req, GG_PUBDIR50_GENDER, GG_PUBDIR50_GENDER_SET_FEMALE);
 				continue;
@@ -340,7 +340,7 @@ void gg_session_handler_search50(session_t *s, struct gg_event *e)
 
 		name = saprintf(
 			("%s %s"),
-					firstname ? firstname : (""), 
+					firstname ? firstname : (""),
 					lastname ? lastname : (""));
 
 #define __format(x) ((count == 1 && !all) ? "search_results_single" x : "search_results_multi" x)
@@ -366,17 +366,17 @@ void gg_session_handler_search50(session_t *s, struct gg_event *e)
 			 *	define target and thus display result in right conversation window? */
 		for (l = autofinds; l; l = l->next) {
 			char *d = (char *) l->data;
-		
+
 			if (!xstrcasecmp(d + 3, uin)) {
 				target = d;
 				break;
 			}
 		}
-		
-		print_info(target, s, __format(""), 
-			uin		? uin : ("?"), name, 
-			nickname	? nickname : (""), 
-			city		? city : (""), 
+
+		print_info(target, s, __format(""),
+			uin		? uin : ("?"), name,
+			nickname	? nickname : (""),
+			city		? city : (""),
 			birthyear	? birthyear : ("-"),
 			gender, active);
 

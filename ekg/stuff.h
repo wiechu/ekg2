@@ -337,7 +337,7 @@ int ekg_write(int fd, const char *buf, int len);
 int ekg_writef(int fd, const char *format, ...);
 
 #endif
-	
+
 #ifdef __cplusplus
 }
 #endif

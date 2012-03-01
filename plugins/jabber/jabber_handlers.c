@@ -66,7 +66,7 @@ JABBER_HANDLER(jabber_handle_presence);
 static time_t jabber_try_xdelay(const char *stamp);
 static void jabber_session_connected(session_t *s);
 
-static void newmail_common(session_t *s); 
+static void newmail_common(session_t *s);
 
 /**
  * xmlnode_find_child()
@@ -136,7 +136,7 @@ static xmlnode_t *xmlnode_find_child_xmlns(xmlnode_t *n, const char *name, const
 void jabber_iq_auth_send(session_t *s, const char *username, const char *passwd, const char *stream_id) {
 	jabber_private_t *j = s->priv;
 
-	const char *passwd2 = NULL;			/* if set than jabber_digest() should be done on it. else plaintext_passwd 
+	const char *passwd2 = NULL;			/* if set than jabber_digest() should be done on it. else plaintext_passwd
 							   Variable to keep password from @a password, or generated hash of password with magic constant [tlen] */
 
 	char *resource = tlenjabber_escape(j->resource);/* escaped resource name */
@@ -169,7 +169,7 @@ void jabber_iq_auth_send(session_t *s, const char *username, const char *passwd,
 		saprintf("<digest>%s</digest>", jabber_digest(stream_id, passwd2, j->istlen)) :	/* hash */
 		saprintf("<password>%s</password>", epasswd);				/* plaintext */
 
-	watch_write(j->send_watch, 
+	watch_write(j->send_watch,
 			"<iq type=\"set\" id=\"auth\" to=\"%s\"><query xmlns=\"jabber:iq:auth\">%s<username>%s</username>%s<resource>%s</resource></query></iq>",
 			j->server, host, username, authpass, resource);
 	xfree(authpass);
@@ -211,13 +211,13 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 		for (ch = n->children; ch; ch = ch->next) {
 			xmlnode_t *another;
 				if (!xstrcmp(ch->name, "starttls")) {
-					print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "/session use_tls"); 
+					print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "/session use_tls");
 					continue;
 				}
 
 				if (!xstrcmp(ch->name, "mechanisms")) {
 					print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "/session disable_sasl");
-					for (another = ch->children; another; another = another->next) {	
+					for (another = ch->children; another; another = another->next) {
 						if (!xstrcmp(another->name, "mechanism")) {
 							if (!xstrcmp(another->data, "DIGEST-MD5"))
 								print("xmpp_feature_sub", session_name(s), j->server, "SASL", another->data, "Default");
@@ -299,7 +299,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 				if (!xstrcmp(method->name, "method")) {
 					if (!xstrcmp(method->data, "zlib")) {
 #ifdef HAVE_LIBZ
-						if ((tmp2 = xstrstr(tmp, "zlib")) && ((tmp2 < method_comp) || (!method_comp)) && 
+						if ((tmp2 = xstrstr(tmp, "zlib")) && ((tmp2 < method_comp) || (!method_comp)) &&
 								(tmp2[4] == ',' || tmp2[4] == '\0')) {
 							method_comp = tmp2;	 /* found more preferable method */
 							j->using_compress = JABBER_COMPRESSION_ZLIB_INIT;
@@ -329,7 +329,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 				continue;
 			}
 
-			watch_write(j->send_watch, 
+			watch_write(j->send_watch,
 					"<compress xmlns=\"http://jabber.org/protocol/compress\"><method>%s</method></compress>", method_comp);
 			return;
 		} else {
@@ -342,8 +342,8 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 	if (use_fjuczers & 2) {	/* bind */
 		char *resource = jabber_escape(j->resource);
 
-		watch_write(j->send_watch, 
-				"<iq type=\"set\" id=\"bind%d\"><bind xmlns=\"urn:ietf:params:xml:ns:xmpp-bind\"><resource>%s</resource></bind></iq>", 
+		watch_write(j->send_watch,
+				"<iq type=\"set\" id=\"bind%d\"><bind xmlns=\"urn:ietf:params:xml:ns:xmpp-bind\"><resource>%s</resource></bind></iq>",
 				j->id++, resource);
 		xfree(resource);
 
@@ -351,7 +351,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 	}
 	else		/* else here, to avoid : 'stanza sent before session start' */
 	if (use_fjuczers & 1) {	/* session */
-		watch_write(j->send_watch, 
+		watch_write(j->send_watch,
 				"<iq type=\"set\" id=\"auth\"><session xmlns=\"urn:ietf:params:xml:ns:xmpp-session\"/></iq>",
 				j->id++);
 	}
@@ -359,12 +359,12 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 	if (j->sasl_connecting && !(use_fjuczers & 2)) {	/* STRANGE, BUT MAYBE POSSIBLE? */
 		jabber_session_connected(s);
 	}
-	
+
 	/* i think it's done here.. */
 	if (j->sasl_connecting && display_fjuczers)
 		session_int_set(s, "__features_displayed", 1);
 
-	JABBER_COMMIT_DATA(j->send_watch);	
+	JABBER_COMMIT_DATA(j->send_watch);
 
 	if (use_sasl && mech_node) {
 		enum {
@@ -389,7 +389,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 			} else debug_error("[jabber] SASL mechanisms: %s\n", mech_node->name);
 		}
 
-		if (auth_type != JABBER_SASL_AUTH_UNKNOWN) 
+		if (auth_type != JABBER_SASL_AUTH_UNKNOWN)
 			j->sasl_connecting = 1;
 
 		switch (auth_type) {
@@ -398,7 +398,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 
 			case JABBER_SASL_AUTH_DIGEST_MD5:
 				debug_function("[jabber] SASL chosen: JABBER_SASL_AUTH_DIGEST_MD5\n");
-				watch_write(j->send_watch, 
+				watch_write(j->send_watch,
 					"<auth xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\" mechanism=\"DIGEST-MD5\"/>");
 			break;
 			case JABBER_SASL_AUTH_PLAIN:
@@ -420,7 +420,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 			break;
 			default:
 				debug_error("[jabber] SASL auth_type: UNKNOWN!!!, disconnecting from host.\n");
-				j->parser = NULL; jabber_handle_disconnect(s, 
+				j->parser = NULL; jabber_handle_disconnect(s,
 						"We tried to auth using SASL but none of method supported by server we know. "
 						"Check __debug window and supported SASL server auth methods and sent them to ekg2 devs. "
 						"Temporary you can turn off SASL auth using by setting disable_sasl to 1 or 2. "
@@ -483,7 +483,7 @@ JABBER_HANDLER(jabber_handle_challenge) {
 	/* decode && parse challenge data */
 	data = base64_decode(n->data);
 	debug_error("[jabber] PARSING challenge (%s): \n", data);
-	arr = array_make(data, "=,", 0, 1, 1);	/* maybe we need to change/create another one parser... i'm not sure. please notify me, 
+	arr = array_make(data, "=,", 0, 1, 1);	/* maybe we need to change/create another one parser... i'm not sure. please notify me,
 						   I'm lazy, sorry */
 	/* for chrome.pl and jabber.autocom.pl it works */
 	xfree(data);
@@ -495,7 +495,7 @@ JABBER_HANDLER(jabber_handle_challenge) {
 		if (!arr[i+1]) {
 			debug_error("Parsing var<=>value failed, NULL....\n");
 			g_strfreev(arr);
-			j->parser = NULL; 
+			j->parser = NULL;
 			jabber_handle_disconnect(s, "IE, Current SASL support for ekg2 cannot handle with this data, sorry.", EKG_DISCONNECT_FAILURE);
 			return;
 		}
@@ -614,8 +614,8 @@ JABBER_HANDLER(jabber_handle_success) {
 	CHECK_XMLNS(n, "urn:ietf:params:xml:ns:xmpp-sasl", return)
 
 	j->parser = jabber_parser_recreate(NULL, XML_GetUserData(j->parser));	/* here could be passed j->parser to jabber_parser_recreate() but unfortunetly expat makes SIGSEGV */
-	watch_write(j->send_watch, 
-			"<stream:stream to=\"%s\" xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\">", 
+	watch_write(j->send_watch,
+			"<stream:stream to=\"%s\" xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\">",
 			j->server);
 }
 
@@ -708,7 +708,7 @@ JABBER_HANDLER(jabber_handle_message) {
 	xmlnode_t *nthread	= NULL;
 	xmlnode_t *nhtml	= NULL;
 	xmlnode_t *xitem;
-	
+
 	const char *from = jabber_attr(n->atts, "from");
 	char *x_encrypted = NULL;
 
@@ -748,13 +748,13 @@ JABBER_HANDLER(jabber_handle_message) {
 
 	if (j->istlen)	/* disable typing notify, tlen protocol doesn't send info about it (?) XXX */
 		protocol_xstate_emit(s, uid, 0, EKG_XSTATE_TYPING);
-	
+
 	body = string_init("");
 
 	for (xitem = n->children; xitem; xitem = xitem->next) {
 		if (!xstrcmp(xitem->name, "x")) {
 			const char *ns = xitem->xmlns;
-			
+
 			if (!xstrcmp(ns, "jabber:x:encrypted")) {	/* JEP-0027 */
 				x_encrypted = xstrdup(xitem->data);
 				char *error = NULL;
@@ -800,8 +800,8 @@ JABBER_HANDLER(jabber_handle_message) {
 				}
 				/* je¶li body nie ma, to odpowiedz na nasza prosbe */
 				if (!nbody && isack) {
-					int __status  = ((acktype & 1) ? EKG_ACK_DELIVERED : 
-							(acktype & 2) ? EKG_ACK_QUEUED : 
+					int __status  = ((acktype & 1) ? EKG_ACK_DELIVERED :
+							(acktype & 2) ? EKG_ACK_QUEUED :
 							EKG_ACK_UNKNOWN);
 					protocol_message_ack_emit(s, uid, NULL, __status);
 				}
@@ -832,7 +832,7 @@ JABBER_HANDLER(jabber_handle_message) {
 					stuct tm *tm = localtime(&bsent);
 					char buf[100];
 					string_append(body, "Sent: ");
-					if (!strftime(buf, sizeof(buf), nazwa_zmiennej_do_formatowania_czasu, tm) 
+					if (!strftime(buf, sizeof(buf), nazwa_zmiennej_do_formatowania_czasu, tm)
 						string_append(body, ekg_itoa(bsent);	/* if too long display seconds since the Epoch */
 					else	string_append(body, buf);	/* otherwise display formatted time */
 					new_line = 1;
@@ -841,7 +841,7 @@ JABBER_HANDLER(jabber_handle_message) {
 			} else debug_error("[JABBER, MESSAGE]: <x xmlns=%s>\n", __(ns));
 /* x */		} else if (!xstrcmp(xitem->xmlns, "http://jabber.org/protocol/chatstates")) {
 			composing = 3;	/* disable + higher prio */
-			if (!xstrcmp(xitem->name, "active")) { 
+			if (!xstrcmp(xitem->name, "active")) {
 			} else if (!xstrcmp(xitem->name, "composing")) {
 				composing = 7; /* enable + higher prio */
 			} else if (!xstrcmp(xitem->name, "paused")) {
@@ -896,16 +896,16 @@ JABBER_HANDLER(jabber_handle_message) {
 				(nonthreaded && hassubject ? nsubject->data : NULL),
 				(nonthreaded ? NULL : nthread->data),
 				&thr, (session_int_get(s, "allow_add_reply_id") > 0));
-		
+
 		if (nonthreaded)
 			nthread = xmalloc(sizeof(xmlnode_t)); /* ugly hack, to make non-threaded reply work */
-		
+
 		if (thr) { /* XXX, do it nicer */
 			xfree(nthread->data);
 			nthread->data = saprintf("#%d", i);
 			debug("[jabber, message] thread: %s -> #%d\n", thr->thread, i);
 		}
-	
+
 		if (!(nsubject && nsubject->data)) {
 			string_append(body, (thr ? "Reply-ID: " : "Thread: "));
 			string_append(body, nthread->data);
@@ -926,7 +926,7 @@ JABBER_HANDLER(jabber_handle_message) {
 			string_append(body, " [");
 			string_append(body, nthread->data);
 			string_append(body, "]");
-			
+
 			if (!nthread->name) /* this means we're using above hack */
 				xfree(nthread);
 		}
@@ -936,7 +936,7 @@ JABBER_HANDLER(jabber_handle_message) {
 
 	if (new_line) string_append(body, "\n");	/* let's seperate headlines from message */
 
-	if (x_encrypted) 
+	if (x_encrypted)
 		string_append(body, x_encrypted);	/* encrypted message */
 	else if (nbody)
 		string_append(body, nbody->data);	/* unecrypted message */
@@ -1053,15 +1053,15 @@ static void jabber_handle_xmldata_form(session_t *s, const char *uid, const char
 
 			int isreq = 0;	/* -1 - optional; 1 - required */
 			/* ?WO? XEP-0004 tells nothing about optional values ??? */
-			
+
 			if (!fieldcount) print("jabber_form_command", session_name(s), uid, command, param);
 
 			for (child = node->children; child; child = child->next) {
 				if (!xstrcmp(child->name, "required")) isreq = 1;
 				else if (!xstrcmp(child->name, "value")) {
-					xfree(def_option); 
-					def_option	= jabber_unescape(child->data); 
-				} 
+					xfree(def_option);
+					def_option	= jabber_unescape(child->data);
+				}
 				else if (!xstrcmp(child->name, "option")) {
 					xmlnode_t *tmp;
 					char *opt_value = jabber_unescape( (tmp = xmlnode_find_child(child, "value")) ? tmp->data : NULL);
@@ -1088,7 +1088,7 @@ static void jabber_handle_xmldata_form(session_t *s, const char *uid, const char
 			else if (!(xstrcmp(type, "hidden")))
 				print("jabber_form_hidden", session_name(s), uid, label, var, def_option);
 			else
-				print("jabber_form_item", session_name(s), uid, label, var, def_option, 
+				print("jabber_form_item", session_name(s), uid, label, var, def_option,
 					isreq == -1 ? "X" : isreq == 1 ? "V" : " ", type);
 
 			if (sub && sub->len > 1) {
@@ -1117,7 +1117,7 @@ static int jabber_handle_xmldata_submit(session_t *s, xmlnode_t *form, const cha
 
 	va_start(ap, alloc);
 
-	if (!alloc) while ((vatmp = va_arg(ap, char *))) { 
+	if (!alloc) while ((vatmp = va_arg(ap, char *))) {
 		atts		= (char **) xrealloc(atts, sizeof(char *) * (count + 3));
 		atts[count]	= xstrdup(vatmp);
 		atts[count+1]	= (char *) va_arg(ap, char **);					/* here is char ** */
@@ -1128,11 +1128,11 @@ static int jabber_handle_xmldata_submit(session_t *s, xmlnode_t *form, const cha
 	for (; form; form = form->next) {
 		if (!xstrcmp(form->name, "field")) {
 			int quiet = 0;
-			const char *vartype	= jabber_attr(form->atts, "type"); 
+			const char *vartype	= jabber_attr(form->atts, "type");
 			const char *varname	= jabber_attr(form->atts, "var");
 			char *value		= jabber_unescape(form->children ? form->children->data : NULL);
-			char **tmp; 
-							
+			char **tmp;
+
 			if (FORM_TYPE && (!xstrcmp(varname, "FORM_TYPE") && !xstrcmp(vartype, "hidden") && !xstrcmp(value, FORM_TYPE))) { valid = 1; quiet = 1;	}
 			if ((tmp = (char **) jabber_attr(atts, varname))) {
 				if (!alloc)	{ xfree(*tmp);		*tmp = value; }			/* here is char ** */
@@ -1140,7 +1140,7 @@ static int jabber_handle_xmldata_submit(session_t *s, xmlnode_t *form, const cha
 				value	= NULL;
 			} else if (alloc) {
 				atts		= (char **) xrealloc(atts, sizeof(char *) * (count + 3));
-				atts[count]	= xstrdup(varname);					
+				atts[count]	= xstrdup(varname);
 				atts[count+1]	= value;						/* here is char * */
 				atts[count+2]	= NULL;
 				count += 2;
@@ -1323,7 +1323,7 @@ JABBER_HANDLER(jabber_handle_iq) {
 		default:
 			/* never here */
 
-			/* protect from gcc warning: 
+			/* protect from gcc warning:
 			 *	jabber_handlers.c:1271: warning: 'callbacks' may be used uninitialized in this function */
 			return;
 	}
@@ -1347,7 +1347,7 @@ JABBER_HANDLER(jabber_handle_iq) {
 			} else {
 				print(new_passwd ? "passwd_possible_abuse" : "passwd_abuse", session_name(s), from);
 			}
-		} 
+		}
 		session_set(s, "__new_password", NULL);
 		return;
 	}
@@ -1393,7 +1393,7 @@ static status_t role_and_affiliation_to_ekg2_status(char *role, char * affiliati
 	else /* none */
 		return EKG_STATUS_NA;
 }
-									    
+
 JABBER_HANDLER(jabber_handle_presence) {
 	jabber_private_t *j = s->priv;
 
@@ -1517,9 +1517,9 @@ JABBER_HANDLER(jabber_handle_presence) {
 						if (na)		print_info(mucuid, s, "muc_left", session_name(s), nickjid + 5, jid, mucuid+5, "");
 
 						ulist = newconference_member_find(c, nickjid);
-						if (ulist && na) { 
-							newconference_member_remove(c, ulist); 
-							ulist = NULL; 
+						if (ulist && na) {
+							newconference_member_remove(c, ulist);
+							ulist = NULL;
 						} else if (!ulist) {
 							ulist = newconference_member_add(c, nickjid, nickjid + 5);
 							print_info(mucuid, s, "muc_joined", session_name(s), nickjid + 5, jid, mucuid+5, "", role, affiliation);
@@ -1528,7 +1528,7 @@ JABBER_HANDLER(jabber_handle_presence) {
 						if (ulist) {
 							jabber_userlist_private_t *up = jabber_userlist_priv_get(ulist);
 							ulist->status = role_and_affiliation_to_ekg2_status(role, affiliation);
-							
+
 							if (up) {
 								up->role	= xstrdup(role);
 								up->aff		= xstrdup(affiliation);
@@ -1572,7 +1572,7 @@ JABBER_HANDLER(jabber_handle_presence) {
 
 		{		/* first set unknown if we have no auth */
 			jabber_userlist_private_t *up = jabber_userlist_priv_get(u);
-			
+
 			if ((!up || !(up->authtype & EKG_JABBER_AUTH_TO)))
 				status = EKG_STATUS_UNKNOWN;
 		}
@@ -1583,7 +1583,7 @@ JABBER_HANDLER(jabber_handle_presence) {
 
 			if (!(jstatus = tlenjabber_unescape(nshow->data)))
 				jstatus = xstrdup("unknown");
-			
+
 			if (!xstrcmp(jstatus, "na"))
 				na = 1;
 			else if ((status = jabber_status_int(j->istlen, jstatus)) == EKG_STATUS_UNKNOWN)
@@ -1629,7 +1629,7 @@ JABBER_HANDLER(jabber_handle_presence) {
 
 		if ((tmp2 = xstrchr(uid, '/'))) {
 			userlist_t *ut;
-	
+
 			if ((ut = userlist_find(s, uid))) {
 				ekg_resource_t *r;
 
@@ -1689,7 +1689,7 @@ static void jabber_session_connected(session_t *s) {
 }
 
 static void newmail_common(session_t *s) { /* maybe inline? */
-	if (config_sound_mail_file) 
+	if (config_sound_mail_file)
 		play_sound(config_sound_mail_file);
 	else if (config_jabber_beep_mail)
 		query_emit(NULL, "ui-beep", NULL);
@@ -1747,7 +1747,7 @@ again:
 				debug_error("jabber_iq_reg() avoiding deadlock\n");
 				return NULL;
 			}
-			
+
 			id = saprintf("%s%x_%d", prefix ? prefix : "", j->id++, rand());
 
 			debug_white("jabber_iq_reg() found id: %s, new id: %s\n", i->id, id);
@@ -1786,7 +1786,7 @@ const char *jabber_iq_send(session_t *s, const char *prefix, jabber_iq_type_t iq
 		debug_error("jabber_iq_send() wrong iqtype passed\n");
 		return NULL;
 	}
-	
+
 	if (!(id = jabber_iq_reg(s, prefix, to, type, xmlns)))
 		return NULL;
 

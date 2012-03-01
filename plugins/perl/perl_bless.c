@@ -49,7 +49,7 @@ void ekg2_bless_irc_channel(HV *hv, channel_t *chan)
 	debug_bless("blessing channel %s\n", chan->name);
 
 	(void) hv_store(hv, "name", 4, new_pv(chan->name+4), 0);
-	(void) hv_store(hv, "mode", 4, new_pv(chan->mode_str), 0); 
+	(void) hv_store(hv, "mode", 4, new_pv(chan->mode_str), 0);
 	(void) hv_store(hv, "topic",5, new_pv(chan->topic), 0);
 	(void) hv_store(hv, "window", 6, ekg2_bless(BLESS_WINDOW, 0, chan->window), 0);
 	(void) hv_store(hv, "topicby", 7, new_pv(chan->topicby), 0);
@@ -64,8 +64,8 @@ void ekg2_bless_irc_user(HV *hv, people_t *person)
 	(void) hv_store(hv, "realname", 8, new_pv(person->realname), 0);
 	(void) hv_store(hv, "hostname", 8, new_pv(person->host), 0);
 	(void) hv_store(hv, "ident",	5, new_pv(person->ident), 0);
-	
-//	(void) hv_store(hv, "channels", 8, bless_struct("Ekg2::Irc::Channels", person->channels), 0);  
+
+//	(void) hv_store(hv, "channels", 8, bless_struct("Ekg2::Irc::Channels", person->channels), 0);
 	(void) hv_store(hv, "nick_", 5, new_pv(person->nick), 0); /* wywalic ? */
 }
 
@@ -256,7 +256,7 @@ SV *ekg2_bless(perl_bless_t flag, int flag2, void *object)
 			(void) hv_store(hv, "", 0, create_sv_ptr(object), 0);
 			break;
 #ifdef HAVE_IRC
-/* IRC */			
+/* IRC */
 		case BLESS_IRC_SERVER:
 			stash = gv_stashpv("Ekg2::Irc::Server", 1);
 			ekg2_bless_irc_server(hv, object);
@@ -276,7 +276,7 @@ SV *ekg2_bless(perl_bless_t flag, int flag2, void *object)
 
 #endif
 /* abstact script */
-		
+
 /* ELSE */
 		default:
 			debug("@perl_bless.c ekg2_bless() unknown flag=%d flag1=%d obj=0x%x\n", flag, flag2, object);

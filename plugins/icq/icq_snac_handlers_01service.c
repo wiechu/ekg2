@@ -58,7 +58,7 @@ SNAC_SUBHANDLER(icq_snac_service_error) {
 SNAC_SUBHANDLER(icq_snac_service_families) {
 	/*
 	 * SNAC(01,03) SRV_FAMILIES -- Server supported snac families list
-	 * 
+	 *
 	 * This is the first snac in protocol negotiation sequence. Client shouldn't use
 	 * families not listed in this SNAC. So if your client use SNAC(13) family and
 	 * server SNAC(01,03) doesn't contain it - your client should popup "server error"
@@ -383,7 +383,7 @@ SNAC_SUBHANDLER(icq_snac_service_resume) {
 
 	debug_ok("Server resume command\n");
 	j->migrate = 0;
-	
+
 	return 0;
 }
 
@@ -532,7 +532,7 @@ SNAC_SUBHANDLER(icq_snac_service_migrate) {
 	j->migrate = 1;
 
 	icq_flap_close_helper(s, buf, len);
-	
+
 	return 0;
 }
 
@@ -583,7 +583,7 @@ SNAC_SUBHANDLER(icq_snac_service_urls) {
 }
 
 SNAC_SUBHANDLER(icq_snac_service_nop) {
-	/* SNAC(01,16) CLI_KEEPALIVE No operation (NOP) 
+	/* SNAC(01,16) CLI_KEEPALIVE No operation (NOP)
 	 *
 	 * WinAIM (AIM service) use this snac to keep connection alive. This is usefull
 	 * when it use proxy server to connect to BOS. Proxy servers can disconnect client
@@ -609,7 +609,7 @@ SNAC_SUBHANDLER(icq_snac_service_families2) {
 	}
 	#endif
 
-	/* SNAC(01,06) CLI_RATES_REQUEST  
+	/* SNAC(01,06) CLI_RATES_REQUEST
 	 * Client use this SNAC to request server rate-limits. This happens during
 	 * protocol negotiation sequence. Server should reply via SNAC(01,07)
 	 */

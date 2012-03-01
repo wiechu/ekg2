@@ -30,7 +30,7 @@ int gg_config_dcc_port;
 char *gg_config_dcc_ip;
 char *gg_config_dcc_limit;
 
-/* 
+/*
  * gg_changed_dcc()
  *
  * called when some dcc_* variables are changed
@@ -45,7 +45,7 @@ void gg_changed_dcc(const char *var)
 			gg_dcc_ip = 0;
 			gg_dcc_port = 0;
 		}
-	
+
 		if (gg_config_dcc) {
 			if (gg_dcc_socket_open(gg_config_dcc_port) == -1)
 				print("dcc_create_error", strerror(errno));
@@ -55,7 +55,7 @@ void gg_changed_dcc(const char *var)
 			if (!xstrcasecmp(gg_config_dcc_ip, "auto")) {
 				gg_dcc_ip = inet_addr("255.255.255.255");
 			} else {
-				if (inet_addr(gg_config_dcc_ip) != INADDR_NONE) 
+				if (inet_addr(gg_config_dcc_ip) != INADDR_NONE)
 					gg_dcc_ip = inet_addr(gg_config_dcc_ip);
 				else {
 					print("dcc_invalid_ip");
@@ -73,7 +73,7 @@ void gg_changed_dcc(const char *var)
 
 			if (gg_dcc_socket_open(gg_config_dcc_port) == -1)
 				print("dcc_create_error", strerror(errno));
-	
+
 		}
 	} else if (!xstrcmp(var, ("gg:audio"))) {
 		gg_config_audio = 0;
@@ -172,7 +172,7 @@ COMMAND(gg_command_dcc)
 			printq("dcc_user_aint_dcc", format_user(session, u->uid));
 			return -1;
 		}
-		
+
 		if (!stat(fn, &st) && !S_ISREG(st.st_mode)) {
 			printq("io_nonfile", params[2]);
 			return -1;
@@ -197,7 +197,7 @@ COMMAND(gg_command_dcc)
 				return -1;
 			}
 			dccdata = gd;
-		} else 
+		} else
 #endif
 		{
 			if (__port < 10 || !xstrncasecmp(params[0], "rse", 3)) {
@@ -220,7 +220,7 @@ COMMAND(gg_command_dcc)
 				dccdata = gd;
 			}
 		}
-		
+
 		d = dcc_add(session, u->uid, DCC_SEND, dccdata);
 		dcc_filename_set(d, fn);
 		dcc_size_set(d, st.st_size);
@@ -252,7 +252,7 @@ COMMAND(gg_command_dcc)
 		printq("dcc_voice_unsupported");
 		return -1;
 	}
-	
+
 	/* get, resume */
 	if (params[0] && (!xstrncasecmp(params[0], "g", 1) || !xstrncasecmp(params[0], "re", 2))) {
 		dcc_t *d = NULL, *D;
@@ -261,13 +261,13 @@ COMMAND(gg_command_dcc)
 
 		int fd;
 		unsigned int offset = 0;
-		
+
 		for (D = dccs; D; D = D->next) {
 			userlist_t *u;
 
 			if (!dcc_private_get(D) || !dcc_filename_get(D) || dcc_type_get(D) != DCC_GET)
 				continue;
-			
+
 			if (!params[1]) {
 				if (dcc_active_get(D))
 					continue;
@@ -304,7 +304,7 @@ COMMAND(gg_command_dcc)
 			return -1;
 		}
 
-		if (config_dcc_dir) 
+		if (config_dcc_dir)
 			path = saprintf("%s/%s", config_dcc_dir, dcc_filename_get(d));
 		else
 			path = xstrdup(dcc_filename_get(d));
@@ -327,12 +327,12 @@ COMMAND(gg_command_dcc)
 
 			dcc_close(d);
 			xfree(path);
-			
+
 			return -1;
 		}
-		
+
 		xfree(path);
-		
+
 		printq("dcc_get_getting", format_user(session, dcc_uid_get(d)), dcc_filename_get(d));
 		dcc_active_set(d, 1);
 
@@ -347,7 +347,7 @@ COMMAND(gg_command_dcc)
 			timer_add(&gg_plugin, NULL, 1 /* gd->timeout */, 1, gg_dcc_handler_timeout, gd);
 
 			gg_dcc7_accept(gd, offset);		/* accept */
-		} else 
+		} else
 #endif
 		{
 			struct gg_dcc *gd = (struct gg_dcc *) g;
@@ -370,7 +370,7 @@ static void gg_dcc7_close_handler(dcc_t *d)
 
 	if (!d || !(g = d->priv))
 		return;
-	
+
 	gg_dcc7_free(g);
 }
 
@@ -410,7 +410,7 @@ WATCHER(gg_dcc7_handler)
 	if (!(e = gg_dcc7_watch_fd(d))) {
 		print("dcc_error", strerror(errno));
 		if (d->type != GG_SESSION_DCC7_SOCKET) {
-			
+
 			if (!D) {
 				gg_dcc7_free(d);
 			} else {
@@ -433,11 +433,11 @@ WATCHER(gg_dcc7_handler)
 			}
 
 			print((D->type == DCC_SEND) ? "dcc_done_send" : "dcc_done_get", format_user(D->session, D->uid), D->filename);
-			
+
 			gg_dcc7_close_handler(D);
 			dcc_close(D);
 			break;
-			
+
 		case GG_EVENT_DCC7_ERROR:
 		{
 			struct in_addr addr;
@@ -461,7 +461,7 @@ WATCHER(gg_dcc7_handler)
 					port = u->port;
 				}
 				tmp = saprintf("%s (%s:%d)", format_user(D->session, D->uid), inet_ntoa(addr), port);
-			} else 
+			} else
 				tmp = saprintf("%s:%d", inet_ntoa(addr), port);
 #endif
 			tmp = saprintf("%s (%s:%d)", format_user(D->session, D->uid), inet_ntoa(addr), port);
@@ -497,7 +497,7 @@ WATCHER(gg_dcc7_handler)
 	}
 
 	gg_event_free(e);
-	
+
 	return -1;
 }
 
@@ -576,20 +576,20 @@ WATCHER(gg_dcc_handler)	/* tymczasowy */
 				gg_dcc_free(d);
 
 			e->event.dcc_new = NULL;
-			
+
 			break;
 		}
 
 		case GG_EVENT_DCC_CLIENT_ACCEPT:
 		{
 			char peer[16], uin[16];
-			session_t *s; 
+			session_t *s;
 
 			debug("[gg] GG_EVENT_DCC_CLIENT_ACCEPT\n");
 
 			snprintf(peer, sizeof(peer), "gg:%d", d->peer_uin);
 			snprintf(uin, sizeof(uin), "gg:%d", d->uin);
-			
+
 			s = session_find(uin);
 
 			if (!s || !userlist_find(s, peer) || (ignored_check(s, peer) & IGNORE_DCC)) {
@@ -598,18 +598,18 @@ WATCHER(gg_dcc_handler)	/* tymczasowy */
 				gg_event_free(e);
 				return -1;
 			}
-			break;	
+			break;
 		}
 
 		case GG_EVENT_DCC_CALLBACK:
 		{
 			int found = 0;
 			char peer[16];
-			
+
 			debug("[gg] GG_EVENT_DCC_CALLBACK\n");
 
 			snprintf(peer, sizeof(peer), "gg:%d", d->peer_uin);
-			
+
 			for (D = dccs; D; D = D->next) {
 				debug("[gg] dcc id=%d, uid=%d, type=%d\n", dcc_id_get(D), dcc_uid_get(D), dcc_type_get(D));
 
@@ -619,15 +619,15 @@ WATCHER(gg_dcc_handler)	/* tymczasowy */
 					dcc_private_set(D, d);
 					gg_dcc_set_type(d, (dcc_type_get(D) == DCC_SEND) ? GG_SESSION_DCC_SEND : GG_SESSION_DCC_VOICE);
 					found = 1;
-					
+
 					break;
 				}
 			}
-			
+
 			if (!found) {
 				debug("[gg] connection from %d not found\n", d->peer_uin);
 				gg_dcc_free(d);
-				gg_event_free(e);	
+				gg_event_free(e);
 				return -1;
 			}
 
@@ -647,7 +647,7 @@ WATCHER(gg_dcc_handler)	/* tymczasowy */
 					print("dcc_open_error", dcc_filename_get(D));
 					dcc_close(D);
 					gg_free_dcc(d);
-					
+
 					break;
 				}
 
@@ -656,7 +656,7 @@ WATCHER(gg_dcc_handler)	/* tymczasowy */
 
 			break;
 		}
-			
+
 		case GG_EVENT_DCC_NEED_FILE_ACK:
 		{
 			char *path;
@@ -695,12 +695,12 @@ WATCHER(gg_dcc_handler)	/* tymczasowy */
 
 			if (!stat(path, &st) && st.st_size < d->file_info.size)
 				print("dcc_get_offer_resume", format_user(session_find(uin), dcc_uid_get(D)), dcc_filename_get(D), ekg_itoa(d->file_info.size), ekg_itoa(dcc_id_get(D)));
-			
+
 			xfree(path);
 
 			break;
 		}
-			
+
 		case GG_EVENT_DCC_DONE:
 		{
 			char uin[16];
@@ -715,14 +715,14 @@ WATCHER(gg_dcc_handler)	/* tymczasowy */
 			}
 
 			print((dcc_type_get(D) == DCC_SEND) ? "dcc_done_send" : "dcc_done_get", format_user(session_find(uin), dcc_uid_get(D)), dcc_filename_get(D));
-			
+
 			dcc_close(D);
 			gg_free_dcc(d);
 			d = NULL;
 
 			break;
 		}
-			
+
 		case GG_EVENT_DCC_ERROR:
 		{
 			struct in_addr addr;
@@ -736,7 +736,7 @@ WATCHER(gg_dcc_handler)	/* tymczasowy */
 			if (d->peer_uin) {
 				char peer[16];
 				userlist_t *u;
-				
+
 				snprintf(peer, sizeof(peer), "gg:%d", d->peer_uin);
 				u = userlist_find(session_find(uin), peer);
 
@@ -745,9 +745,9 @@ WATCHER(gg_dcc_handler)	/* tymczasowy */
 					port = user_private_item_get_int(u, "port");
 				}
 				tmp = saprintf("%s (%s:%d)", format_user(session_find(uin), peer), inet_ntoa(addr), port);
-			} else 
+			} else
 				tmp = saprintf("%s:%d", inet_ntoa(addr), port);
-			
+
 			switch (e->event.dcc_error) {
 				case GG_ERROR_DCC_HANDSHAKE:
 					print("dcc_error_handshake", tmp);
@@ -798,7 +798,7 @@ WATCHER(gg_dcc_handler)	/* tymczasowy */
 	}
 
 	gg_event_free(e);
-	
+
 	return -1;
 }
 
@@ -817,7 +817,7 @@ int gg_dcc_socket_open(int port)
 
 	if (!(gg_dcc_socket = gg_dcc_socket_create(1, port)))
 		return -1;
-	
+
 	watch_add(&gg_plugin, gg_dcc_socket->fd, gg_dcc_socket->check, gg_dcc_handler_open, gg_dcc_socket);
 
 	return 0;

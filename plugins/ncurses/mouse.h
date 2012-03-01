@@ -27,7 +27,7 @@ void ncurses_lastlog_mouse_handler(int x, int y, int mouse_state);
 
 // int last_mouse_state;
 
-#define EKG_BUTTON1_CLICKED	0x0001		
+#define EKG_BUTTON1_CLICKED	0x0001
 #define EKG_BUTTON2_CLICKED	0x0007
 #define EKG_BUTTON3_CLICKED	0x0008
 #define EKG_UNKNOWN_CLICKED	0x0006

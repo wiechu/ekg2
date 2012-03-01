@@ -61,7 +61,7 @@ DYNSTUFF_LIST_DECLARE_SORTED(ekg_groups, struct ekg_group, group_compare, group_
 
 /* resources: */
 static LIST_ADD_COMPARE(userlist_resource_compare, ekg_resource_t *) {
-	if (data1->prio != data2->prio)			
+	if (data1->prio != data2->prio)
 		return (data2->prio - data1->prio);	/* sort by prio */
 
 	return xstrcasecmp(data1->name, data2->name);	/* sort by name */
@@ -127,19 +127,19 @@ void userlist_add_entry(session_t *session, const char *line) {
 			entry[i] = NULL;
 		}
 	}
-			
+
 	u->groups	= group_init(entry[5]);
 
 	if (entry[3]) {
-		u->nickname	= !valid_nick(entry[3]) ? 
+		u->nickname	= !valid_nick(entry[3]) ?
 			saprintf("_%s", entry[3]) :
 			xstrdup(entry[3]);
 	}
 
-	u->foreign	= entry[7] ? 
+	u->foreign	= entry[7] ?
 		saprintf(";%s", entry[7]) :
 		NULL;
-	
+
 	array_free_count(entry, count);
 	userlists_add(&(session->userlist), u);
 }
@@ -159,20 +159,20 @@ int userlist_read(session_t *session) {
 
 	if (!(f = G_DATA_INPUT_STREAM(config_open("%s-userlist", "r", session->uid))))
 		return -1;
-			
+
 	while ((buf = read_line(f))) {
 		if (buf[0] == '#' || (buf[0] == '/' && buf[1] == '/'))
 			continue;
-		
+
 		userlist_add_entry(session, buf);
 	}
 
 	query_emit(NULL, "userlist-refresh");	/* XXX, wywolywac tylko kiedy dodalismy przynajmniej 1 */
 
 	g_object_unref(f);
-		
+
 	return 0;
-} 
+}
 
 /**
  * userlist_write()
@@ -218,7 +218,7 @@ void userlist_write(session_t *session) {
 
 		line = array_join_count(entry, ";", 7);
 
-		ekg_fprintf(f, "%s%s\n", 
+		ekg_fprintf(f, "%s%s\n",
 			line,					/* look upper */
 			u->foreign ? u->foreign : "");		/* backwards compatibility */
 
@@ -311,7 +311,7 @@ void userlist_free(session_t *session) {
 ekg_resource_t *userlist_resource_add(userlist_t *u, const char *name, int prio) {
 	ekg_resource_t *r;
 
-	if (!u) 
+	if (!u)
 		return NULL;
 
 	r	= xmalloc(sizeof(ekg_resource_t));
@@ -432,7 +432,7 @@ int userlist_remove_u(userlist_t **userlist, userlist_t *u) {
  * (pod wzglêdem kolejno¶ci alfabetycznej) miejscu. g³upie to trochê, ale
  * przy listach jednokierunkowych nie za bardzo jest sens komplikowaæ sprawê
  * z przesuwaniem elementów listy.
- * 
+ *
  *  - u.
  *
  * 0/-1
@@ -462,7 +462,7 @@ userlist_t *userlist_find(session_t *session, const char *uid) {
 	return userlist_find_u(&(session->userlist), uid);
 }
 
-/* 
+/*
  * userlist_find_u()
  *
  * finds and returns pointer to userlist_t which includes given
@@ -554,7 +554,7 @@ int valid_uid(const char *uid) {
  * valid_plugin_uid()
  *
  * Check if @a uid can be handled by given @a plugin
- * 
+ *
  * @param plugin	- plugin to check for
  * @param uid		- uid to check for
  *
@@ -598,7 +598,7 @@ int valid_plugin_uid(plugin_t *plugin, const char *uid) {
 const char *get_uid_any(session_t *session, const char *text) {
 	const char *uid = get_uid(session, text);
 
-	if (!session) 
+	if (!session)
 		return uid;
 
 	if (!uid && !xstrcmp(text, "$"))
@@ -612,13 +612,13 @@ const char *get_uid_any(session_t *session, const char *text) {
  *
  * Return and checks if uid passed @a text is proper for @a session or it's nickname of smb on @a session userlist.
  *
- * @note It also work with userlist_find() and if @a text is nickname of smb in session userlist.. 
- *	 Than it return uid of this user. 
+ * @note It also work with userlist_find() and if @a text is nickname of smb in session userlist..
+ *	 Than it return uid of this user.
  *	 So you shouldn't call userlist_find() with get_uid() as param, cause it's senseless
  *	 userlist_find() don't check for "$" target, so you must do it by hand. Rest is the same.
  *	 If there are such user:
  *	 <code>userlist_find(s, get_uid(s, target))</code> return the same as <code>userlist_find(s, target)</code><br>
- *	 If not, even <code>userlist_find(s, get_uid(s, get_uid(s, get_uid(s, target))))</code> won't help 
+ *	 If not, even <code>userlist_find(s, get_uid(s, get_uid(s, get_uid(s, target))))</code> won't help
  *
  * @param session - session to check for, if NULL check all sessions (it doesn't look at userlists, in this mode)
  * @param text - uid to check for, if '$' than check current window.
@@ -652,11 +652,11 @@ const char *get_uid(session_t *session, const char *text) {
 	return NULL;
 }
 
-/* 
+/*
  * get_nickname()
  *
- * if given text is nickname it returns the same, if it is 
- * an uid it returns its nickname (if exists), if there is 
+ * if given text is nickname it returns the same, if it is
+ * an uid it returns its nickname (if exists), if there is
  * no nickname it returns uid, else if contacts doesnt exist
  * it returns text if it is a correct uid, else NULL
  */
@@ -713,9 +713,9 @@ const char *format_user(session_t *session, const char *uid) {
 		tmp = format_string(format_find("unknown_user"), uid, uid);
 	else
 		tmp = format_string(format_find("known_user"), u->nickname, uid);
-	
+
 	g_strlcpy(buf, tmp, sizeof(buf));
-	
+
 	xfree(tmp);
 
 	return buf;
@@ -782,7 +782,7 @@ int ignored_add(session_t *session, const char *uid, ignore_t level) {
 
 	if (ignored_check(session, uid))
 		return -1;
-	
+
 	if (!(u = userlist_find(session, uid)))
 		u = userlist_add(session, uid, NULL);
 
@@ -803,7 +803,7 @@ int ignored_add(session_t *session, const char *uid, ignore_t level) {
 	query_emit(NULL, "protocol-ignore", &tmps, &tmp, &oldlevel, &level);
 	xfree(tmps);
 	xfree(tmp);
-	
+
 	return 0;
 }
 
@@ -953,17 +953,17 @@ int ekg_group_remove(userlist_t *u, const char *group) {
 
 	if (!u || !group)
 		return -1;
-	
+
 	for (gl = u->groups; gl; gl = gl->next) {
 		struct ekg_group *g = gl;
 
 		if (!xstrcasecmp(g->name, group)) {
 			(void) ekg_groups_removei(&u->groups, g);
-			
+
 			return 0;
 		}
 	}
-	
+
 	return -1;
 }
 
@@ -998,7 +998,7 @@ int ekg_group_member(userlist_t *u, const char *group) {
  *
  * inicjuje listê grup u¿ytkownika na podstawie danego ci±gu znaków,
  * w którym kolejne nazwy grup s± rozdzielone przecinkiem.
- * 
+ *
  *  @param names - nazwy grup.
  *
  *  @return zwraca listê `struct group' je¶li siê uda³o, inaczej NULL.
@@ -1023,7 +1023,7 @@ struct ekg_group *group_init(const char *names) {
 	 *	array @ initing groups. We don't use strdup()
 	 */
 	xfree(groups);
-	
+
 	return gl;
 }
 

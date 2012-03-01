@@ -378,7 +378,7 @@ static void done_async_connect(GObject *obj, GAsyncResult *res, gpointer user_da
 	struct ekg_connection_starter *cs = user_data;
 	GSocketConnection *conn;
 	GError *err = NULL;
-	
+
 	conn = g_socket_client_connect_finish(sock, res, &err);
 	if (conn) {
 #ifdef HAVE_LIBGNUTLS
@@ -576,7 +576,7 @@ static gssize ekg_gnutls_pull(gnutls_transport_ptr_t connptr, gpointer buf, gsiz
 				MIN(avail_bytes, len),
 				NULL,
 				&err);
-		
+
 		if (ret == -1) {
 			debug_error("ekg_gnutls_pull() failed: %s\n", err->message);
 			g_error_free(err);
@@ -622,7 +622,7 @@ static void ekg_gnutls_handle_data(GDataInputStream *s, gpointer data) {
 					g_free);
 		else if (ret != GNUTLS_E_INTERRUPTED && ret != GNUTLS_E_AGAIN) {
 			GError *err;
-			
+
 			if (ret != 0)
 				err = g_error_new_literal(EKG_GNUTLS_ERROR,
 						ret, gnutls_strerror(ret));

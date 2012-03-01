@@ -68,8 +68,8 @@ static void Final(unsigned char digest[20], EKG2_SHA1_CTX* context, int usesha);
 
 #define SHA1Init(ctx)			Init(ctx, 1)
 #define SHA1Transform(state, buffer)	Transform(state, buffer, 1)
-#define SHA1Update(ctx, data, len)	Update(ctx, (unsigned char *) data, len, 1) 
-#define SHA1Final(digest, ctx)		Final(digest, ctx, 1) 
+#define SHA1Update(ctx, data, len)	Update(ctx, (unsigned char *) data, len, 1)
+#define SHA1Final(digest, ctx)		Final(digest, ctx, 1)
 
 #define MD5Init(ctx)			Init(ctx, 0)
 #define MD5Transform(state, buffer)	Transform(state, buffer, 0)
@@ -526,7 +526,7 @@ char *jabber_sha1_generic(char *buf, int len) {
 
 	for (i = 0; i < 20; i++)
 		sprintf(result + i * 2, "%.2x", digest[i]);
-	
+
 	return result;
 }
 

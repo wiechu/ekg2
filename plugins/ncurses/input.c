@@ -485,7 +485,7 @@ void ncurses_redraw_input(unsigned int ch) {
 				*s2 = '\0'; /* and split the original string using it */
 
 				ncurses_fstring_print(input, s, a, -1);
-		
+
 				if (!ncurses_simple_print(input, ncurses_current->prompt,
 						*a2, input->_maxx / 4)) {
 

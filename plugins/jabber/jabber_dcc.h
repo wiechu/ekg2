@@ -15,7 +15,7 @@ enum jabber_dcc_protocol_type_t {
 
 enum jabber_socks5_step_t {
 	SOCKS5_UNKNOWN = 0,
-	SOCKS5_CONNECT, 
+	SOCKS5_CONNECT,
 	SOCKS5_AUTH,
 	SOCKS5_DATA,
 };
@@ -50,7 +50,7 @@ typedef struct {
 		jabber_dcc_bytestream_t *bytestream;		/* for JABBER_DCC_PROTOCOL_BYTESTREAMS */
 		void *other;			/* XXX */
 	} priv_data;
-} jabber_dcc_t; 
+} jabber_dcc_t;
 
 
 dcc_t *jabber_dcc_find(const char *uin, const char *id, const char *sid);

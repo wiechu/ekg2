@@ -38,10 +38,10 @@ BINDING_FUNCTION(binding_next_only_history);
 
 int mouse_initialized = 0;
 
-/* 
+/*
  * show_mouse_pointer()
- * 
- * should show mouse pointer 
+ *
+ * should show mouse pointer
  */
 static void show_mouse_pointer(void) {
 #ifdef HAVE_LIBGPM
@@ -56,7 +56,7 @@ static void show_mouse_pointer(void) {
 
 /*
  * ncurses_mouse_timer()
- * 
+ *
  * every second we should do something
  * it's done here
  */
@@ -70,8 +70,8 @@ static TIMER(ncurses_mouse_timer)
 #ifdef HAVE_LIBGPM
 /*
  * ncurses_mouse_move_handler()
- * 
- * handler for move of mouse 
+ *
+ * handler for move of mouse
  */
 static void ncurses_mouse_move_handler(int x, int y)
 {
@@ -114,9 +114,9 @@ void ncurses_main_window_mouse_handler(int x, int y, int mouse_state)
 	}
 }
 
-/* 
+/*
  * ncurses_mouse_clicked_handler()
- * 
+ *
  * handler for clicked of mouse
  */
 void ncurses_mouse_clicked_handler(int x, int y, int mouse_flag)
@@ -166,12 +166,12 @@ void ncurses_mouse_clicked_handler(int x, int y, int mouse_flag)
 	for (w = windows; w; w = w->next) {
 		if (x > w->left && x <= w->left + w->width && y > w->top && y <= w->top + w->height) {
 			ncurses_window_t *n;
-			if (w->id == 0) { /* if we are reporting status window it means that we clicked 
+			if (w->id == 0) { /* if we are reporting status window it means that we clicked
 					 * on window_current and some other functions should be called */
 				ncurses_main_window_mouse_handler(x - w->left, y - w->top, mouse_flag);
 				break;
 			}
-			
+
 			n = w->priv_data;
 			/* debug("window id:%d y %d height %d\n", w->id, w->top, w->height); */
 			if (n->handle_mouse)
@@ -240,7 +240,7 @@ void ncurses_mouse_clicked_handler(int x, int y, int mouse_flag)
 #ifdef HAVE_LIBGPM
 /*
  * ncurses_gpm_watch_handler()
- * 
+ *
  * handler for gpm events etc
  */
 static WATCHER(ncurses_gpm_watch_handler)
@@ -296,7 +296,7 @@ static WATCHER(ncurses_gpm_watch_handler)
 			}
 			break;
 		default:
-	 debug("Event Type : %d at x=%d y=%d buttons=%d\n", event.type, event.x, event.y, event.buttons); 
+	 debug("Event Type : %d at x=%d y=%d buttons=%d\n", event.type, event.x, event.y, event.buttons);
 			break;
 	}
 	return 0;
@@ -325,7 +325,7 @@ static int ncurses_has_mouse_support(const char *term) {
 
 /*
  * ncurses_enable_mouse()
- * 
+ *
  * it should enable mouse support
  * checks if we are in console mode or in xterm
  */
@@ -334,7 +334,7 @@ void ncurses_enable_mouse(const char *env) {
 	Gpm_Connect conn;
 
 	conn.eventMask		= ~0;
-	conn.defaultMask	= 0;   
+	conn.defaultMask	= 0;
 	conn.minMod		= 0;
 	conn.maxMod		= 0;
 
@@ -342,7 +342,7 @@ void ncurses_enable_mouse(const char *env) {
 
 	if (gpm_fd >= 0) {
 		debug("Gpm at fd no %d\n", gpm_fd);
-		
+
 		watch_add(&ncurses_plugin, gpm_fd, WATCH_READ, ncurses_gpm_watch_handler, NULL);
 		gpm_visiblepointer = 1;
 		mouse_initialized = 1;
@@ -366,7 +366,7 @@ void ncurses_enable_mouse(const char *env) {
 
 /*
  * ncurses_disable_mouse()
- * 
+ *
  * it should disable mouse and destroy everything
  * connected with it's support
  */

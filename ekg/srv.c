@@ -136,7 +136,7 @@ char *ekg_inet_ntostr(int family,  void *buf)
 #ifdef HAVE_RESOLV_H
 /**
  * extract_rr()
- * 
+ *
  * parses RR header from dns reply. RR format according to rfc 1035.
  *
  * @param start - beginning of a buffer with dns response
@@ -318,7 +318,7 @@ int srv_resolver(gim_host **hostlist, const char *hostname, const int proto_port
 
 		/* PARSE QUERY */
 		if ((expanded_len = dn_expand(res_answer,
-				res_answer + res_query_len, 
+				res_answer + res_query_len,
 				res_answer + sizeof(HEADER),
 				expanded_dn,
 				sizeof(expanded_dn))) == -1)
@@ -349,7 +349,7 @@ int srv_resolver(gim_host **hostlist, const char *hostname, const int proto_port
 		for (i = 0; i < cnt[SAUTH]; i++)
 			if (skip_rr_ns (res_answer, res_answer + res_query_len, &rrs) != 0)
 				RET(8);
-		
+
 		/* PARSE ADDITIONAL SECTION */
 		for (i=0; i<cnt[SEXTRA]; i++)
 		{
@@ -420,7 +420,7 @@ static int basic_resolver_item (gim_host *srv)
 
 			if (aitmp->ai_family == AF_INET6)
 				tm = &(((struct sockaddr_in6 *) aitmp->ai_addr)->sin6_addr);
-			else if (aitmp->ai_family == AF_INET) 
+			else if (aitmp->ai_family == AF_INET)
 				tm = &(((struct sockaddr_in *) aitmp->ai_addr)->sin_addr);
 			else
 				continue;
@@ -434,12 +434,12 @@ static int basic_resolver_item (gim_host *srv)
 		}
 		freeaddrinfo(ai);
 	}
-#else 
+#else
 	if ((he4 = gethostbyname(srv->name))) {
 		int ip_cnt = array_add (&(srv->ip), xstrdup(inet_ntoa(*(struct in_addr *) he4->h_addr)));
 		srv->ai_family = xrealloc (srv->ai_family, ip_cnt*sizeof(srv->ai_family));
 		srv->ai_family[ip_cnt-1] = AF_INET;
-	} 
+	}
 #endif
 	return 0;
 }
@@ -492,10 +492,10 @@ int basic_resolver(gim_host **hostlist, const char *hostname, int port)
 		for (aitmp = ai; aitmp; aitmp = aitmp->ai_next) {
 			int ip_cnt;
 			void *tm;
-			
+
 			if (aitmp->ai_family == AF_INET6)
 				tm = &(((struct sockaddr_in6 *) aitmp->ai_addr)->sin6_addr);
-			else if (aitmp->ai_family == AF_INET) 
+			else if (aitmp->ai_family == AF_INET)
 				tm = &(((struct sockaddr_in *) aitmp->ai_addr)->sin_addr);
 			else
 				continue;
@@ -533,7 +533,7 @@ int basic_resolver(gim_host **hostlist, const char *hostname, int port)
 		LIST_ADD_SORTED2(hostlist, srv, gim_host_cmp);
 		freeaddrinfo(ai);
 	}
-#else 
+#else
 	if ((he4 = gethostbyname(hostname))) {
 		gim_host *srv = xmalloc(sizeof(gim_host));
 		int ip_cnt = array_add (&(srv->ip), xstrdup(inet_ntoa(*(struct in_addr *) he4->h_addr)));
@@ -543,7 +543,7 @@ int basic_resolver(gim_host **hostlist, const char *hostname, int port)
 		srv->port = port;
 		strncpy(srv->name, hostname, DNS_NS_MAXDNAME);
 		LIST_ADD_SORTED2(hostlist, srv, gim_host_cmp);
-	} 
+	}
 #endif
 	return 0;
 }

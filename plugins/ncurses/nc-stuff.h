@@ -78,7 +78,7 @@ int ncurses_window_new(window_t *w);
 #define contacts ncurses_contacts
 #define history ncurses_history
 #define history_index ncurses_history_index
-	
+
 #define HISTORY_MAX 1000
 extern CHAR_T *ncurses_history[HISTORY_MAX];
 extern int ncurses_history_index;

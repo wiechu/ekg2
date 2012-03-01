@@ -39,13 +39,13 @@ void config_upgrade() {
 
 	switch (config_version+1) { /* versions MUST be sorted, break MUST NOT be used */
 		case 0: /* jabber SASL behavior change */
-			print("config_upgrade_major", 
+			print("config_upgrade_major",
 				_("We've started using XMPP SASL AUTH by default, so if you're unable to connect to your favorite jabber server,"	\
 				"please send us debug info and try to set (within appropriate session):\n"
 				"/session disable_sasl 2"), "2007-03-24");
 
 		case 1: /* display_ack values change */
-			print("config_upgrade_minor", 
+			print("config_upgrade_minor",
 				_("Variable display_ack's values have been changed. "	\
 				"An update is done to your settings, but please check the new values."), "2007-03-24");
 
@@ -58,7 +58,7 @@ void config_upgrade() {
 			config_changed = 1;
 
 		case 2: /* allow_autoresponder session var */
-			print("config_upgrade_minor", 
+			print("config_upgrade_minor",
 				_("'allow_autoresponder' session variables have been replaced by 'allowed_sessions' plugin variable. "	\
 				"The same way future plugins will be enabled."), "2007-04-06");
 
@@ -67,7 +67,7 @@ void config_upgrade() {
 				_("'logs:away_log' plugin variable have been replaced by 'away_log' irc session variable. " \
 				"Also away_log_* formats have been changed to irc_awaylog_* formats. Enjoy"), "2007-07-06");
 		case 4:
-#if 0		
+#if 0
 			print("config_upgrade_major",
 				_("Jabber UIDs prefix has been changed from 'jid:' to 'xmpp:'. Your session UIDs were changed " \
 				"automagically, and in other areas old prefix will be still supported for some time."), "2007-10-16");

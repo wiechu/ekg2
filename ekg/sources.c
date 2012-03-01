@@ -77,7 +77,7 @@ static ekg_source_t source_new(plugin_t *plugin, const gchar *name_format, gpoin
 	s->name = args ? g_strdup_vprintf(name_format, args) : g_strdup(name_format);
 	s->priv_data = data;
 	s->destr = destr;
-	
+
 	return s;
 }
 
@@ -290,7 +290,7 @@ static void child_wrapper(GPid pid, gint status, gpointer data) {
 ekg_child_t ekg_child_add(plugin_t *plugin, const gchar *name_format, GPid pid, GChildWatchFunc handler, gpointer data, GDestroyNotify destr, ...) {
 	va_list args;
 	struct ekg_source *c;
-	
+
 	va_start(args, destr);
 	c = source_new(plugin, name_format, data, destr, args);
 	va_end(args);
@@ -406,7 +406,7 @@ ekg_timer_t ekg_timer_add(plugin_t *plugin, const gchar *name_format, guint64 in
 	va_list args;
 	struct ekg_source *t;
 	guint id;
-	
+
 	va_start(args, destr);
 	t = source_new(plugin, name_format, data, destr, args);
 	va_end(args);
@@ -656,7 +656,7 @@ static void timer_print(gpointer data, gpointer user_data) {
 			hours = sec / 3600;
 			sec -= hours * 3600;
 		}
-	
+
 		if (sec > 60) {
 			minutes = sec / 60;
 			sec -= minutes * 60;
@@ -776,7 +776,7 @@ COMMAND(cmd_at)
 						ret = sscanf(foo, "%2d%2d%2d", &lt->tm_mday, &lt->tm_hour, &lt->tm_min);
 						if (ret != 3)
 							wrong = 1;
-						break;	
+						break;
 					case 4:
 						ret = sscanf(foo, "%2d%2d", &lt->tm_hour, &lt->tm_min);
 						if (ret != 2)
@@ -829,7 +829,7 @@ COMMAND(cmd_at)
 					}
 
 					freq += _period;
-					
+
 					if (!*freq_str)
 						break;
 				}
@@ -866,7 +866,7 @@ COMMAND(cmd_at)
 				guint d = t->details.as_timer.interval;
 				t->details.as_timer.interval = freq * 1000;
 				d -= t->details.as_timer.interval;
-				t->details.as_timer.lasttime.tv_sec += (d / 1000); 
+				t->details.as_timer.lasttime.tv_sec += (d / 1000);
 				t->details.as_timer.lasttime.tv_usec += ((d % 1000) * 1000);
 			}
 			if (!in_autoexec)
@@ -890,13 +890,13 @@ COMMAND(cmd_at)
 			del_all = 1;
 		ret = !ekg_source_remove_by_handler(timer_handle_at,
 				del_all ? NULL : params[1]);
-		
+
 		if (!ret) {
 			if (del_all)
 				printq("at_deleted_all");
 			else
 				printq("at_deleted", params[1]);
-			
+
 			config_changed = 1;
 		} else {
 			if (del_all)
@@ -946,7 +946,7 @@ TIMER(timer_handle_command)
 		xfree(data);
 		return 0;
 	}
-	
+
 	command_exec(NULL, NULL, (char *) data, 0);
 	return 0;
 }
@@ -1040,7 +1040,7 @@ COMMAND(cmd_timer)
 			}
 
 			period += _period;
-			
+
 			if (!*p)
 				break;
 		}
@@ -1086,7 +1086,7 @@ COMMAND(cmd_timer)
 				printq("timer_empty");
 			else {
 				printq("timer_noexist", params[1]);
-				return -1;	
+				return -1;
 			}
 		}
 
@@ -1116,7 +1116,7 @@ COMMAND(cmd_timer)
 		}
 
 		return 0;
-	}	
+	}
 
 	printq("invalid_params", name, params[0]);
 
@@ -1177,7 +1177,7 @@ void timers_write(GOutputStream *f) {
  */
 watch_t *watch_find(plugin_t *plugin, int fd, watch_type_t type) {
 	list_t l;
-	
+
 	for (l = watches; l; l = l->next) {
 		watch_t *w = l->data;
 
@@ -1308,7 +1308,7 @@ static int watch_handle_write(watch_t *w) {
 #endif
 		return -1;
 	}
-	
+
 	if (res > len) {
 		/* use debug_fatal() */
 		/* debug_fatal() should do:
@@ -1319,7 +1319,7 @@ static int watch_handle_write(watch_t *w) {
 		 *
 		 * XXX, implement and use it. It should be used as ASSERT()
 		 */
-		
+
 		debug_error("watch_write(): handler returned bad value, 0x%x vs 0x%x\n", res, len);
 		res = len;
 	} else if (res < 0) {
@@ -1374,12 +1374,12 @@ int watch_write(watch_t *w, const char *format, ...) {			/* XXX, refactory: watc
 	va_start(ap, format);
 	text = vsaprintf(format, ap);
 	va_end(ap);
-	
-	textlen = xstrlen(text); 
+
+	textlen = xstrlen(text);
 
 	debug_io("[watch]_send: %s\n", text ? textlen ? text: "[0LENGTH]":"[FAILED]");
 
-	if (!text) 
+	if (!text)
 		return -1;
 
 	res = watch_write_data(w, text, textlen);
@@ -1396,7 +1396,7 @@ int watch_write(watch_t *w, const char *format, ...) {			/* XXX, refactory: watc
  * Mark watch with w->removed = -1, to indicate that watch is in use. And it shouldn't be
  * executed again. [If watch can or even must be executed twice from ekg_loop() than you must
  * change w->removed by yourself.]<br>
- * 
+ *
  * If handler of watch return -1 or watch was removed inside function [by watch_remove() or watch_free()]. Than it'll be removed.<br>
  * ELSE Update w->started field to current time.
  *
@@ -1412,7 +1412,7 @@ static int watch_handle(watch_t *w) {
 	g_assert(w);
 
 	handler = w->handler;
-		
+
 	res = handler(0, w->fd, w->type, w->data);
 
 	w->started = time(NULL);
@@ -1511,7 +1511,7 @@ watch_t *watch_add(plugin_t *plugin, int fd, watch_type_t type, watcher_handler_
 		w->type = WATCH_WRITE;
 		w->buf = string_init(NULL);
 	}
-	
+
 	w->started = time(NULL);
 	w->handler = handler;
 	w->data    = data;

@@ -643,7 +643,7 @@ static int icq_meta_info_reply(session_t *s, unsigned char *buf, int len, privat
 			/* search */
 			case SRV_LAST_USER_FOUND:	handler = icq_snac_extension_userfound_last; break;
 			case SRV_USER_FOUND:		handler = icq_snac_extension_userfound; break;
-		
+
 			case META_SET_FULLINFO_ACK:	handler = icq_snac_extension_fullinfo_ack; break;
 
 			case SRV_RANDOM_FOUND:		handler = NULL; break;	/* XXX, SRV_RANDOM_FOUND */

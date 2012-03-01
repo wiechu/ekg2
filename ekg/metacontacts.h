@@ -19,7 +19,7 @@
 
 #ifndef __EKG_METACONTACTS_H
 #define __EKG_METACONTACTS_H
-#include "dynstuff.h" 
+#include "dynstuff.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,7 +40,7 @@ typedef struct metacontact {
 	metacontact_item_t	*metacontact_items;
 } metacontact_t;
 
-#ifndef EKG2_WIN32_NOFUNCTION 
+#ifndef EKG2_WIN32_NOFUNCTION
 extern metacontact_t *metacontacts;
 
 metacontact_t *metacontact_add(const char *name);

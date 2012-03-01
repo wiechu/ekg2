@@ -64,14 +64,14 @@ void *list_add_sorted(list_t *list, void *data, int (*comparision)(void *, void 
 			tmp->next = new_;
 		} else {
 			list_t prev = NULL;
-			
+
 			while (comparision(new_->data, tmp->data) > 0) {
 				prev = tmp;
 				tmp = tmp->next;
 				if (!tmp)
 					break;
 			}
-			
+
 			if (!prev) {
 				new_->next = *list;
 				*list = new_;
@@ -150,14 +150,14 @@ void *list_add_sorted3(list_t *list, list_t new_, int (*comparision)(void *, voi
 			tmp->next = new_;
 		} else {
 			list_t prev = NULL;
-			
+
 			while (comparision(new_, tmp) > 0) {
 				prev = tmp;
 				tmp = tmp->next;
 				if (!tmp)
 					break;
 			}
-			
+
 			if (!prev) {
 				new_->next = *list;
 				*list = new_;
@@ -247,7 +247,7 @@ void list_cleanup(list_t *list) {
 			tmp = tmp->next;		/* move to next item */
 
 			if (!last)
-				*list = tmp;		/* repoint list to next item */	
+				*list = tmp;		/* repoint list to next item */
 			else
 				last->next = tmp;	/* repoint last->next to next item */
 
@@ -480,7 +480,7 @@ int list_count(list_t list)
 
 int list_destroy2(list_t list, void (*func)(void *)) {
 	list_t tmp;
-	
+
 	while (list) {
 		if (func && list->data)
 			func(list->data);
@@ -497,7 +497,7 @@ int list_destroy2(list_t list, void (*func)(void *)) {
 
 int list_destroy3(list_t list, void (*func)(void *)) {
 	list_t tmp;
-	
+
 	while (list) {
 		if (func)
 			func(list);
@@ -619,7 +619,7 @@ int string_append_format(string_t s, const char *format, ...) {
  * string_append_raw()
  *
  * Append to string_t @a s, @a count bytes from memory pointed by @a str<br>
- * 
+ *
  * @sa string_append_n() - If you want to append NUL terminated (C-like) String
  * @todo XXX Protect from negative count (and less than -1) ?
  */
@@ -648,7 +648,7 @@ int string_append(string_t s, const char *str)
  * string_insert_n()
  *
  * wstawia tekst w podane miejsce bufora.
- *  
+ *
  *  - s - ci±g znaków,
  *  - index - miejsce, gdzie mamy wpisaæ (liczone od 0),
  *  - str - tekst do dopisania,
@@ -674,7 +674,7 @@ void string_insert_n(string_t s, int index, const char *str, int count)
  *
  * @param s	- string_t
  * @param index - pos
- * @param str	- text 
+ * @param str	- text
  *
  * @sa string_insert_n()
  */
@@ -780,7 +780,7 @@ const char *ekg_itoa(long int i)
 
 	if (index > 9)
 		index = 0;
-	
+
 	snprintf(tmp, 16, "%ld", i);
 
 	return tmp;
@@ -818,7 +818,7 @@ char **array_make(const char *string, const char *sep, int max, int trim, int qu
 
 		if (max && items >= max - 1)
 			last = 1;
-		
+
 		if (trim) {
 			while (*p && xstrchr(sep, *p))
 				p++;
@@ -867,12 +867,12 @@ char **array_make(const char *string, const char *sep, int max, int trim, int qu
 					}
 				} else if (*q == sep) {
 					break;
-				} else 
+				} else
 					*r = *q;
 			}
 
 			*r = 0;
-			
+
 			p = (*q) ? q + 1 : q;
 
 		} else {
@@ -881,7 +881,7 @@ way2:
 			token = xstrndup(p, len);
 			p = q;
 		}
-		
+
 		result = xrealloc(result, (items + 2) * sizeof(char*));
 		result[items] = token;
 		result[++items] = NULL;
@@ -899,7 +899,7 @@ failure:
 	return result;
 }
 
-/* 
+/*
  * array_add()
  *
  * dodaje element do tablicy.
@@ -917,7 +917,7 @@ int array_add(char ***array, char *string)
 
 /*
  * array_add_check()
- * 
+ *
  * dodaje element do tablicy, uprzednio sprawdzaj±c
  * czy taki ju¿ w niej nie istnieje
  *
@@ -927,7 +927,7 @@ int array_add(char ***array, char *string)
  *
  * zwraca zero w przypadku, je¶li ci±g ju¿ jest na li¶cie
  * lub aktualn± liczbê ci±gów na li¶cie, po dodaniu
- */ 
+ */
 int array_add_check(char ***array, char *string, int casesensitive)
 {
 	if (!array_item_contains(*array, string, casesensitive))
@@ -946,8 +946,8 @@ char *array_join_count(char **array, const char *sep, int count) {
 		for (i = 0; i < count; i++) {
 			if (array[i])
 				string_append(s, array[i]);
-			
-			if (i != count-1)	
+
+			if (i != count-1)
 				string_append(s, sep);
 		}
 	}
@@ -1112,7 +1112,7 @@ const char *cssfind(const char *haystack, const char *needle, const char sep, in
  * - 0x0D (\r) -> \r
  * - pozosta³e -> \xXX (szesnastkowa reprezentacja)
  *
- * je¿eli który¶ z wymienionych wy¿ej znaków (np. \a) nie wystêpuje 
+ * je¿eli który¶ z wymienionych wy¿ej znaków (np. \a) nie wystêpuje
  * w stringu to zostanie przepisany tak jak jest, bez eskejpowania.
  *
  * zwraca nowego, zaalokowanego stringa.
@@ -1174,7 +1174,7 @@ char *unescape(const char *src) {
 		char ch = *src;
 
 		if (state == 0) {		/* normalny tekst */
-			/* sprawdzamy czy mamy cos po '\\', bo jezeli to ostatni 
+			/* sprawdzamy czy mamy cos po '\\', bo jezeli to ostatni
 			 * znak w stringu, to nie zostanie nigdy dodany. */
 			if (ch == '\\' && *(src + 1)) {
 				state = 1;

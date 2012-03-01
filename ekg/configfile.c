@@ -51,10 +51,10 @@ static char *strip_quotes(char *line) {
 	return buf;
 }
 
-/* 
+/*
  * config_postread()
  *
- * initialized after config is read 
+ * initialized after config is read
  */
 void config_postread()
 {
@@ -81,8 +81,8 @@ void config_postread()
 				tmp = strip_spaces(tmp);
 				tmp = strip_quotes(tmp);
 
-				window_new(tmp, s, i + 1);	
-	
+				window_new(tmp, s, i + 1);
+
 				xfree(session_name);
 			} else {
 				window_new(NULL, NULL, i + 1);
@@ -116,7 +116,7 @@ static GCancellable *config_cancellable = NULL;
  *
  * @param f - writable GOutputStream.
  * @param format - the format string.
- * 
+ *
  * @return TRUE on success, FALSE otherwise.
  *
  * @note The channel must be open for writing in blocking mode.
@@ -133,7 +133,7 @@ gboolean ekg_fprintf(GOutputStream *f, const gchar *format, ...) {
 	va_start(args, format);
 	g_string_vprintf(buf, format, args);
 	va_end(args);
-	
+
 	out = g_output_stream_write(f, buf->str, buf->len, NULL, &err);
 
 	if (out < buf->len) {
@@ -248,7 +248,7 @@ static GObject *config_open_real(const gchar *path, const gchar *mode) {
 			break;
 		case 'w':
 			stream = G_OBJECT(g_data_output_stream_new(G_OUTPUT_STREAM(instream)));
-			
+
 			/* we're always writing config in utf8 */
 			if (!ekg_fprintf(G_OUTPUT_STREAM(stream), "%s%s\n", modeline_prefix, "UTF-8")) {
 				g_object_unref(stream);
@@ -272,7 +272,7 @@ static const char *prepare_old_path(const char *filename) {
 		snprintf(path, sizeof(path), "%s", old_config_dir);
 	else
 		snprintf(path, sizeof(path), "%s/%s", old_config_dir, filename);
-	
+
 	return path;
 }
 
@@ -434,7 +434,7 @@ int config_read(const gchar *plugin_name)
 		query_emit(NULL, "set-vars-default");
 		query_emit(NULL, "binding-default");
 		debug("  flushed previous config\n");
-	} 
+	}
 
 	/* then global and plugins variables */
 	if (plugin_name)
@@ -470,7 +470,7 @@ int config_read(const gchar *plugin_name)
 
 		} else if (!xstrcasecmp(buf, ("plugin"))) {
 			char **p = array_make(foo, (" \t"), 3, 1, 0);
-			if (g_strv_length(p) == 2) 
+			if (g_strv_length(p) == 2)
 				plugin_load(p[0], atoi(p[1]), 1);
 			g_strfreev(p);
 		} else if (!xstrcasecmp(buf, ("bind"))) {
@@ -538,9 +538,9 @@ int config_read(const gchar *plugin_name)
 					period = atoi(p[1]) - time(NULL);
 					period_str = saprintf("%ld", (long) period);
 				}
-		
+
 				if (period > 0) {
-					ret = command_exec_format(NULL, NULL, 1, 
+					ret = command_exec_format(NULL, NULL, 1,
 						("/timer --add %s %s %s"), (name) ? name : "", period_str, p[2]);
 				}
 
@@ -557,7 +557,7 @@ int config_read(const gchar *plugin_name)
 		if (ret && (err_count++ > 100))
 			break;
 	}
-	
+
 	g_object_unref(f);
 
 	if (!plugin_name) {
@@ -565,11 +565,11 @@ int config_read(const gchar *plugin_name)
 
 		for (pl = plugins; pl; pl = pl->next) {
 			const plugin_t *p = pl->data;
-			
+
 			config_read(p->name);
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -601,7 +601,7 @@ static void config_write_variable(GOutputStream *f, variable_t *v)
 /*
  * config_write_plugins()
  *
- * function saving plugins 
+ * function saving plugins
  *
  * - f - file, that we are saving to
  */
@@ -694,7 +694,7 @@ void config_write()
 	/* first of all we are saving plugins */
 	if (!(f = G_OUTPUT_STREAM(config_open("plugins", "w"))))
 		return;
-	
+
 	config_write_plugins(f);
 
 	/* now we are saving global variables and settings
@@ -718,7 +718,7 @@ void config_write()
 			if (p == v->plugin) {
 				config_write_variable(f, v);
 			}
-		}	
+		}
 	}
 }
 
@@ -726,7 +726,7 @@ void config_write()
  * config_write_partly()
  *
  * zapisuje podane zmienne, nie zmieniaj±c reszty konfiguracji.
- *  
+ *
  *  - plugin - zmienne w vars, maja byc z tego pluginu, lub NULL gdy to sa zmienne z core.
  *  - vars - tablica z nazwami zmiennych do zapisania.
  */
@@ -768,9 +768,9 @@ int config_write_partly(plugin_t *plugin, const char **vars)
 		g_object_unref(fi);
 		return -1;
 	}
-	
+
 	wrote = xcalloc(g_strv_length((char **) vars) + 1, sizeof(int));
-	
+
 	while ((line = read_line(fi))) {
 		char *tmp;
 
@@ -793,13 +793,13 @@ int config_write_partly(plugin_t *plugin, const char **vars)
 
 		if (!xstrncasecmp(tmp, ("set "), 4))
 			tmp += 4;
-		
+
 		for (i = 0; vars[i]; i++) {
 			int len;
 
 			if (wrote[i])
 				continue;
-			
+
 			len = xstrlen(vars[i]);
 
 			if (xstrlen(tmp) < len + 1)
@@ -807,11 +807,11 @@ int config_write_partly(plugin_t *plugin, const char **vars)
 
 			if (xstrncasecmp(tmp, vars[i], len) || tmp[len] != ' ')
 				continue;
-			
+
 			config_write_variable(fo, variable_find(vars[i]));
 
 			wrote[i] = 1;
-			
+
 			line = NULL;
 			break;
 		}
@@ -829,9 +829,9 @@ pass:
 	}
 
 	xfree(wrote);
-	
+
 	g_object_unref(fi);
-	
+
 	return 0;
 }
 

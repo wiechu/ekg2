@@ -20,7 +20,7 @@
 #ifndef __EKG_THEMES_H
 #define __EKG_THEMES_H
 
-#include "gettext.h" 
+#include "gettext.h"
 #define _(a) gettext(a)
 #define N_(a) gettext_noop(a)
 
@@ -45,7 +45,7 @@ typedef struct {
 	gchar		*priv_data;		/* can be helpfull */
 } fstring_t;
 
-#define print(x...)		print_window_w(NULL, EKG_WINACT_JUNK, x) 
+#define print(x...)		print_window_w(NULL, EKG_WINACT_JUNK, x)
 #define print_status(x...)	print_window_w(window_status, EKG_WINACT_JUNK, x)
 
 #ifndef EKG2_WIN32_NOFUNCTION

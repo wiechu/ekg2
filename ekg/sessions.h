@@ -149,7 +149,7 @@ typedef struct ekg_session {
 	int		global_vars_count;
 	char		**values;
 	session_param_t	*local_vars;
-	
+
 /* new auto-away */
 	status_t	last_status;		/**< user's status before going into autoaway */
 	char		*last_descr;		/**< user's description before going into autoaway */
