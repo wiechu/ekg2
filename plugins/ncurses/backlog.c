@@ -193,7 +193,7 @@ static int backlog_split(window_t *w, backlog_line_t *b, gboolean show, int y) {
 		int len, last_space = 0;
 		int width = n->width - prompt_width;
 
-		if ((rows_count==0) || !(config_display_mode==1 && prompt_width==0))
+		if ((rows_count==0) || !(config_display_indent==1 && prompt_width==0))
 			width -= ts_width;
 
 		len = wrap_line(w, width, str, attr, &last_space);
@@ -201,9 +201,9 @@ static int backlog_split(window_t *w, backlog_line_t *b, gboolean show, int y) {
 		if (show && (0 <= y && y < n->height)) {
 			wmove(n->window, n->y0 + y, n->x0);
 
-			if (ts_width && ((config_display_mode==0) || (rows_count==0))) {
+			if (ts_width && ((config_display_indent==0) || (rows_count==0))) {
 				ncurses_fstring_print_fast(n->window, ts_str, ts_attr, -1);
-			} else if (config_display_mode==2 || prompt_width)
+			} else if (config_display_indent==2 || prompt_width)
 				wmove(n->window, n->y0 + y, n->x0 + ts_width);
 
 			if (prompt_width)	/* print prompt */

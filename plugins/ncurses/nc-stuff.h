@@ -91,7 +91,7 @@ void changed_backlog_size(const char *var);
 extern int config_backlog_size;
 extern int config_backlog_scroll_half_page;
 
-extern int config_display_mode;
+extern int config_display_indent;
 extern int config_display_transparent;
 extern int config_enter_scrolls;
 extern int config_margin_size;
