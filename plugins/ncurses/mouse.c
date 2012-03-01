@@ -107,10 +107,11 @@ void ncurses_lastlog_mouse_handler(int x, int y, int mouse_state) {
  */
 void ncurses_main_window_mouse_handler(int x, int y, int mouse_state)
 {
+	int scroll = config_mouse_scroll_lines && (config_mouse_scroll_lines < window_current->height) ? config_mouse_scroll_lines : window_current->height - 1;
 	if (mouse_state == EKG_SCROLLED_UP) {
-		binding_helper_scroll(window_current, -5);
+		binding_helper_scroll(window_current, -scroll);
 	} else if (mouse_state == EKG_SCROLLED_DOWN) {
-		binding_helper_scroll(window_current, +5);
+		binding_helper_scroll(window_current, +scroll);
 	}
 }
 

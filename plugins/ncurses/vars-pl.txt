@@ -218,6 +218,12 @@ mark_on_window_change
 	
 	określa czy wstawiać marker do okna przy przejściu z niego do innego okna
 
+mouse_scroll_lines
+	typ: int
+	domyślna wartość: 5
+	
+	liczba lini przewijanych kółkiem myszy. 0 przwija o stronę
+
 statusbar_size
 	typ: liczba
 	domyślna wartość: 1

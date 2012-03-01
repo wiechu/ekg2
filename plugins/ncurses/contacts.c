@@ -464,12 +464,14 @@ void ncurses_contacts_mouse_handler(int x, int y, int mouse_state)
 {
 	backlog_line_t *bl;
 	window_t *w = window_exist(WINDOW_CONTACTS_ID);
+	int scroll = config_mouse_scroll_lines && (config_mouse_scroll_lines < w->height) ? config_mouse_scroll_lines : w->height - 1;
+
 
 	if (mouse_state == EKG_SCROLLED_UP) {
-		binding_helper_scroll(w, -5);
+		binding_helper_scroll(w, -scroll);
 		return;
 	} else if (mouse_state == EKG_SCROLLED_DOWN) {
-		binding_helper_scroll(w, 5);
+		binding_helper_scroll(w, scroll);
 		return;
 	}
 
