@@ -3486,7 +3486,13 @@ static COMMAND(cmd_plugin) {
 			/* XXX, display info */
 			return -1;
 		}
-		return plugin_unload(pl);
+		if ((ret = plugin_unload(pl)))
+			return ret;
+
+		// XXX ??? -> queries_reconnect();
+		changed_theme(NULL);
+
+		return 0;
 	}
 
 	if (params[1] && (pl = plugin_find(params[0]))) {

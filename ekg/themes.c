@@ -1084,7 +1084,7 @@ void print_warning(const char *target, session_t *session, const char *theme, ..
  *		Just be careful. If you are not sure call:<br>
  *		<code>print_window_c(window_find_ptr(w), separate, theme, ...)</code>
  *		And in worst case text will be displayed in (__status / or __current) window instead of a usual one.. But ekg2 won't crash.
- * 
+ *
  *		@param	w - window to display,<br>
  *			if NULL than __status or __current will be used. it depends on: config_default_status_window and config_display_crap variables.
  */
@@ -1208,87 +1208,54 @@ static int format_remove(const char *name) {
 /*
  * theme_open() // funkcja wewnêtrzna
  *
- * próbuje otworzyæ plik, je¶li jeszcze nie jest otwarty.
+ * próbuje otworzyæ plik theme
  *
- *  - prevfd - deskryptor z poprzedniego wywo³ania,
  *  - prefix - ¶cie¿ka,
  *  - filename - nazwa pliku.
+ *
+ * zwraca nazwê pliku
  */
-static FILE *theme_open(const char *prefix, const char *filename)
+gchar *theme_open(const char *prefix, const char *filename)
 {
 	char buf[PATH_MAX];
-	int save_errno;
-	FILE *f;
 
 	if (prefix)
 		snprintf(buf, sizeof(buf), "%s/%s", prefix, filename);
 	else
 		snprintf(buf, sizeof(buf), "%s", filename);
 
-	if ((f = fopen(buf, "r")))
-		return f;
+	if (g_file_test(buf, G_FILE_TEST_IS_REGULAR))
+		return g_strdup(buf);
 
 	if (prefix)
 		snprintf(buf, sizeof(buf), "%s/%s.theme", prefix, filename);
 	else
 		snprintf(buf, sizeof(buf), "%s.theme", filename);
 
-	save_errno = errno;
-
-	if ((f = fopen(buf, "r")))
-		return f;
-
-	if (errno == ENOENT)
-		errno = save_errno;
+	if (g_file_test(buf, G_FILE_TEST_IS_REGULAR))
+		return g_strdup(buf);
 
 	return NULL;
 }
 
 /*
- * theme_read()
+ * theme_read_real()
  *
  * wczytuje opis wygl±du z podanego pliku.
  *
  *  - filename - nazwa pliku z opisem,
  *  - replace - czy zastêpowaæ istniej±ce wpisy.
  *
- * zwraca 0 je¶li wszystko w porz±dku, -1 w przypadku b³êdu.
+ * zwraca TRUE je¶li wszystko w porz±dku, FALSE w przypadku b³êdu.
  */
-int theme_read(const char *filename, int replace) {
+gboolean theme_read_real(const char *filename, int replace) {
 	char *buf;
 	FILE *f = NULL;
 
-	if (!xstrlen(filename)) {
-		/* XXX, DEFAULT_THEME <-> default.theme ? */
-		filename = prepare_path("default.theme", 0);
-		if (!filename || !(f = fopen(filename, "r")))
-			return -1;
-	} else {
-		char *fn = xstrdup(filename), *tmp;
+	if (!(f = fopen(filename, "r")))
+		return FALSE;
 
-		if ((tmp = xstrchr(fn, ',')))
-			*tmp = 0;
-
-		errno = ENOENT;
-		f = NULL;
-
-		if (!xstrchr(fn, '/')) {
-			if (!f) f = theme_open(prepare_path("", 0), fn);
-			if (!f) f = theme_open(prepare_path("themes", 0), fn);
-			if (!f) f = theme_open(DATADIR "/themes", fn);
-		} else
-			f = theme_open(NULL, fn);
-
-		xfree(fn);
-
-		if (!f)
-			return -1;
-	}
-	if (!in_autoexec) {
-		theme_free();
-		theme_init();
-	}
-	/*	ui_event("theme_init"); */
+	debug_function("theme_read_real() filename=%s\n", filename);
 
 	while ((buf = read_file(f, 0))) {
 		char *value;
@@ -1315,6 +1282,72 @@ int theme_read(const char *filename, int replace) {
 	}
 
 	fclose(f);
+
+	return TRUE;
+}
+
+/*
+ * theme_read()
+ *
+ * wczytuje opis wygl±du z podanego pliku.
+ *
+ *  - filename - nazwa pliku z opisem,
+ *  - replace - czy zastêpowaæ istniej±ce wpisy.
+ *
+ * zwraca 0 je¶li wszystko w porz±dku, -1 w przypadku b³êdu.
+ */
+int theme_read(const char *filename, int replace) {
+	char *fn;
+
+	if (!xstrlen(filename)) {
+		/* XXX, DEFAULT_THEME <-> default.theme ? */
+		filename = prepare_path("default.theme", 0);
+		if (!g_file_test(filename, G_FILE_TEST_IS_REGULAR))
+			return -1;
+		fn = xstrdup(filename);
+	} else {
+
+		if (!g_path_is_absolute(filename)) {
+			fn = theme_open(prepare_path("", 0), filename);
+			if (!fn) fn = theme_open(prepare_path("themes", 0), filename);
+			if (!fn) fn = theme_open(DATADIR "/themes", filename);
+		} else
+			fn = theme_open(NULL, filename);
+
+		if (!fn)
+			return -1;
+	}
+	if (!in_autoexec) {
+		theme_free();
+		theme_init();
+	}
+	/*	ui_event("theme_init"); */
+
+	if (theme_read_real(fn, replace)) {
+		char *fn0, *ext, *pfn;
+		int len = xstrlen(fn);
+		GSList *pl;
+
+		if ( (len > 6) && (!xstrcmp(fn+len-6, ".theme")) ) {
+			fn0 = xstrndup(fn, len-6);
+			ext = xstrdup(".theme");
+		} else {
+			fn0 = g_strdup(fn);
+			ext = g_strdup("");
+		}
+
+		for (pl = plugins; pl; pl = pl->next) {
+			plugin_t *p = pl->data;
+			pfn = saprintf("%s-%s%s", fn0, p->name, ext);
+			if (g_file_test(pfn, G_FILE_TEST_IS_REGULAR))
+				theme_read_real(pfn, replace);
+			g_free(pfn);
+		}
+		g_free(fn0);
+		g_free(ext);
+	}
+
+	xfree(fn);
 
 	theme_cache_reset();
 
