@@ -111,7 +111,7 @@ static const IrcCommand irccommands[] =
 	{ 1,	1,	NULL,	"RPL_WELCOME",		&irc_c_init,	0,	0 },
 	{ 1,	2,	NULL,	"RPL_YOURHOST",		&irc_c_error,	IRC_ERR_NEW,	0 },
 	{ 1,	3,	NULL,	"RPL_CREATED",		&irc_c_error,	IRC_ERR_NEW,	0 },
-	{ 1,	4,	NULL,	"RPL_MYINFO",		&irc_c_init,	0,	0 },
+	{ 1,	4,	NULL,	"RPL_MYINFO",		&irc_c_init,	0,	5 },
 	{ 1,	5,	NULL,	"RPL_BOUNCE",		&irc_c_init,	0,	0 },
 
 /*	{ 1,	200,	NULL,	"RPL_TRACELINK",	&irc_c_error,
@@ -213,7 +213,7 @@ static const IrcCommand irccommands[] =
 	{ 1,	341,	NULL,	"RPL_INVITE",		&irc_c_error,	IRC_RPL_OTHER,	3 },
 /*	{ 1,	443, G->dj: ??? */
 /*	{ 1,	351,	NULL,	"RPL_VERSION",		&irc_c_error,	*/
-	{ 1,	353,	NULL,	"RPL_NAMREPLY",		&irc_c_namerpl,	0,	0 },
+	{ 1,	353,	NULL,	"RPL_NAMREPLY",		&irc_c_namerpl,	0,	3 },
 	{ 1,	364,	NULL,	"RPL_LINKS",		&irc_c_list,	IRC_LISTLIN,	0 },
 	{ 1,	365,	NULL,	"RPL_ENDOFLINKS",	&irc_c_list,	IRC_LISTLIN|IRC_LISTEND,	0 },
 
@@ -303,16 +303,16 @@ static const IrcCommand irccommands[] =
 	{ 1,	502,	NULL,	"ERR_USERSDONTMATCH",	&irc_c_error,	IRC_ERR_ONLY1,	0 },
 
 	{ 0,	0,	"PING",	"PING",			&irc_c_ping,	0,	0 },
-	{ 0,	0,	"INVITE", "INVITE",		&irc_c_invite,	0,	0 },
+	{ 0,	0,	"INVITE", "INVITE",		&irc_c_invite,	0,	2 },
 	{ 0,	0,	"NICK", "NICK",			&irc_c_nick,	0,	1 },
-	{ 0,	0,	"PRIVMSG", "PRIVMSG",		&irc_c_msg,	0,	0 },
-	{ 0,	0,	"NOTICE", "NOTICE",		&irc_c_msg,	0,	0 },
-	{ 0,	0,	"JOIN", "JOIN",			&irc_c_join,	0,	0 },
-	{ 0,	0,	"PART", "PART",			&irc_c_part,	0,	0 },
-	{ 0,	0,	"KICK", "KICK",			&irc_c_kick,	0,	0 },
+	{ 0,	0,	"PRIVMSG", "PRIVMSG",		&irc_c_msg,	0,	2 },
+	{ 0,	0,	"NOTICE", "NOTICE",		&irc_c_msg,	0,	2 },
+	{ 0,	0,	"JOIN", "JOIN",			&irc_c_join,	0,	1 },
+	{ 0,	0,	"PART", "PART",			&irc_c_part,	0,	1 },
+	{ 0,	0,	"KICK", "KICK",			&irc_c_kick,	0,	2 },
 	{ 0,	0,	"QUIT", "QUIT",			&irc_c_quit,	0,	0 },
 	{ 0,	0,	"MODE", "MODE",			&irc_c_mode,	0,	0 },
-	{ 0,	0,	"TOPIC", "TOPIC",		&irc_c_topic,	0,	0 },
+	{ 0,	0,	"TOPIC", "TOPIC",		&irc_c_topic,	0,	1 },
 	{ 0,	0,	"ERROR", "ERROR",		&irc_c_error,	0,	0 },
 	{ -1,	-1,	NULL,	NULL,			NULL,		0,	0 }
 };

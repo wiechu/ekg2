@@ -357,10 +357,10 @@ and the prefix.
 		array_add(&pfxcmd, g_strdup(""));	// pfx_nick
 		array_add(&pfxcmd, g_strdup(""));	// pfx_ihost
 	} else {
-		array_add(&pfxcmd, array_shift(&args));	// prefix
+		array_add(&pfxcmd, array_shift(&args));						// prefix
 		p = xstrchr(pfxcmd[0], '!');
-		array_add(&pfxcmd, p ? g_strndup(pfxcmd[0], p-pfxcmd[0]) : g_strdup(""));
-		array_add(&pfxcmd, p ? g_strdup(p+1) : g_strdup(""));
+		array_add(&pfxcmd, p ? g_strndup(pfxcmd[0], p-pfxcmd[0]) : g_strdup(""));	// pfx_nick
+		array_add(&pfxcmd, p ? g_strdup(p+1) : g_strdup(""));				// pfx_ihost
 	}
 
 	cmd = array_shift(&args);
@@ -555,21 +555,21 @@ IRC_COMMAND(irc_c_error)
 	}
 
 	future = irccommands[ecode].future&0xff;
-	if ((future == IRC_ERR_NEW) && (2 == g_strv_length(args)))
+	i = irccommands[ecode].future&0x100;
+	if ((n_params <= 2) && ((IRC_ERR_NEW == future) || (IRC_ERR_21 == future) || (IRC_ERR_12 == future)))
 		future = IRC_ERR_ONLY1;
 
-	i = irccommands[ecode].future&0x100;
 	switch (future)
 	{
 		case IRC_ERR_21:
 			print_info(NULL, s,
 					i?"IRC_RPL_SECONDFIRST":"IRC_ERR_SECONDFIRST",
-					session_name(s), args[1], NOK(2));
+					session_name(s), args[1], args[2]);
 			return (0);
 		case IRC_ERR_12:
 			print_info(NULL, s,
 					i?"IRC_RPL_FIRSTSECOND":"IRC_ERR_FIRSTSECOND",
-					session_name(s), args[1], NOK(2));
+					session_name(s), args[1], args[2]);
 			return (0);
 		case IRC_ERR_ONLY1:
 			print_info(NULL, s,
@@ -579,7 +579,7 @@ IRC_COMMAND(irc_c_error)
 		case IRC_ERR_NEW:
 			print_info(NULL, s,
 					i?"IRC_RPL_NEWONE":"IRC_ERR_NEWONE",
-					session_name(s), cmdname, NOK(1), NOK(2), NOK(3), NOK(4));
+					session_name(s), cmdname, args[1], args[2], NOK(3), NOK(4));
 			return (0);
 		case IRC_ERR_IGNO:
 			return(0);
@@ -1003,9 +1003,10 @@ IRC_COMMAND(irc_c_list)
  */
 IRC_COMMAND(irc_c_ping)
 {
-	irc_write(s, "PONG :%s\r\n", args[0]);
+	char *arg0 = args[0]?args[0]:"";
+	irc_write(s, "PONG :%s\r\n", arg0);
 	if (session_int_get(s, "DISPLAY_PONG"))
-		print_info("__status", s, "IRC_PINGPONG", session_name(s), args[0]);
+		print_info("__status", s, "IRC_PINGPONG", session_name(s), arg0);
 	return 0;
 }
 
@@ -1394,7 +1395,7 @@ IRC_COMMAND(irc_c_part)
 	else
 		irc_del_person_channel(s, j, pfx_nick, __channel);
 
-	coloured = (__reason && *__reason) ? irc_ircoldcolstr_to_ekgcolstr(s, __reason, 1) : xstrdup("no reason");
+	coloured = xstrlen(__reason) ? irc_ircoldcolstr_to_ekgcolstr(s, __reason, 1) : xstrdup(_("no reason"));
 
 	/* TODO: if channel window exists do print_info, else do nothing (?)
 	 * now after alt+k if user was on that channel-window, we recved info
@@ -1440,17 +1441,17 @@ IRC_COMMAND(irc_c_kick)
 	else
 		irc_del_person_channel(s, j, args[1], irc_channel);
 
-	coloured = (args[2] && *args[2]) ? irc_ircoldcolstr_to_ekgcolstr(s, args[2], 1) : xstrdup("no reason");
+	coloured = xstrlen(args[2]) ? irc_ircoldcolstr_to_ekgcolstr(s, args[2], 1) : xstrdup(_("no reason"));
 
 	cchn = clean_channel_names(s, irc_channel);
 	/* session, kicked_nick, kicker_nick, kicker_ident+host, chan, reason */
 	print_info(ekg2_channel, s, me ? "irc_kicked_you" : "irc_kicked",  session_name(s),
-			args[1], pfx_nick, pfx_ihost?pfx_ihost:"",
+			args[1], *pfx_nick?pfx_nick:prefix, pfx_ihost,
 			cchn, coloured);
 	xfree(coloured);
 
 /*sending irc-kick event*/
-	_uid = irc_uid(pfx_nick);
+	_uid = irc_uid(*pfx_nick?pfx_nick:prefix);
 	_session = xstrdup(session_uid_get(s));
 	_nick = irc_uid(args[1]);
 	query_emit(NULL, "irc-kick", &_session, &_nick, &ekg2_channel, &_uid);
@@ -1474,7 +1475,7 @@ IRC_COMMAND(irc_c_quit)
 	/* TODO: SPLIT MODE! */
 	int	split = 0;
 
-	__reason = (args[0] && args[0]) ? irc_ircoldcolstr_to_ekgcolstr(s, args[0], 1) : xstrdup("no reason");
+	__reason = xstrlen(args[0]) ? irc_ircoldcolstr_to_ekgcolstr(s, args[0], 1) : xstrdup(_("no reason"));
 	me = !xstrcmp(j->nick, pfx_nick); /* we quit? */
 
 	if (query_emit(NULL, "irc-quit", &s->uid, &pfx_nick, &me, &pfx_ihost, &__reason) == -1) {
@@ -1500,14 +1501,14 @@ IRC_COMMAND(irc_c_quit)
 	return 0;
 }
 /*
- * p[0]	:server
- * p[1]	353    RPL_NAMREPLY
- * p[2]	nick
- * p[3] ( '='/'*'/'@' )		'@' is used for secret channels,
+ * pfx   :server
+ * cmd	 353    RPL_NAMREPLY
+ * p[0]	 nick
+ * p[1]  ( '='/'*'/'@' )	'@' is used for secret channels,
  * 				'*' for private channels
  * 				'=' for others (public channels)
- * p[4]	channel
- * p[5]	:names
+ * p[2]  channel
+ * (p[3] :names)
  */
 IRC_COMMAND(irc_c_namerpl)
 {
@@ -1525,42 +1526,48 @@ IRC_COMMAND(irc_c_namerpl)
 	return 0;
 }
 
-/*
- * p[2] - channel
+/* pfx   - :nick!ident@ihost
+ * cmd   - TOPIC
+ * p[0]  - channel
+ * (p[1] - topic)
  */
 IRC_COMMAND(irc_c_topic)
 {
 	window_t	*w;
 	char		*t, *dest=NULL;
 	char		*coloured, *cchn;
-	char		*__topic;
+	char		*__channel, *__topic;
 	channel_t	*chanp = NULL;
 
-	IRC_TO_LOWER(args[0]);
-	t = irc_uid(args[0]);
-	w = window_find_s(s, t);
-	chanp = irc_find_channel(j->channels, args[0]);
-	dest = w?w->target:NULL;
-	xfree(t);
-	xfree(chanp->topic);
-	xfree(chanp->topicby);
-
-	cchn = clean_channel_names(s, args[0]);
+	__channel = IRC_TO_LOWER(args[0]);
 	__topic   = args[1];
+
+	t = irc_uid(__channel);
+	w = window_find_s(s, t);
+	dest = w?w->target:NULL;
+	g_free(t);
+
+	cchn = clean_channel_names(s, __channel);
+
 	if (xstrlen(__topic)) {
-		chanp->topic  = g_strdup(__topic);
-		chanp->topicby = xstrdup(pfx_nick);
-		coloured = irc_ircoldcolstr_to_ekgcolstr(s, chanp->topic, 1);
-		print_info(dest, s, "IRC_TOPIC_CHANGE",
-				session_name(s), pfx_nick, pfx_ihost, cchn, coloured);
+		coloured = irc_ircoldcolstr_to_ekgcolstr(s, __topic, 1);
+		print_info(dest, s, "IRC_TOPIC_CHANGE", session_name(s), pfx_nick, pfx_ihost, cchn, coloured);
 		xfree(coloured);
 	} else {
-		chanp->topic   = xstrdup("No topic set!");
-		chanp->topicby = xstrdup(pfx_nick);
-		print_info(dest, s, "IRC_TOPIC_UNSET",
-				session_name(s), pfx_nick, pfx_ihost, cchn);
+		print_info(dest, s, "IRC_TOPIC_UNSET", session_name(s), pfx_nick, pfx_ihost, cchn);
 	}
-	xfree(cchn);
+
+	g_free(cchn);
+
+	if (!(chanp = irc_find_channel(j->channels, __channel)))
+		return 0;
+
+	g_free(chanp->topic);
+	g_free(chanp->topicby);
+
+	chanp->topicby = g_strdup(pfx_nick);
+	chanp->topic   = g_strdup(xstrlen(__topic) ? __topic : _("No topic set!"));
+
 	return 0;
 }
 
