@@ -788,6 +788,7 @@ EXPORT int ncurses_plugin_init(int prio)
 	header_statusbar_resize(NULL);
 	ncurses_typing_retimer(NULL);
 
+debug_ok("%x %x %x %x\n", A_COLOR, A_BOLD, COLOR_WHITE, COLOR_PAIR(COLOR_WHITE));
 	for (w = windows; w; w = w->next)
 		ncurses_window_new(w);
 

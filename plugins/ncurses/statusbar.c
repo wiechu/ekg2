@@ -60,17 +60,20 @@ struct format_data {
  * zwraca ilo¶æ dopisanych znaków.
  */
 
-static void window_printat(WINDOW *w, const /*locale*/ char *format, /*locale*/ struct format_data *data, int fgcolor, int bold, int bgcolor) {
+//static void window_printat(WINDOW *w, const /*locale*/ char *format, /*locale*/ struct format_data *data, int fgcolor, int bold, int bgcolor) {
+static void window_printat(WINDOW *w, const /*locale*/ char *format, /*locale*/ struct format_data *data, int attr) {
 	const char *p;			/* temporary format value */
-	int attr;
+	int fgcolor = PAIR_NUMBER(attr) & 0x7;
+	int bgcolor = (PAIR_NUMBER(attr) >> 3) & 0x7;
 #define __fgcolor(x,y,z) \
-		case x: fgcolor = z; bold = 0; break; \
-		case y: fgcolor = z; bold = 1; break;
+		case x: fgcolor = z; attr &= ~A_BOLD; break; \
+		case y: fgcolor = z; attr |= A_BOLD; break;
 #define __bgcolor(x,y) \
 		case x: bgcolor = y; break;
 
-	int __set_colors(char control) {
+	void __set_attr(char control) {
 		switch (control) {
+			case '%': waddch(w, control); return;	/* it's character, not color attribute */
 			__fgcolor('k', 'K', COLOR_BLACK);
 			__fgcolor('r', 'R', COLOR_RED);
 			__fgcolor('g', 'G', COLOR_GREEN);
@@ -88,19 +91,20 @@ static void window_printat(WINDOW *w, const /*locale*/ char *format, /*locale*/ 
 			__bgcolor('q', COLOR_MAGENTA);
 			__bgcolor('d', COLOR_CYAN);
 			__bgcolor('x', COLOR_WHITE);
-			case 'T':
-				bold = !bold;
-				break;
+			case 'T':	attr ^= A_BOLD;		break;
+			case 'U':	attr |= A_UNDERLINE;	break;
+			case 'V':	attr |= A_REVERSE;	break;
+			case 'i':	attr |= A_BLINK;	break;
+			case 'A':	attr |= A_ALTCHARSET;	break;
+			case 'a':	attr &= ~A_ALTCHARSET;	break;
 			case 'n':
 				bgcolor = COLOR_BLUE;
 				fgcolor = COLOR_WHITE;
-				bold = 0;
+				attr &= A_COLOR;
 				break;
 		}
-		if (bold)
-			return (color_pair(fgcolor, bgcolor) | A_BOLD);
-		else
-			return color_pair(fgcolor, bgcolor);
+		attr = color_pair(fgcolor, bgcolor) | (attr & ~A_COLOR);
+		wattrset(w, attr);
 	}
 
 #undef __fgcolor
@@ -119,12 +123,8 @@ static void window_printat(WINDOW *w, const /*locale*/ char *format, /*locale*/ 
 		if (!*++p)
 			break;
 
-		if (*p == '%') {
-			waddch(w, (unsigned char) *p++);
-			continue;
-		} else if (*p != '{') {
-			attr = __set_colors(*p++);
-			wattrset(w, attr);
+		if (*p != '{') {
+			__set_attr(*p++);
 			continue;
 		}
 // %{
@@ -147,8 +147,7 @@ static void window_printat(WINDOW *w, const /*locale*/ char *format, /*locale*/ 
 						if (!*++text)
 							break;
 
-						attr = __set_colors(*text++);
-						wattrset(w, attr);
+						__set_attr(*text++);
 					} else {
 						waddch(w, (unsigned char) *text++);
 					}
@@ -183,7 +182,7 @@ static void window_printat(WINDOW *w, const /*locale*/ char *format, /*locale*/ 
 					p += len + 1;
 
 					if (matched)
-						window_printat(w, p, data, fgcolor, bold, bgcolor);
+						window_printat(w, p, data, attr);
 					break; /* goto next; */
 				}
 			}
@@ -262,7 +261,7 @@ static void reprint_statusbar(WINDOW *w, int y, const gchar *format, /*locale*/ 
 
 	wmove(w, y, 0);
 	tmp = ekg_recode_to_locale(format);
-	window_printat(w, tmp, data, COLOR_WHITE, 0, COLOR_BLUE);
+	window_printat(w, tmp, data, color_pair(COLOR_WHITE, COLOR_BLUE));
 	g_free(tmp);
 
 	mvwhline(w, y, getcurx(w), ' ', w->_maxx);
