@@ -24,9 +24,9 @@ backlog_size
 	typ: liczba
 	domyślna wartość: 1000
 	
-	ilość linii, która będzie zapisywana w buforze ekranu (tym, który
+	liczba linii, która będzie zapisywana w buforze ekranu (tym, który
 	jest przewijany klawiszami Page Up i Page Down). nie może być
-	mniejsza niż ilość linii na ekranie. 
+	mniejsza niż liczba linii na ekranie.
 
 backlog_scroll_half_page
 	typ: bool
@@ -75,7 +75,7 @@ contacts_groups
 	domyślna wartość: brak
 	
 	oddzielone przecinkiem grupy, które można przełączać w liście
-	kontaktów klawiszem F4. Aby wyświetlić użytkowników z poza grupy: !grupa.
+	kontaktów klawiszem F4. Aby wyświetlić użytkowników spoza grupy: !grupa.
 	domyślnie wyświetlani są wszyscy użytkownicy.
 
 contacts_groups_all_sessions
@@ -135,8 +135,8 @@ contacts_orderbystate
 	typ: bool
 	domyślna wartość: 0
 	
-	czy grupować opisy wg. statusu? jeśli nie, kontakty będą sortowane
-	alfabetyczne, ale wyświetlane będą tylko statusy, wymienione w opcji
+	czy grupować opisy wg statusu? jeśli nie, kontakty będą sortowane
+	alfabetyczne, ale wyświetlane będą tylko statusy wymienione w opcji
 	contacts_order.
 
 contacts_size
@@ -161,7 +161,7 @@ display_transparent
 	typ: bool
 	domyślna wartość: 1
 	
-	mówi, czy w tło ma być przezroczyste. 
+	określa, czy w tło ma być przezroczyste.
 
 enter_scrolls
 	typ: bool
@@ -175,7 +175,7 @@ header_size
 	domyślna wartość: 0
 	
 	określa rozmiar nagłówka okna wyświetlanego na górze ekranu.
-	maksymalna ilość linii to 5.
+	maksymalna liczba linii to 5.
 
 kill_irc_window
 	typ: bool
@@ -189,7 +189,7 @@ lastlog_display_all
 	domyślna wartość: 0
 	
 	Określa zakres wyszukiwania dla polecenia '/lastlog'
-		0 - bieżące okno
+		0 - bieżące okno,
 		1 - bieżące okno + wskazane w poleceniu,
 		2 - wszystkie okna + wskazane w poleceniu
 
@@ -210,19 +210,19 @@ margin_size
 	typ: liczba
 	domyślna wartość: 15
 	
-	określa rozmiar marginesu wykorzystywanego przy /| w themach
+	określa rozmiar marginesu wykorzystywanego przy /| w theme'ach
 
 mark_on_window_change
 	typ: bool
 	domyślna wartość: 0
 	
-	określa czy wstawiać marker do okna przy przejściu z niego do innego okna
+	określa, czy wstawiać marker do okna przy przejściu z niego do innego okna
 
 mouse_scroll_lines
 	typ: int
 	domyślna wartość: 5
 	
-	liczba lini przewijanych kółkiem myszy. 0 przwija o stronę
+	liczba linii przewijanych kółkiem myszy. 0 przewija o stronę
 
 statusbar_size
 	typ: liczba
