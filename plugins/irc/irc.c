@@ -144,7 +144,7 @@ void irc_write(session_t *session, const gchar *format, ...) {
 	for (i=0; lines[i]; i++)
 		if (*lines[i])
 			debug_io("irc_write(0x%x) %s\n", session, lines[i]);
-	ekg_connection_write(j->send_stream, tmp);
+	ekg_connection_write_buf(j->send_stream, tmp, xstrlen(tmp));
 	g_strfreev(lines);
 	xfree(tmp);
 	va_end(args);
