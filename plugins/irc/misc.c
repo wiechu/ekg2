@@ -137,7 +137,7 @@ static void irc_access_parse(session_t *s, channel_t *chan, people_t *p, int fla
 		i++;
 
 /* parse ident@ */
-		for (j = 4 /* skip irc: */; (u->uid[i] != '\0' && u->uid[i] != '@'); i++, j++) {
+		for (j = 0; (u->uid[i] != '\0' && u->uid[i] != '@'); i++, j++) {
 			dchar(u->uid[i]);
 
 			if (u->uid[i] != p->nick[j]) {
@@ -162,7 +162,7 @@ static void irc_access_parse(session_t *s, channel_t *chan, people_t *p, int fla
 		dchar('\n');
 		i++;
 
-		debug_error("irc_access_parse() %s!%s@%s MATCH with %s\n", p->ident, p->nick+4, p->host, u->uid+4);
+		debug_error("irc_access_parse() %s!%s@%s MATCH with %s\n", p->ident, p->nick, p->host, u->uid+4);
 
 skip_identhost_check:
 /* let's rock with channels */
@@ -199,7 +199,9 @@ next2:
 			if (!ismatch) continue;
 		}
 		if (!r) {
-			r = userlist_resource_add(u, p->nick, 0);
+			char *tmp = irc_uid(p->nick);
+			r = userlist_resource_add(u, tmp, 0);
+			g_free(tmp);
 
 			r->status	= EKG_STATUS_AVAIL;
 			r->descr	= xstrdup(chan->name+4);
@@ -226,7 +228,7 @@ next2:
 
 next:
 		dchar('\n');
-		debug_error("irc_access_parse() %s!%s@%s NOT MATCH with %s\n", p->ident, p->nick+4, p->host, u->uid+4);
+		debug_error("irc_access_parse() %s!%s@%s NOT MATCH with %s\n", p->ident, p->nick, p->host, u->uid+4);
 next3:
 		continue;
 	}

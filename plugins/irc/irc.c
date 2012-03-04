@@ -859,7 +859,7 @@ static COMMAND(irc_command_alist) {
 	for (l = j->people; l; l = l->next) {
 		people_t	*per = l->data;
 
-		printq("irc_access_known", session_name(session), per->nick+4, per->ident, per->host);
+		printq("irc_access_known", session_name(session), per->nick, per->ident, per->host);
 	}
 #endif
 
@@ -899,9 +899,9 @@ static COMMAND(irc_command_alist) {
 			for (l = j->people; l; l = l->next) {
 				people_t *per = l->data;
 
-				if (!xstrcmp(per->nick+4, params[1]+4)) {
+				if (!xstrcmp(per->nick, params[1]+4)) {
 					/* XXX, here generate mask */
-					mask = saprintf("%s!%s@%s", per->nick+4, per->ident, per->host);
+					mask = saprintf("%s!%s@%s", per->nick, per->ident, per->host);
 					break;
 				}
 			}
@@ -1507,7 +1507,7 @@ static COMMAND(irc_command_ban) {
 		/* ok new irc-find-person checked */
 		person = irc_find_person(j, j->people, (char *) *mp);
 		if (person)
-			temp = irc_make_banmask(session, person->nick+4, person->ident, person->host);
+			temp = irc_make_banmask(session, person->nick, person->ident, person->host);
 		if (temp) {
 			irc_write(session, "MODE %s +b %s\r\n", chan+4, temp);
 			xfree(temp);

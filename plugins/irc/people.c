@@ -74,10 +74,9 @@ people_t *irc_find_person(irc_private_t *j, list_t p, char *nick)
 
 	comp_func = irc_xstrcasecmp_default;
 
-	for (; p; p=p->next)
-	{
+	for (; p; p=p->next) {
 		person = (people_t *)(p->data);
-		if (person->nick && !comp_func(nick, person->nick+4))
+		if (person->nick && !comp_func(nick, person->nick))
 			return person;
 	}
 	return NULL;
@@ -135,7 +134,7 @@ static void update_longest_nick(channel_t *chan)
 	for (p=chan->onchan; p; p=p->next)
 	{
 		people_t *person = (people_t *)p->data;
-		const gsize nicklen = g_utf8_strlen(person->nick+4, -1);
+		const gsize nicklen = g_utf8_strlen(person->nick, -1);
 		if (person->nick && nicklen > chan->longest_nick)
 			chan->longest_nick = nicklen;
 	}
@@ -183,13 +182,14 @@ static people_t *irc_add_person_int(session_t *s, irc_private_t *j,
 		ulist = userlist_add_u(&(w->userlist), ircnick, nick);
 		irccol = irc_color_in_contacts(j, mode, ulist);
 	}
+	g_free(ircnick);
 
 	/* add entry in priv_data->people if nick's not yet there */
 	/* ok new irc-find-person checked */
 	if (!(person = irc_find_person(j, j->people, nick))) {
 	/*	debug("+%s lista ludzi, ", nick); */
 		person = xmalloc(sizeof(people_t));
-		person->nick = xstrdup(ircnick);
+		person->nick = g_strdup(nick);
 		/* K&Rv2 5.4 */
 		list_add(&(j->people), person);
 	}
@@ -198,7 +198,6 @@ static people_t *irc_add_person_int(session_t *s, irc_private_t *j,
 	/*	debug("+do kana³u, "); */
 		list_add(&(chan->onchan), person);
 	}
-	xfree(ircnick);
 
 	/* if channel's not yet on given user channels, add it to his channels */
 	/* as I haven't looked here for a longer time I'm wondering is this check needed at all */
@@ -302,8 +301,11 @@ static int irc_del_person_channel_int(session_t *s, irc_private_t *j, people_t *
 	/* GiM: We can't use chan->window->userlist,
 	 * cause, window could be already destroyed. ;/
 	 */
-	if ((w = window_find_s(s, chan->name)))
-		ulist = userlist_find_u(&(w->userlist), nick->nick);
+	if ((w = window_find_s(s, chan->name))) {
+		char *ircnick = irc_uid(nick->nick);
+		ulist = userlist_find_u(&(w->userlist), ircnick);
+		g_free(ircnick);
+	}
 	if (ulist) {
 	/* delete from userlist
 		debug("-userlisty, "); */
@@ -566,11 +568,9 @@ int irc_nick_change(session_t *s, irc_private_t *j, char *old_nick, char *new_ni
 	people_t *per;
 	people_chan_t *pch;
 	window_t *w;
-	char *t1, *t2 = irc_uid(new_nick);
 
 	if (!(per = irc_find_person(j, j->people, old_nick))) {
 		debug_error("irc_nick_change() person not found?\n");
-		xfree(t2);
 		return 0;
 	}
 
@@ -583,21 +583,22 @@ int irc_nick_change(session_t *s, irc_private_t *j, char *old_nick, char *new_ni
 
 			if (r->priv_data != per) continue;
 
-			xfree(r->name);
-			r->name = xstrdup(t2);
+			g_free(r->name);
+			r->name = irc_uid(new_nick);
 			/* XXX, here. readd to list, coz it'll be bad sorted. :( */
 			break;
 		}
 	}
 
 	/* update userlists of proper windows */
-	for (i=per->channels; i; i=i->next)
-	{
+	for (i=per->channels; i; i=i->next) {
 		pch = (people_chan_t *)i->data;
 
 		w = window_find_s(s, pch->chanp->name);
 		if (w && (ulist = userlist_find_u(&(w->userlist), old_nick))) {
+			char *t2 = irc_uid(new_nick);
 			newul = userlist_add_u(&(w->userlist), t2, new_nick);
+			g_free(t2);
 			newul->status = ulist->status;
 			userlist_remove_u(&(w->userlist), ulist);
 			/* XXX dj, userlist_replace() */
@@ -610,24 +611,21 @@ int irc_nick_change(session_t *s, irc_private_t *j, char *old_nick, char *new_ni
 	query_emit(NULL, "userlist-refresh");
 
 	/* update nickname in internal structures */
-	t1 = per->nick;
-	per->nick = t2;
+	g_free(per->nick);
+	per->nick = g_strdup(new_nick);
 
-	for (i=per->channels; i; i=i->next)
-	{
+	for (i=per->channels; i; i=i->next) {
 		pch = (people_chan_t *)i->data;
 		/* if person who changed nick had longest nick,
 		 * update longest_nick variable
 		 */
-		if (xstrlen(new_nick) > pch->chanp->longest_nick)
-		{
-			pch->chanp->longest_nick = xstrlen(new_nick);
+		if (g_utf8_strlen(new_nick, -1) > pch->chanp->longest_nick) {
+			pch->chanp->longest_nick = g_utf8_strlen(new_nick, -1);
 			nickpad_string_create(pch->chanp);
-		} else if (xstrlen(old_nick) == pch->chanp->longest_nick)
+		} else if (g_utf8_strlen(old_nick, -1) == pch->chanp->longest_nick)
 			update_longest_nick (pch->chanp);
 	}
 
-	xfree(t1);
 	return 0;
 }
 
