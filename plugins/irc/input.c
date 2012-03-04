@@ -209,7 +209,7 @@ static int is_ctcp(char *mesg)
 char *ctcp_parser(session_t *sess, int ispriv, char *sender, char *recp, char *s, int to_us)
 {
 	irc_private_t	*j = session_private_get(sess);
-	char		*begin, *end, *winname, *p, *bang, *newsender, *coloured;
+	char		*begin, *end, *winname, *p, *bang, *newsender;
 	int		ctcp;
 
 	if (!s || xstrlen(s) < 2)
@@ -233,25 +233,25 @@ char *ctcp_parser(session_t *sess, int ispriv, char *sender, char *recp, char *s
 
 			newsender = irc_uid(sender);
 
-			coloured = irc_ircoldcolstr_to_ekgcolstr(sess, begin,1);
 			if (ispriv) {
 				if (!ctcps[ctcp-1].handled) {
 					irc_write(sess, "NOTICE %s :\01ERRMSG %s :not handled\01\r\n", sender, ctcps[ctcp-1].name);
-				} else if ((ctcp_main_priv(sess, j, ctcp, coloured, newsender,
+				} else if ((ctcp_main_priv(sess, j, ctcp, begin, newsender,
 								bang?bang+1:"", winname, to_us)))
 				{
 				/* blah blah blah */
 				}
 			} else {
-				ctcp_main_noti(sess, j, ctcp, coloured, newsender,
+				ctcp_main_noti(sess, j, ctcp, begin, newsender,
 						bang?bang+1:"", winname, to_us);
 			}
 			xfree(newsender);
-			xfree(coloured);
 
 			if (bang) *bang = '!';
 		} else {
+			char *coloured = irc_ircoldcolstr_to_ekgcolstr(sess, begin, 1);
 			print_info(winname, sess, "irc_unknown_ctcp", session_name(sess), sender, begin, end+1);
+			g_free(coloured);
 #if 0
 			irc_write(sess, "NOTICE %s :\01ERRMSG %s :unknown ctcp\01\r\n", sender, begin);
 #endif
@@ -273,19 +273,22 @@ char *ctcp_parser(session_t *sess, int ispriv, char *sender, char *recp, char *s
 CTCP_COMMAND(ctcp_main_priv)
 {
 	char		*ischn = xstrchr(SOP(_005_CHANTYPES), targ[4]);
-	char		*space = xstrchr(ctcp, ' ');
-	int		i, mw = session_int_get(s, "make_window");
-	char		*ta, *tb, *tc;
+	char		*arg = xstrchr(ctcp, ' ');
+	int		i, msg = 1, mw = session_int_get(s, "make_window");
+	char		*ta, *tb, *tc, *coloured;
 	char		*purename = sender+4, *win;
 	char		*cchname = clean_channel_names(s, targ+4);
 	struct utsname	un;
 	time_t		timek;
 	window_t	*w;
-	if (space) while ((*space) && (*space == ' ')) space++;
+
+	if (arg) while ((*arg) && (*arg == ' ')) arg++;
 
 	win = ischn?targ:sender;
 	w = window_find_s(s, win);
 	if (!(ischn || w || (mw&4))) win = window_current->target;
+
+	coloured = irc_ircoldcolstr_to_ekgcolstr(s, arg, 1);
 
 switch (number) {
     case CTCP_ACTION:	/* ===== ===== ===== ===== ===== ACTION */
@@ -294,23 +297,24 @@ switch (number) {
 	if (ignored_check(s, sender) & IGNORE_MSG)
 		break;
 
-	if (space && xstrlen(space)) {
+	if (arg && xstrlen(arg)) {
 		char *format;
 		int class = EKG_MSGCLASS_CHAT | EKG_NO_THEMEBIT;
 		int beep  = EKG_NO_BEEP;
+
+		msg = 0;
 
 		if (to_us) 	beep = EKG_TRY_BEEP;
 		else		class |= EKG_MSGCLASS_NOT2US;
 
 		format = format_string(format_find(ischn?"irc_ctcp_action_pub":"irc_ctcp_action"),
-				session_name(s), purename, idhost, cchname, space);
+				session_name(s), purename, idhost, cchname, coloured);
 
 		protocol_message_emit(s, win, NULL, format, NULL, time(NULL), class, NULL, beep, 1);
 
-		xfree(format);
+		g_free(format);
 	}
 	break;
-
 
     case CTCP_DCC:		/* ===== ===== ===== ===== ===== DCC */
 	break;
@@ -324,21 +328,13 @@ switch (number) {
 	ta = xstrdup(ctime(&(s->last_conn)));
 	if (ta[xstrlen(ta)-1] == '\n') ta[xstrlen(ta)-1]='\0';
 
-	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
-			ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
-			session_name(s), purename, idhost, cchname, ctcp);
-
-	irc_write(s, "NOTICE %s :\01FINGER :%s connected since %s\01\r\n",
-			purename, j->nick, ta);
+	/* XXX - customize reply */
+	irc_write(s, "NOTICE %s :\01FINGER :%s connected since %s\01\r\n", purename, j->nick, ta);
 	xfree(ta);
 	break;
 
 
     case CTCP_VERSION:	/* ===== ===== ===== ===== ===== VERSION */
-	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
-			ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
-			session_name(s), purename, idhost, cchname, ctcp);
-
 	ta = (char *)session_get(s, "VERSION_NAME");
 	tb = (char *)session_get(s, "VERSION_NO");
 	tc = (char *)session_get(s, "VERSION_SYS");
@@ -357,31 +353,17 @@ switch (number) {
 
 
     case CTCP_SOURCE:	/* ===== ===== ===== ===== ===== SOURCE */
-	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
-			ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
-			session_name(s), purename, idhost, cchname, ctcp);
-
-	irc_write(s, "NOTICE %s :\01SOURCE \02\x1fhttp://ekg2.org/ekg2-current.tar.gz\x1f\02\01\r\n",
-			purename);
+	irc_write(s, "NOTICE %s :\01SOURCE \02\x1fhttp://ekg2.org/ekg2-current.tar.gz\x1f\02\01\r\n", purename);
 	break;
 
 
     case CTCP_USERINFO:	/* ===== ===== ===== ===== ===== USERINFO */
 	ta = (char *)session_get(s, "USERINFO");
-	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
-			ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
-			session_name(s), purename, idhost, cchname, ctcp);
-
-	irc_write(s, "NOTICE %s :\01USERINFO :%s\01\r\n",
-			purename, ta?ta:"no userinfo set");
+	irc_write(s, "NOTICE %s :\01USERINFO :%s\01\r\n", purename, ta?ta:"no userinfo set");
 	break;
 
 
     case CTCP_CLIENTINFO:	/* ===== ===== ===== ===== ===== CLIENTINFO */
-	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
-			ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
-			session_name(s), purename, idhost, cchname, ctcp);
-
 	ta = xmalloc(sizeof(ctcps));
 	for (i=0; ctcps[i].name; i++) {
 		if (ctcps[i].handled) {
@@ -389,50 +371,40 @@ switch (number) {
 			xstrcat(ta, " ");
 		}
 	}
-	irc_write(s, "NOTICE %s :\01CLIENTINFO %s\01\r\n",
-			purename, ta);
+	irc_write(s, "NOTICE %s :\01CLIENTINFO %s\01\r\n", purename, ta);
 	xfree(ta);
 	break;
 
 
     case CTCP_PING:		/* ===== ===== ===== ===== ===== PING */
-	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
-			ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
-			session_name(s), purename, idhost, cchname, ctcp);
-
-	irc_write(s, "NOTICE %s :\01PING %s\01\r\n",
-			purename, space?space:"");
+	irc_write(s, "NOTICE %s :\01PING %s\01\r\n", purename, arg?arg:"");
 	break;
 
 
     case CTCP_TIME:		/* ===== ===== ===== ===== ===== TIME */
-	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
-			ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
-			session_name(s), purename, idhost, cchname, ctcp);
-
 	timek = time(NULL);
 	ta = xstrdup(ctime(&timek));
 	if (ta[xstrlen(ta)-1] == '\n') ta[xstrlen(ta)-1]='\0';
 
-	irc_write(s, "NOTICE %s :\01TIME %s\01\r\n",
-			purename, ta);
+	irc_write(s, "NOTICE %s :\01TIME %s\01\r\n", purename, ta);
 	xfree(ta);
 	break;
 
 
     case CTCP_ERRMSG:	/* ===== ===== ===== ===== ===== ERRMSG */
-	print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
-			ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
-			session_name(s), purename, idhost, cchname, ctcp);
-
-	irc_write(s, "NOTICE %s :\01ERRMSG %s\01\r\n",
-			purename, space?space:"");
+	irc_write(s, "NOTICE %s :\01ERRMSG %s\01\r\n", purename, arg?arg:"");
 	break;
 
 
 } /* switch(number) */
 
-	xfree(cchname);
+	if (msg)
+		print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&4),
+				ischn?"irc_ctcp_request_pub":"irc_ctcp_request",
+				session_name(s), purename, idhost, cchname, coloured);
+
+	g_free(coloured);
+	g_free(cchname);
 	return (0);
 }
 
@@ -440,22 +412,18 @@ switch (number) {
 CTCP_COMMAND(ctcp_main_noti)
 {
 	char		*ischn = xstrchr(SOP(_005_CHANTYPES), targ[4]);
-	char		*space = xstrchr(ctcp, ' ');
+	char		*arg = xstrchr(ctcp, ' ');
 	int		mw = session_int_get(s, "make_window");
-	char		*t, *win;
+	char		*coloured, *win;
 	window_t	*w;
 
-	if (space) while ((*space) && (*space == ' ')) space++;
+	if (arg) while ((*arg) && (*arg == ' ')) arg++;
 
 	win = ischn?targ:sender;
 	w = window_find_s(s, win);
 	if (!ischn && !w && !(mw&4)) win = window_current->target;
 
-	t = irc_ircoldcolstr_to_ekgcolstr(s, space,1);
-	/* if number == CTCP_PING, we could display
-	 *	differences between current gettimeofday() && recv
-	 *	like most irc clients do.
-	 */
+	coloured = irc_ircoldcolstr_to_ekgcolstr(s, arg, 1);
 
 	switch (number) {
 		case CTCP_PING:
@@ -463,28 +431,28 @@ CTCP_COMMAND(ctcp_main_noti)
 			GTimeVal t1, now;
 			int diff, err = 0;
 			char *x, *bang;
-			if ((bang = xstrchr(t, ' '))) {
+			if ((bang = xstrchr(arg, ' '))) {
 				*bang = '\0';
-				t1.tv_sec = strtol(t, &x, 10);	err = (x == t);
+				t1.tv_sec = strtol(arg, &x, 10);	err = (x == arg);
 				t1.tv_usec = strtol(bang+1, &x, 10);	err = (x == bang+1);
 				if (!err) {
-					g_free(t);
 					g_get_current_time(&now);
 					diff = (now.tv_sec-t1.tv_sec)*1000 + (now.tv_usec-t1.tv_usec)/1000;
-					t = saprintf("%d.%03d s", diff/1000, diff % 1000);
+					g_free(coloured);
+					coloured = saprintf("%d.%03d s", diff/1000, diff % 1000);
 				}
-				*bang = '\0';
+				*bang = ' ';
 			}
 			/* no break */
 		}
 		default:
 			print_window(win, s, EKG_WINACT_MSG, ischn?(mw&1):!!(mw&8),
 					"irc_ctcp_reply", session_name(s),
-					ctcps[number-1].name, sender+4, idhost, t);
+					ctcps[number-1].name, sender+4, idhost, coloured);
 			break;
 	}
 
-	g_free (t);
+	g_free(coloured);
 
 	return (0);
 }
