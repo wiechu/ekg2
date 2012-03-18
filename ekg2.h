@@ -20,6 +20,7 @@
 #include "ekg/commands.h"
 #include "ekg/configfile.h"
 #include "ekg/connections.h"
+#include "ekg/connections2.h"
 #include "ekg/debug.h"
 #include "ekg/dynstuff_inline.h"
 #include "ekg/events.h"
