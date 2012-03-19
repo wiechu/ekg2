@@ -289,7 +289,7 @@ int icq_flap_close_helper(session_t *s, unsigned char *buf, int len) {
 		}
 
 		// Client disconnects from authorizer
-		ekg_disconnect_by_outstream(j->send_stream);
+		ekg2_connection_close(&j->connection);
 
 		s->connecting = 2;
 		j->migrate = 0;

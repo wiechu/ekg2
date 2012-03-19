@@ -29,8 +29,7 @@ typedef struct icq_snac_reference_list_s {
 } icq_snac_reference_list_t;
 
 typedef struct {
-	GCancellable *connect_cancellable;
-	GDataOutputStream *send_stream;
+	connection_data_t *connection;
 
 	int flap_seq;		/* FLAP seq id */
 	guint16 snac_seq;	/* SNAC seq id */

@@ -66,7 +66,7 @@ int icq_send_pkt(session_t *s, GString *buf) {
 	if (j->migrate)
 		debug_warn("Client migrate! Packet will not be send\n");
 	else
-		ekg_connection_write_buf(j->send_stream, buf->str, buf->len);
+		ekg2_connection_write_buf(j->connection, buf->str, buf->len);
 	g_string_free(buf, TRUE);
 	return 0;
 }
@@ -572,16 +572,18 @@ void icq_handle_disconnect(session_t *s, const char *reason, int type) {
 
 	timer_remove_session(s, "ping");
 	timer_remove_session(s, "snac_timeout");
+
+	ekg2_connection_close(&j->connection);
+
 	protocol_disconnected_emit(s, reason, type);
 
 	g_string_set_size(j->stream_buf, 0);
 	j->migrate = 0;
 }
 
-static void icq_handle_stream(GDataInputStream *input, gpointer data) {
-	session_t *s = data;
+static void icq_handle_stream(connection_data_t *cd, GString *buffer) {
+	session_t *s = ekg2_connection_get_session(cd);
 	icq_private_t *j = NULL;
-	gsize count;
 	int left, ret, start_len;
 
 	if (!s || !(j = s->priv)) {
@@ -589,23 +591,11 @@ static void icq_handle_stream(GDataInputStream *input, gpointer data) {
 		return;
 	}
 
-	count = g_buffered_input_stream_get_available(G_BUFFERED_INPUT_STREAM(input));
+	g_string_append_len(j->stream_buf, buffer->str, buffer->len);
 
-	if (count>0) {
-		char *tmp = g_malloc(count);
-		gssize result = g_input_stream_read(G_INPUT_STREAM(input), tmp, count, NULL, NULL);
+	debug_iorecv("icq_handle_stream(%d) rcv: %d, %d in buffer.\n", s->connecting, buffer->len, j->stream_buf->len);
 
-		g_string_append_len(j->stream_buf, tmp, result);
-
-		g_free(tmp);
-	}
-
-	debug_iorecv("icq_handle_stream(%d) rcv: %d, %d in buffer.\n", s->connecting, count, j->stream_buf->len);
-
-	if (count < 1) {
-		icq_handle_disconnect(s, strerror(errno), EKG_DISCONNECT_NETWORK);
-		return;
-	}
+	g_string_set_size(buffer, 0);
 
 	icq_hexdump(DEBUG_IORECV, (unsigned char *) j->stream_buf->str, j->stream_buf->len);
 
@@ -639,19 +629,15 @@ static void icq_handle_stream(GDataInputStream *input, gpointer data) {
 
 }
 
-static void icq_handle_failure(GDataInputStream *f, GError *err, gpointer data) {
-	session_t *s = data;
+static void icq_handle_failure(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
+	GError *err = ekg2_connection_get_error(cd);
 
-	icq_handle_disconnect(s, err->message, EKG_DISCONNECT_NETWORK);
+	icq_handle_disconnect(s, err ? err->message : "", EKG_DISCONNECT_FAILURE);
 }
 
-static void icq_handle_connect(
-		GSocketConnection *conn,
-		GInputStream *instream,
-		GOutputStream *outstream,
-		gpointer data)
-{
-	session_t *s = data;
+static void icq_handle_connect(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
 	icq_private_t *j = NULL;
 
 	if (!s || !(j = s->priv)) {
@@ -662,30 +648,28 @@ static void icq_handle_connect(
 	debug_function("[icq] handle_connect(%d)\n", s->connecting);
 
 	g_string_set_size(j->stream_buf, 0);
-
-	j->send_stream = ekg_connection_add(
-			conn,
-			instream,
-			outstream,
-			icq_handle_stream,
-			icq_handle_failure,
-			s);
 }
 
-static void icq_handle_connect_failure(GError *err, gpointer data) {
-	session_t *s = data;
+static void icq_handle_connect_failure(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
+	GError *err = ekg2_connection_get_error(cd);
 
-	icq_handle_disconnect(s, err->message, EKG_DISCONNECT_FAILURE);
+	icq_handle_disconnect(s, err ? err->message : "", EKG_DISCONNECT_FAILURE);
 }
 
 void icq_connect(session_t *session, const char *server, int port) {
+	icq_private_t *j = session->priv;
+	connection_data_t *cd;
+	
+	j->connection = cd = ekg2_connection_new(session, port);
 
-	GSocketClient *sock		= g_socket_client_new();
-	ekg_connection_starter_t cs	= ekg_connection_starter_new(port);
+	ekg2_connection_set_servers(cd, server);
 
-	ekg_connection_starter_set_servers(cs, server);
-
-	ekg_connection_starter_run(cs, sock, icq_handle_connect, icq_handle_connect_failure, session);
+	ekg2_connect(cd,
+			icq_handle_connect,
+			icq_handle_connect_failure,
+			icq_handle_stream,
+			icq_handle_failure);
 }
 
 
