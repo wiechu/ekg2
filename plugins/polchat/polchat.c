@@ -57,8 +57,7 @@
 #define polchat_uid(target) protocol_uid("polchat", target)
 
 typedef struct {
-	GCancellable *connect_cancellable;
-	GDataOutputStream *out_stream;
+	connection_data_t *connection;
 	GString *recvbuf;
 
 	char *nick;
@@ -141,7 +140,7 @@ static int polchat_sendpkt(session_t *s, short headercode, ...)  {
 		g_strfreev(arr);
 	}
 
-	ekg_connection_write_buf(j->out_stream, buf->str, buf->len);
+	ekg2_connection_write_buf(j->connection, buf->str, buf->len);
 	g_string_free(buf, TRUE);
 	return 0;
 }
@@ -245,6 +244,8 @@ static void polchat_handle_disconnect(session_t *s, const char *reason, int type
 
 	userlist_free(s);
 
+	ekg2_connection_close(&j->connection);
+
 	protocol_disconnected_emit(s, reason, type);
 
 }
@@ -252,86 +253,71 @@ static void polchat_handle_disconnect(session_t *s, const char *reason, int type
 #include "polchat_handlers.inc"
 /* extern void polchat_processpkt(session_t *s, unsigned short nheaders, unsigned short nstrings, unsigned char *data, size_t len); */
 
-static void polchat_handle_stream(GDataInputStream *input, gpointer data) {
-	session_t *s = data;
+static void polchat_handle_stream(connection_data_t *cd, GString *inbuf) {
+	session_t *s = ekg2_connection_get_session(cd);
 	polchat_private_t *j = NULL;
-	gsize count;
+	unsigned char *buffer;
 
 	if (!s || !(j = s->priv)) {
 		debug_error("polchat_handle_stream() s: 0x%x j: 0x%x\n", s, j);
 		return;
 	}
 
-	count = g_buffered_input_stream_get_available(G_BUFFERED_INPUT_STREAM(input));
+	debug_function("polchat_handle_stream() read %d bytes\n", inbuf->len);
 
-	debug_function("polchat_handle_stream() read %d bytes\n", count);
+	g_string_append_len(j->recvbuf, inbuf->str, inbuf->len);
+	g_string_set_size(inbuf, 0);
 
-	if (count>0) {
-		unsigned char *buffer;
-		char *tmp = g_malloc (count);
-		gssize res = g_input_stream_read(G_INPUT_STREAM(input), tmp, count, NULL, NULL);
+	buffer = (unsigned char *) j->recvbuf->str;
 
-		g_string_append_len(j->recvbuf, tmp, res);
-		g_free(tmp);
+	while (j->recvbuf->len >= 8) {
+		unsigned int rlen = (buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3]);
 
-		buffer = (unsigned char *) j->recvbuf->str;
+		debug("polchat_handle_stream() rlen: %u buflen: %d\n", rlen, j->recvbuf->len);
 
-		while (j->recvbuf->len >= 8) {
-			unsigned int rlen = (buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3]);
-
-			debug("polchat_handle_stream() rlen: %u buflen: %d\n", rlen, j->recvbuf->len);
-
-			if (rlen < 8) {	/* bad packet */
-				debug_error("polchat_handle_stream() RECV BAD PACKET rlen < 8\n");
-				return;
-			}
-
-			if (rlen > 1024 * 1024) {
-				debug_error("polchat_handle_stream() RECV BAD PACKET rlen > 1MiB\n");
-				return;
-			}
-
-			if (j->recvbuf->len >= rlen) {
-				short headerlen	= buffer[4] << 8 | buffer[5];
-				short nstrings	= buffer[6] << 8 | buffer[7];
-
-				if (!headerlen && !nstrings) {
-					debug_error("polchat_handle_stream() <blink> CONNECTION LOST :-( </blink>");
-					return;
-				}
-
-				polchat_processpkt(s, headerlen, nstrings, &buffer[8], rlen-8);
-
-				g_string_erase(j->recvbuf, 0, rlen);
-
-			} else {
-				debug_warn("polchat_handle_stream() NEED MORE DATA\n");
-				return;
-			}
+		if (rlen < 8) {	/* bad packet */
+			debug_error("polchat_handle_stream() RECV BAD PACKET rlen < 8\n");
+			return;
 		}
-		return;
-	}
 
-	debug_error("polchat_handle_stream() Connection closed/ error XXX\n");
+		if (rlen > 1024 * 1024) {
+			debug_error("polchat_handle_stream() RECV BAD PACKET rlen > 1MiB\n");
+			return;
+		}
+
+		if (j->recvbuf->len >= rlen) {
+			short headerlen	= buffer[4] << 8 | buffer[5];
+			short nstrings	= buffer[6] << 8 | buffer[7];
+
+			if (!headerlen && !nstrings) {
+				debug_error("polchat_handle_stream() <blink> CONNECTION LOST :-( </blink>");
+				return;
+			}
+
+			polchat_processpkt(s, headerlen, nstrings, &buffer[8], rlen-8);
+
+			g_string_erase(j->recvbuf, 0, rlen);
+
+		} else {
+			debug_warn("polchat_handle_stream() NEED MORE DATA\n");
+			return;
+		}
+	}
 	return;
 }
 
-static void polchat_handle_failure(GDataInputStream *f, GError *err, gpointer data) {
-	session_t *s = data;
+static void polchat_handle_failure(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
+	GError *err = ekg2_connection_get_error(cd);
 
 	if (g_error_matches(err, EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF))
 		polchat_handle_disconnect(s, NULL, EKG_DISCONNECT_USER);
 	else
-		polchat_handle_disconnect(s, err->message, EKG_DISCONNECT_NETWORK);
+		polchat_handle_disconnect(s, err?err->message:"", EKG_DISCONNECT_NETWORK);
 }
 
-static void polchat_handle_connect(
-		GSocketConnection *conn,
-		GInputStream *instream,
-		GOutputStream *outstream,
-		gpointer data)
-{
-	session_t *s = data;
+static void polchat_handle_connect(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
 	polchat_private_t *j;
 	const char *tmp;
 
@@ -343,14 +329,6 @@ static void polchat_handle_connect(
 	debug_function("[polchat] handle_connect(%d)\n", s->connecting);
 
 	g_string_set_size(j->recvbuf, 0);
-
-	j->out_stream = ekg_connection_add(
-			conn,
-			instream,
-			outstream,
-			polchat_handle_stream,
-			polchat_handle_failure,
-			s);
 
 	polchat_sendpkt(s, 0x0578,
 		j->nick,						/* nickname */
@@ -367,10 +345,11 @@ static void polchat_handle_connect(
 	return;
 }
 
-static void polchat_handle_connect_failure(GError *err, gpointer data) {
-	session_t *s = data;
+static void polchat_handle_connect_failure(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
+	GError *err = ekg2_connection_get_error(cd);
 
-	polchat_handle_disconnect(s, err->message, EKG_DISCONNECT_FAILURE);
+	polchat_handle_disconnect(s, err ? err->message : "", EKG_DISCONNECT_FAILURE);
 }
 
 static COMMAND(polchat_command_connect) {
@@ -379,8 +358,7 @@ static COMMAND(polchat_command_connect) {
 	const char *nick;
 	const char *room;
 	int port;
-	ekg_connection_starter_t cs;
-	GSocketClient *s;
+	connection_data_t *cd;
 
 	if (session->connecting) {
 		printq("during_connect", session_name(session));
@@ -425,11 +403,15 @@ static COMMAND(polchat_command_connect) {
 	if (port < 0 || port > 65535)
 		port = atoi(POLCHAT_DEFAULT_PORT);
 
-	cs = ekg_connection_starter_new(port);
-	ekg_connection_starter_set_servers(cs, server);
+	j->connection = cd = ekg2_connection_new(session, port);
+	ekg2_connection_set_servers(cd, server);
 
-	s = g_socket_client_new();
-	ekg_connection_starter_run(cs, s, polchat_handle_connect, polchat_handle_connect_failure, session);
+	ekg2_connect(cd,
+			polchat_handle_connect,
+			polchat_handle_connect_failure,
+			polchat_handle_stream,
+			polchat_handle_failure
+			);
 
 	return 0;
 }
