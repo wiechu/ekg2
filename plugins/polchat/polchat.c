@@ -140,7 +140,7 @@ static int polchat_sendpkt(session_t *s, short headercode, ...)  {
 		g_strfreev(arr);
 	}
 
-	ekg2_connection_write_buf(j->connection, buf->str, buf->len);
+	ekg2_connection_write(j->connection, buf->str, buf->len);
 	g_string_free(buf, TRUE);
 	return 0;
 }
@@ -406,7 +406,7 @@ static COMMAND(polchat_command_connect) {
 	j->connection = cd = ekg2_connection_new(session, port);
 	ekg2_connection_set_servers(cd, server);
 
-	ekg2_connect(cd,
+	ekg2_connect_full(cd,
 			polchat_handle_connect,
 			polchat_handle_connect_failure,
 			polchat_handle_stream,
@@ -418,6 +418,8 @@ static COMMAND(polchat_command_connect) {
 
 static COMMAND(polchat_command_disconnect) {
 	const char *reason = params[0]?params[0]:QUITMSG(session);
+
+	session->disconnecting = 1;
 
 	if (timer_remove_session(session, "reconnect") == 0) {
 		printq("auto_reconnect_removed", session_name(session));

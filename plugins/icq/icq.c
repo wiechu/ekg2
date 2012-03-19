@@ -66,7 +66,7 @@ int icq_send_pkt(session_t *s, GString *buf) {
 	if (j->migrate)
 		debug_warn("Client migrate! Packet will not be send\n");
 	else
-		ekg2_connection_write_buf(j->connection, buf->str, buf->len);
+		ekg2_connection_write(j->connection, buf->str, buf->len);
 	g_string_free(buf, TRUE);
 	return 0;
 }
@@ -665,7 +665,7 @@ void icq_connect(session_t *session, const char *server, int port) {
 
 	ekg2_connection_set_servers(cd, server);
 
-	ekg2_connect(cd,
+	ekg2_connect_full(cd,
 			icq_handle_connect,
 			icq_handle_connect_failure,
 			icq_handle_stream,
@@ -1230,6 +1230,8 @@ static COMMAND(icq_command_connect) {
 }
 
 static COMMAND(icq_command_disconnect) {
+	session->disconnecting = 1;
+
 	if (timer_remove_session(session, "reconnect") == 0) {
 		printq("auto_reconnect_removed", session_name(session));
 		return 0;

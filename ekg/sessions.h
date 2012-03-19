@@ -141,6 +141,7 @@ typedef struct ekg_session {
 
 	unsigned int	connected	: 1;	/**< whether session is connected */
 	unsigned int	connecting	: 2;	/**< whether session is currently being connected */
+	unsigned int	disconnecting	: 1;	/** set in /disconnect, clear in disconnect_handler */
 	unsigned int	autoaway	: 1;	/**< whether we're in autoaway */
 
 	time_t		activity;		/**< timestamp of last activity */

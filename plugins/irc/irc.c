@@ -144,7 +144,7 @@ void irc_write(session_t *session, const gchar *format, ...) {
 	for (i=0; lines[i]; i++)
 		if (*lines[i])
 			debug_io("irc_write(0x%x) %s\n", session, lines[i]);
-	ekg2_connection_write_buf(j->connection, tmp, xstrlen(tmp));
+	ekg2_connection_write(j->connection, tmp, xstrlen(tmp));
 	g_strfreev(lines);
 	xfree(tmp);
 	va_end(args);
@@ -497,7 +497,7 @@ void irc_handle_disconnect(session_t *s, const char *reason, int type)
 
 	g_assert(j);
 
-	j->disconnecting = FALSE;
+	s->disconnecting = 0;
 	irc_free_people(s, j);
 
 	switch (type) {
@@ -548,9 +548,8 @@ static void irc_handle_line(connection_data_t *conn, GString *buffer) {
 static void irc_handle_failure(connection_data_t *cd) {
 	session_t *s = ekg2_connection_get_session(cd);
 	GError *err = ekg2_connection_get_error(cd);
-	irc_private_t *j = irc_private(s);
 
-	if (j->disconnecting &&
+	if (s->disconnecting &&
 			g_error_matches(err, EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF))
 		irc_handle_disconnect(s, NULL, EKG_DISCONNECT_USER);
 	else
@@ -600,7 +599,7 @@ static int irc_really_connect(session_t *session, gboolean quiet) {
 
 	ekg2_connection_set_servers(cd, session_get(session, "server"));
 
-	ekg2_connect(cd,
+	ekg2_connect_full(cd,
 			irc_handle_connect,
 			irc_handle_connect_failure, 
 			irc_handle_line,
@@ -649,7 +648,7 @@ static COMMAND(irc_command_disconnect) {
 		return -1;
 	}
 
-	j->disconnecting = TRUE;
+	session->disconnecting = 1;
 
 	if (reason && session_connected_get(session))
 		irc_write(session, "QUIT :%s\r\n", reason);

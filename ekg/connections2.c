@@ -68,6 +68,8 @@ struct connection_data_t {
 			input_callback;
 	ekg2_connection_failure_t
 			failure_callback;
+	ekg2_connection_disconnect_t
+			disconnect_handler;
 	/* private */
 	connection_starter_t *cs;
 };
@@ -220,7 +222,7 @@ static void ekg2_conneciton_set_error(connection_data_t *cd, GError **err, const
 
 }
 
-int ekg2_connection_write_buf(connection_data_t *cd, gconstpointer buffer, gsize length) {
+int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize length) {
 	GError *error = NULL;
 	gint b_written = 0;
 
@@ -266,8 +268,11 @@ static gboolean async_read_callback(GIOChannel *channel, GIOCondition condition,
 		g_string_append_len(cd->in_buf, buffer, bytes_read);
 		debug_function("async_read_callback(%s) read %d bytes (%d bytes in buffer)\n", s?session_uid_get(s):"", bytes_read, cd->in_buf->len);
 		cd->input_callback(cd, cd->in_buf);
+	} else {
+		error = g_error_new_literal(EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF, _("Connection terminated"));
+		ekg2_conneciton_set_error(cd, &error, _("Read stream: "));
+		cd->failure_callback(cd);
 	}
-	// XXX - errors?
 
 	return TRUE;
 }
@@ -278,6 +283,26 @@ accept_certificate(GTlsClientConnection *conn, GTlsCertificate *cert, GTlsCertif
 	// XXX
 	return TRUE;
 }
+
+
+static void ekg2_failure_callback(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
+	GError *err = cd->error;
+
+	if (s->disconnecting && g_error_matches(err, EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF))
+		cd->disconnect_handler(s, NULL, EKG_DISCONNECT_USER);
+	else
+		cd->disconnect_handler(s, err->message, EKG_DISCONNECT_NETWORK);
+}
+
+static void ekg2_connect_failure_handler(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
+	GError *err = cd->error;
+
+	cd->disconnect_handler(s, err ? err->message : "", EKG_DISCONNECT_FAILURE);
+}
+
+
 
 static char *socket_address_toa(GSocketAddress *address) {
 	static GString *buffer = NULL;
@@ -565,14 +590,7 @@ void connect_loop(connection_data_t *cd) {
 	cs->connect_failure_handler(cd);
 }
 
-void
-ekg2_connect(
-	connection_data_t *cd,
-	ekg2_connect_handler_t connect_handler,
-	ekg2_connect_failure_t connect_failure_handler,
-	ekg2_connection_input_callback_t input_callback,
-	ekg2_connection_failure_t failure_callback)
-{
+static void ekg2_connect_common(connection_data_t *cd) {
 	session_t *s = session_find(cd->sess_id);
 	connection_starter_t *cs = cd->cs;
 	const int pref	= session_int_get(s, "prefer_family");
@@ -582,11 +600,6 @@ ekg2_connect(
 	else if (6 == pref)
 		cd->cs->prefer_family = G_SOCKET_FAMILY_IPV6;
 
-	cs->connect_handler = connect_handler;
-	cs->connect_failure_handler = connect_failure_handler;
-
-	cd->input_callback = input_callback;
-	cd->failure_callback = failure_callback;
 
 	cs->channel = g_io_channel_unix_new(cs->pipe_in);
 	g_io_channel_set_encoding(cs->channel, NULL, NULL);
@@ -597,4 +610,43 @@ ekg2_connect(
 		async_resolvers(cd, NULL, EKG2_AR_SRV);
 	else
 		connect_loop(cd);
+}
+
+void
+ekg2_connect_full(
+	connection_data_t *cd,
+	ekg2_connect_handler_t connect_handler,
+	ekg2_connect_failure_t connect_failure_handler,
+	ekg2_connection_input_callback_t input_callback,
+	ekg2_connection_failure_t failure_callback)
+{
+	connection_starter_t *cs = cd->cs;
+
+	cs->connect_handler = connect_handler;
+	cs->connect_failure_handler = connect_failure_handler;
+
+	cd->input_callback = input_callback;
+	cd->failure_callback = failure_callback;
+
+	ekg2_connect_common(cd);
+}
+
+void
+ekg2_connect(connection_data_t *cd,
+		ekg2_connect_handler_t connect_handler,
+		ekg2_connection_input_callback_t input_callback,
+		ekg2_connection_disconnect_t disconnect_handler)
+{
+	connection_starter_t *cs = cd->cs;
+
+	cs->connect_handler = connect_handler;
+	cs->connect_failure_handler = ekg2_connect_failure_handler;
+
+	cd->input_callback = input_callback;
+	cd->failure_callback = ekg2_failure_callback;
+
+	cd->disconnect_handler = disconnect_handler;
+
+
+	ekg2_connect_common(cd);
 }
