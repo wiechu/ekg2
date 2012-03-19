@@ -239,6 +239,7 @@ static void polchat_handle_disconnect(session_t *s, const char *reason, int type
 	if (!s || !(j = s->priv))
 		return;
 
+	s->disconnecting = 0;
 	if (!s->connected && !s->connecting)
 		return;
 
@@ -306,16 +307,6 @@ static void polchat_handle_stream(connection_data_t *cd, GString *inbuf) {
 	return;
 }
 
-static void polchat_handle_failure(connection_data_t *cd) {
-	session_t *s = ekg2_connection_get_session(cd);
-	GError *err = ekg2_connection_get_error(cd);
-
-	if (g_error_matches(err, EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF))
-		polchat_handle_disconnect(s, NULL, EKG_DISCONNECT_USER);
-	else
-		polchat_handle_disconnect(s, err?err->message:"", EKG_DISCONNECT_NETWORK);
-}
-
 static void polchat_handle_connect(connection_data_t *cd) {
 	session_t *s = ekg2_connection_get_session(cd);
 	polchat_private_t *j;
@@ -343,13 +334,6 @@ static void polchat_handle_connect(connection_data_t *cd) {
 		NULL);
 
 	return;
-}
-
-static void polchat_handle_connect_failure(connection_data_t *cd) {
-	session_t *s = ekg2_connection_get_session(cd);
-	GError *err = ekg2_connection_get_error(cd);
-
-	polchat_handle_disconnect(s, err ? err->message : "", EKG_DISCONNECT_FAILURE);
 }
 
 static COMMAND(polchat_command_connect) {
@@ -406,12 +390,10 @@ static COMMAND(polchat_command_connect) {
 	j->connection = cd = ekg2_connection_new(session, port);
 	ekg2_connection_set_servers(cd, server);
 
-	ekg2_connect_full(cd,
+	ekg2_connect(cd,
 			polchat_handle_connect,
-			polchat_handle_connect_failure,
 			polchat_handle_stream,
-			polchat_handle_failure
-			);
+			polchat_handle_disconnect);
 
 	return 0;
 }
