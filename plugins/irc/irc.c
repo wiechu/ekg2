@@ -545,17 +545,6 @@ static void irc_handle_line(connection_data_t *conn, GString *buffer) {
 	}
 }
 
-static void irc_handle_failure(connection_data_t *cd) {
-	session_t *s = ekg2_connection_get_session(cd);
-	GError *err = ekg2_connection_get_error(cd);
-
-	if (s->disconnecting &&
-			g_error_matches(err, EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF))
-		irc_handle_disconnect(s, NULL, EKG_DISCONNECT_USER);
-	else
-		irc_handle_disconnect(s, err->message, EKG_DISCONNECT_NETWORK);
-}
-
 static void irc_handle_connect(connection_data_t *cd) {
 	session_t *s = ekg2_connection_get_session(cd);
 	irc_private_t *j = irc_private(s);
@@ -574,14 +563,6 @@ static void irc_handle_connect(connection_data_t *cd) {
 			j->nick);
 }
 
-static void irc_handle_connect_failure(connection_data_t *cd) {
-	session_t *s = ekg2_connection_get_session(cd);
-	GError *err = ekg2_connection_get_error(cd);
-
-	irc_handle_disconnect(s, err ? err->message : "", EKG_DISCONNECT_FAILURE);
-}
-
-
 /*									 *
  * ======================================== COMMANDS ------------------- *
  *									 */
@@ -599,11 +580,10 @@ static int irc_really_connect(session_t *session, gboolean quiet) {
 
 	ekg2_connection_set_servers(cd, session_get(session, "server"));
 
-	ekg2_connect_full(cd,
+	ekg2_connect(cd,
 			irc_handle_connect,
-			irc_handle_connect_failure, 
 			irc_handle_line,
-			irc_handle_failure);
+			irc_handle_disconnect);
 
 	if (session_status_get(session) == EKG_STATUS_NA)
 		session_status_set(session, EKG_STATUS_AVAIL);
