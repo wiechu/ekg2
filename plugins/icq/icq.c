@@ -555,6 +555,7 @@ void icq_handle_disconnect(session_t *s, const char *reason, int type) {
 	if (!s || !(j = s->priv))
 		return;
 
+	s->disconnecting = 0;
 	if (!s->connected && !s->connecting)
 		return;
 
@@ -629,13 +630,6 @@ static void icq_handle_stream(connection_data_t *cd, GString *buffer) {
 
 }
 
-static void icq_handle_failure(connection_data_t *cd) {
-	session_t *s = ekg2_connection_get_session(cd);
-	GError *err = ekg2_connection_get_error(cd);
-
-	icq_handle_disconnect(s, err ? err->message : "", EKG_DISCONNECT_FAILURE);
-}
-
 static void icq_handle_connect(connection_data_t *cd) {
 	session_t *s = ekg2_connection_get_session(cd);
 	icq_private_t *j = NULL;
@@ -650,13 +644,6 @@ static void icq_handle_connect(connection_data_t *cd) {
 	g_string_set_size(j->stream_buf, 0);
 }
 
-static void icq_handle_connect_failure(connection_data_t *cd) {
-	session_t *s = ekg2_connection_get_session(cd);
-	GError *err = ekg2_connection_get_error(cd);
-
-	icq_handle_disconnect(s, err ? err->message : "", EKG_DISCONNECT_FAILURE);
-}
-
 void icq_connect(session_t *session, const char *server, int port) {
 	icq_private_t *j = session->priv;
 	connection_data_t *cd;
@@ -665,11 +652,10 @@ void icq_connect(session_t *session, const char *server, int port) {
 
 	ekg2_connection_set_servers(cd, server);
 
-	ekg2_connect_full(cd,
+	ekg2_connect(cd,
 			icq_handle_connect,
-			icq_handle_connect_failure,
 			icq_handle_stream,
-			icq_handle_failure);
+			icq_handle_disconnect);
 }
 
 
