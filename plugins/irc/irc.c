@@ -144,7 +144,7 @@ void irc_write(session_t *session, const gchar *format, ...) {
 	for (i=0; lines[i]; i++)
 		if (*lines[i])
 			debug_io("irc_write(0x%x) %s\n", session, lines[i]);
-	ekg_connection_write_buf(j->send_stream, tmp, xstrlen(tmp));
+	ekg2_connection_write_buf(j->connection, tmp, xstrlen(tmp));
 	g_strfreev(lines);
 	xfree(tmp);
 	va_end(args);
@@ -525,37 +525,30 @@ void irc_handle_disconnect(session_t *s, const char *reason, int type)
 		xfree(__reason);
 		__reason = xstrdup(reason);
 	}
+
+	ekg2_connection_close(&j->connection);
+
 	protocol_disconnected_emit(s, __reason, type);
 	xfree(__reason);
 }
 
-static void irc_handle_line(GDataInputStream *input, gpointer data) {
-	session_t *s = data;
-	gchar *l;
+static void irc_handle_line(connection_data_t *conn, GString *buffer) {
+	session_t *s = ekg2_connection_get_session(conn);
+	const char *found, *le = "\n";
 
-	const char *buf;
-	const char *le = "\n";
-	gsize count;
-	gboolean found;
-
-	do { /* repeat till user grabs all lines */
-		buf = g_buffered_input_stream_peek_buffer(G_BUFFERED_INPUT_STREAM(input), &count);
-		found = !!g_strstr_len(buf, count, le);
-		if (found) {
-			l = g_data_input_stream_read_line(input, NULL, NULL, NULL);
-			if (l) {
-				irc_parse_line(s, l);
-				g_free(l);
-			}
-		}
-	} while (found);
+	while ((found = g_strstr_len(buffer->str, buffer->len, le))) {
+		int len = found - buffer->str + 1;
+		gchar *line = g_strndup(buffer->str, len - 1);
+		irc_parse_line(s, line);
+		g_free(line);
+		buffer = g_string_erase(buffer, 0, len);
+	}
 }
 
-static void irc_handle_failure(GDataInputStream *f, GError *err, gpointer data) {
-	session_t *s = data;
+static void irc_handle_failure(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
+	GError *err = ekg2_connection_get_error(cd);
 	irc_private_t *j = irc_private(s);
-
-	j->send_stream = NULL; /* XXX: needed? */
 
 	if (j->disconnecting &&
 			g_error_matches(err, EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF))
@@ -564,44 +557,29 @@ static void irc_handle_failure(GDataInputStream *f, GError *err, gpointer data) 
 		irc_handle_disconnect(s, err->message, EKG_DISCONNECT_NETWORK);
 }
 
-static void irc_handle_connect(
-		GSocketConnection *conn,
-		GInputStream *instream,
-		GOutputStream *outstream,
-		gpointer data)
-{
-	session_t *s = data;
+static void irc_handle_connect(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
 	irc_private_t *j = irc_private(s);
+	const gchar *real = session_get(s, "realname");
+	const gchar *mode = session_get(s, "usermode");
+	const gchar *pass = session_password_get(s); /* XXX: we used to strip_spaces() here?! */
 
-	j->send_stream = ekg_connection_add(
-			conn,
-			instream,
-			outstream,
-			irc_handle_line,
-			irc_handle_failure,
-			s);
+	/* XXX: check space in j->nick and mode */
 
-	{
-		const gchar *real = session_get(s, "realname");
-		const gchar *mode = session_get(s, "usermode");
-		const gchar *pass = session_password_get(s); /* XXX: we used to strip_spaces() here?! */
-
-		/* XXX: check space in j->nick and mode */
-
-		if (pass && *pass)
-			ekg_fprintf(G_OUTPUT_STREAM(j->send_stream), "PASS %s\r\n", pass);
-		irc_write(s,
-				"USER %s %s unused_field :%s\r\n"
-				"NICK %s\r\n",
-				j->nick, (mode && *mode) ? mode : EKG_IRC_DEFAULT_USERMODE, (real && *real) ? real : j->nick,
-				j->nick);
-	}
+	if (pass && *pass)
+		irc_write(s, "PASS %s\r\n", pass);
+	irc_write(s, 	"USER %s %s unused_field :%s\r\n"
+			"NICK %s\r\n",
+			j->nick, (mode && *mode) ? mode : EKG_IRC_DEFAULT_USERMODE,
+			(real && *real) ? real : j->nick,
+			j->nick);
 }
 
-static void irc_handle_connect_failure(GError *err, gpointer data) {
-	session_t *s = data;
+static void irc_handle_connect_failure(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
+	GError *err = ekg2_connection_get_error(cd);
 
-	irc_handle_disconnect(s, err->message, EKG_DISCONNECT_FAILURE);
+	irc_handle_disconnect(s, err ? err->message : "", EKG_DISCONNECT_FAILURE);
 }
 
 
@@ -610,25 +588,23 @@ static void irc_handle_connect_failure(GError *err, gpointer data) {
  *									 */
 static int irc_really_connect(session_t *session, gboolean quiet) {
 	irc_private_t *j = irc_private(session);
-	GSocketClient *s;
+	connection_data_t *cd;
 
 	const int defport = session_int_get(session, "port");
-	const gchar *bindhost = session_get(session, "hostname");
-	ekg_connection_starter_t cs;
 
 	session->connecting = 1;
 	j->autoreconnecting = 1; /* XXX? */
 	printq("connecting", session_name(session));
 
-	cs = ekg_connection_starter_new(defport > 0 ? defport : DEFPORT);
-	ekg_connection_starter_set_servers(cs, session_get(session, "server"));
-	ekg_connection_starter_set_use_tls(cs, !!session_int_get(session, "use_tls"));
-	if (bindhost)
-		ekg_connection_starter_bind(cs, bindhost);
+	j->connection = cd = ekg2_connection_new(session, defport > 0 ? defport : DEFPORT);
 
-	s = g_socket_client_new();
-	ekg_connection_starter_run(cs, s, irc_handle_connect,
-			irc_handle_connect_failure, session);
+	ekg2_connection_set_servers(cd, session_get(session, "server"));
+
+	ekg2_connect(cd,
+			irc_handle_connect,
+			irc_handle_connect_failure, 
+			irc_handle_line,
+			irc_handle_failure);
 
 	if (session_status_get(session) == EKG_STATUS_NA)
 		session_status_set(session, EKG_STATUS_AVAIL);
@@ -674,19 +650,14 @@ static COMMAND(irc_command_disconnect) {
 	}
 
 	j->disconnecting = TRUE;
+
 	if (reason && session_connected_get(session))
 		irc_write(session, "QUIT :%s\r\n", reason);
-	if (session->connecting) {
-		g_cancellable_cancel(j->connect_cancellable);
-		/* XXX: how about the 'connection processing' part? */
-	}
 
-#if 0
 	if (session->connecting || j->autoreconnecting)
 		irc_handle_disconnect(session, reason, EKG_DISCONNECT_STOPPED);
 	else
 		irc_handle_disconnect(session, reason, EKG_DISCONNECT_USER);
-#endif
 
 	return 0;
 }

@@ -31,8 +31,7 @@ typedef struct _irc_private_t {
 	int autoreconnecting;		/* are we in reconnecting mode now? */
 	gboolean disconnecting;
 
-	GCancellable *connect_cancellable;
-	GDataOutputStream *send_stream;
+	connection_data_t *connection;
 
 	char *nick;			/* guess again ? ;> */
 	char *host_ident;		/* ident+host */
