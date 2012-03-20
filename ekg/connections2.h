@@ -45,6 +45,7 @@ connection_data_t *ekg2_connection_new(session_t *session, guint16 defport);
 
 void ekg2_connection_set_servers(connection_data_t *cd, const gchar *servers);
 void ekg2_connection_set_srv(connection_data_t *cd, gchar *service, gchar *domain);
+void ekg2_connection_set_tls(connection_data_t *cd, gboolean use_tls);
 
 
 GError *ekg2_connection_get_error(connection_data_t *cd);

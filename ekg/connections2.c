@@ -55,6 +55,7 @@ struct connection_data_t {
 	/* private */
 	/* connection */
 	int		watch_id;
+	gboolean	tls;
 	GSocket		*socket;
 	GIOStream	*conn;
 	GIOChannel	*channel;
@@ -189,6 +190,10 @@ void ekg2_connection_set_srv(connection_data_t *cd, gchar *service, gchar *domai
 	cd->cs->domain = g_strdup(domain);
 	g_free(cd->cs->service);
 	cd->cs->service = g_strdup(service);
+}
+
+void ekg2_connection_set_tls(connection_data_t *cd, gboolean use_tls) {
+	cd->tls = use_tls;
 }
 
 GError *ekg2_connection_get_error(connection_data_t *cd) {
@@ -379,7 +384,7 @@ connection_open(connection_data_t *cd, const char *hostip, int port, GSocketFami
 
 	cd->conn = G_IO_STREAM(g_socket_connection_factory_create_connection(cd->socket));
 
-	if ((1 == session_int_get(s, "use_tls")) || (1 == session_int_get(s, "use_ssl"))) {
+	if (cd->tls) {
 		GSocketConnectable *connectable;
 		GIOStream *tls_conn;
 
