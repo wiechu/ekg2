@@ -150,27 +150,24 @@ void ekg2_connection_close(connection_data_t **acd) {
 	g_string_free(cd->out_buf, TRUE);
 
 	if (cd->conn) {
-		if (!g_io_stream_close(cd->conn, NULL, &error)) {
+		if (!g_io_stream_close(cd->conn, NULL, &error))
 			debug_error("Error closing connection: %s\n", error->message);
-			g_error_free(error);
-			return;
-		}
 		g_object_unref(cd->conn);
 	} else {
-		if (!g_socket_close(cd->socket, &error)) {
+		if (cd->socket && !g_socket_close(cd->socket, &error))
 			debug_error("Error closing master socket: %s\n", error->message);
-			g_error_free(error);
-			return;
-		}
 	}
 
-	g_object_unref(cd->socket);
+	if (cd->socket) g_object_unref(cd->socket);
+
+	if (cd->error) g_error_free(cd->error);
+	if (error) g_error_free(error);
 
 	g_free(cd->sess_id);
-	g_error_free(cd->error);
+
 	g_free(cd);
 
-	cd = NULL;
+	*acd = NULL;
 }
 
 void ekg2_connection_set_servers(connection_data_t *cd, const gchar *servers) {
@@ -326,7 +323,6 @@ static char *socket_address_toa(GSocketAddress *address) {
 
 static gboolean
 connection_open(connection_data_t *cd, const char *hostip, int port, GSocketFamily family) {
-	session_t *s = session_find(cd->sess_id);
 	GSocketAddress *address = NULL;
 	GError	*error = NULL;
 	connection_starter_t *cs = cd->cs;
