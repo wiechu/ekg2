@@ -19,7 +19,7 @@
 #include "ekg2.h"
 
 #include <arpa/inet.h>
-
+#include <string.h>
 
 typedef struct connection_starter_t connection_starter_t;
 
@@ -32,7 +32,7 @@ struct connection_starter_t {
 	char	*service;
 
 	/* data for connect_loop() */
-	char	**hosts;	/* jobs for resolver */
+	char	**srvhosts;	/* jobs for resolver */
 	char	**ips;		/* preferred IPs to connect */
 	char	**ips2;		/* unpreferred IPs to connect */
 
@@ -118,7 +118,7 @@ static void connect_starter_free(connection_data_t *cd) {
 	g_free(cs->domain);
 	g_free(cs->service);
 	g_strfreev(cs->servers);
-	g_strfreev(cs->hosts);
+	g_strfreev(cs->srvhosts);
 	g_strfreev(cs->ips);
 	g_strfreev(cs->ips2);
 
@@ -309,14 +309,15 @@ static void ekg2_connect_failure_handler(connection_data_t *cd) {
 static char *socket_address_toa(GSocketAddress *address) {
 	static GString *buffer = NULL;
 	GInetAddress *inet_addr;
-	char *str;
+	char *str, *format;
 
 	if (!buffer)
 		buffer = g_string_sized_new(256);
 
 	inet_addr = g_inet_socket_address_get_address(G_INET_SOCKET_ADDRESS(address));
 	str = g_inet_address_to_string(inet_addr);
-	g_string_printf(buffer, "%s:%d", str, g_inet_socket_address_get_port(G_INET_SOCKET_ADDRESS(address)));
+	format = (AF_INET6 == g_inet_address_get_family(inet_addr)) ? "[%s]:%d" : "%s:%d";
+	g_string_printf(buffer, format, str, g_inet_socket_address_get_port(G_INET_SOCKET_ADDRESS(address)));
 	g_free(str);
 	return buffer->str;
 }
@@ -469,7 +470,7 @@ static gboolean aresolv_handler(GIOChannel *channel, GIOCondition condition, gpo
 		/* SRV answers */
 		results = array_make(response, "\n", 0, 0, 0);
 		while (results)
-			array_add(&cd->cs->hosts, array_shift(&results));
+			array_add(&cd->cs->srvhosts, array_shift(&results));
 	} else {
 		GError *error = NULL;
 		g_set_error_literal(&error, G_IO_ERROR, G_IO_ERROR_FAILED, response);
@@ -516,7 +517,7 @@ static void async_resolvers(connection_data_t *cd, char *query, aresolv_t type) 
 			const char *host = g_srv_target_get_hostname(target);
 			int port = g_srv_target_get_port(target);
 
-			array_add(&results, saprintf("%s/%d", host, port));
+			array_add(&results, saprintf("%s %d", host, port));
 		}
 
 		g_resolver_free_targets(targets);
@@ -524,7 +525,7 @@ static void async_resolvers(connection_data_t *cd, char *query, aresolv_t type) 
 		GList *addrs, *item;
 		char *port;
 
-		if ((port = xstrchr(query, '/'))) *port++ = 0;	// XXX port separator?
+		if ((port = xstrchr(query, ' '))) *port++ = 0;	// XXX port separator?
 
 		addrs = g_resolver_lookup_by_name(resolver, query, NULL, &error);
 
@@ -556,7 +557,6 @@ static void async_resolvers(connection_data_t *cd, char *query, aresolv_t type) 
 	exit(0);
 }
 
-
 void connect_loop(connection_data_t *cd) {
 	connection_starter_t *cs = cd->cs;
 
@@ -578,10 +578,37 @@ void connect_loop(connection_data_t *cd) {
 		}
 	}
 
-	if (cs->hosts || cs->servers) {
+	if (cs->srvhosts) {
 		char *q;
-		if ((q = array_shift(&cs->hosts)) || (q = array_shift(&cs->servers))) {
+		if ((q = array_shift(&cs->srvhosts))) {
 			async_resolvers(cd, q, EKG2_AR_RESOLVER);
+			g_free(q);
+			return;
+		}
+	}
+
+	if (cs->servers) {
+		char *q, *end, *tmp;
+		char *name = NULL, *port = NULL;
+
+		if ((q = array_shift(&cs->servers))) {
+			name = q;
+			/* parse host and port */
+			if (('[' == *q) && (end = strchr(q, ']'))) {
+				/* [2001:bad::1]:123 */
+				*end = '\0';
+				name = q + 1;
+				if (*++end == ':')
+					port = end + 1;
+			} else if ((port = strchr(q, ':')) && !strchr(port + 1, ':')) {
+				/*  one ':' in string */
+				*port++ = '\0';
+			}
+			tmp = g_strdup_printf("%s %s", name, port ? port : ekg_itoa(cs->port));
+
+			async_resolvers(cd, tmp, EKG2_AR_RESOLVER);
+
+			g_free(tmp);
 			g_free(q);
 			return;
 		}
@@ -600,7 +627,6 @@ static void ekg2_connect_common(connection_data_t *cd) {
 		cd->cs->prefer_family = G_SOCKET_FAMILY_IPV4;
 	else if (6 == pref)
 		cd->cs->prefer_family = G_SOCKET_FAMILY_IPV6;
-
 
 	cs->channel = g_io_channel_unix_new(cs->pipe_in);
 	g_io_channel_set_encoding(cs->channel, NULL, NULL);
@@ -647,7 +673,6 @@ ekg2_connect(connection_data_t *cd,
 	cd->failure_callback = ekg2_failure_callback;
 
 	cd->disconnect_handler = disconnect_handler;
-
 
 	ekg2_connect_common(cd);
 }
