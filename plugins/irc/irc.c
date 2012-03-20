@@ -580,7 +580,7 @@ static int irc_really_connect(session_t *session, gboolean quiet) {
 
 	ekg2_connection_set_servers(cd, session_get(session, "server"));
 
-	ekg2_connection_set_tls(cd, (1 == session_int_get(s, "use_tls")));
+	ekg2_connection_set_tls(cd, (1 == session_int_get(session, "use_tls")));
 
 	ekg2_connect(cd,
 			irc_handle_connect,
