@@ -99,26 +99,12 @@
  * *************************************************************
  */
 
-/*
- * IDEAS:
- *  -> maybe some params in /connect command ?
- *     for example if we have in /session server krakow.irc.pl,poznan.irc.pl
- *     and we want connect to poznan.irc.pl (150.254.64.64) nor krakow... we type
- *     /connect poznan.irc.pl
- *     /connect #2
- *     /connect 150.254.64.64
- *     next, if we want to connect instead of default 6667 port to i.e 6665 we type
- *     /connect :6665
- *     or we can use both.
- *     /connect poznan.irc.pl:6665 || /connect 150.254.64.64 6665.
- */
 /*									 *
  * ======================================== STARTUP AND STANDARD FUNCS - *
  *									 */
 
 static int irc_theme_init();
 static COMMAND(irc_command_disconnect);
-static int irc_really_connect(session_t *session, gboolean quiet);
 static char *irc_getchan_int(session_t *s, const char *name, int checkchan);
 static char *irc_getchan(session_t *s, const char **params, const char *name,
       char ***v, int pr, int checkchan);
@@ -566,19 +552,17 @@ static void irc_handle_connect(connection_data_t *cd) {
 /*									 *
  * ======================================== COMMANDS ------------------- *
  *									 */
-static int irc_really_connect(session_t *session, gboolean quiet) {
+static void irc_really_connect(session_t *session, char *server, int port, gboolean quiet) {
 	irc_private_t *j = irc_private(session);
 	connection_data_t *cd;
-
-	const int defport = session_int_get(session, "port");
 
 	session->connecting = 1;
 	j->autoreconnecting = 1; /* XXX? */
 	printq("connecting", session_name(session));
 
-	j->connection = cd = ekg2_connection_new(session, defport > 0 ? defport : DEFPORT);
+	j->connection = cd = ekg2_connection_new(session, port);
 
-	ekg2_connection_set_servers(cd, session_get(session, "server"));
+	ekg2_connection_set_servers(cd, server);
 
 	ekg2_connection_set_tls(cd, (1 == session_int_get(session, "use_tls")));
 
@@ -590,18 +574,14 @@ static int irc_really_connect(session_t *session, gboolean quiet) {
 	if (session_status_get(session) == EKG_STATUS_NA)
 		session_status_set(session, EKG_STATUS_AVAIL);
 
-	/* XXX: timeout */
-	return -1;
 }
 
 static COMMAND(irc_command_connect) {
-	irc_private_t		*j = irc_private(session);
-	const char		*newnick;
+	irc_private_t	*j = irc_private(session);
+	const char	*newnick, *argument = params[0];
+	char 		*server = NULL;
+	int		port = session_int_get(session, "port");
 
-	if (!session_get(session, "server")) {
-		printq("generic_error", "gdzie lecimy ziom ?! [/session server]");
-		return -1;
-	}
 	if (session->connecting) {
 		printq("during_connect", session_name(session));
 		return -1;
@@ -617,7 +597,46 @@ static COMMAND(irc_command_connect) {
 		printq("generic_error", "gdzie lecimy ziom ?! [/session nickname]");
 		return -1;
 	}
-	return irc_really_connect(session, quiet);
+
+	if (argument) {
+		/*
+		 * params in /connect command
+		 *
+		 * for example if we have in /session server poznan.irc.pl,krakow.irc.pl
+		 * and we want connect to krakow.irc.pl nor poznan.irc.pl we type
+		 *	/connect krakow.irc.pl
+		 *	/connect #2			<- XXX 2do
+		 *	/connect 149.156.124.222
+		 *	/connect 2001:6d8:10:1667::6667
+		 * next, if we want to connect instead of default 6667 port to i.e 6665 we type
+		 *	/connect :6665
+		 * or we can use both.
+		 *	/connect krakow.irc.pl:6665
+		 *	/connect 149.156.124.222:6665
+		 *	/connect [2001:6d8:10:1667::6667]:6665
+		 */
+		if (':' == argument[1]) {
+			port = strtol(argument + 2, NULL, 10);
+		} else
+			server = g_strdup(argument);
+	}
+
+	if (port <= 0 || port > G_MAXUINT16)
+		port = DEFPORT;
+
+	if (!server)
+		server = g_strdup(session_get(session, "server"));
+
+	if (!server) {
+		printq("generic_error", "gdzie lecimy ziom ?! [/session server || /connect server]");
+		return -1;
+	}
+
+	irc_really_connect(session, server, port, quiet);
+
+	g_free(server);
+
+	return -1;
 }
 
 static COMMAND(irc_command_disconnect) {
