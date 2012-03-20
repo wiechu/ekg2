@@ -1,7 +1,6 @@
 /*
- *  Asynchronous read/write handling for connections
- *
- *  (C) Copyright 2011 EKG2 team
+ *  (C) Copyright 2012
+ *			Wiesław Ochmiński <wiechu at wiechu dot com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License Version 2 as
@@ -18,789 +17,667 @@
  */
 
 #include "ekg2.h"
-#include "ekg/internal.h"
 
-#ifdef HAVE_LIBGNUTLS
-#	include <errno.h> /* EAGAIN for transport wrappers */
-#	include <gnutls/gnutls.h>
-
-#	define NEED_SLAVERY 1
-#endif
+#include <arpa/inet.h>
+#include <string.h>
 
 #define EKG_CONNECTION_ERROR ekg_connection_error_quark()
+
+typedef struct connection_starter_t connection_starter_t;
+
+struct connection_starter_t {
+	connection_data_t	*cd;
+
+	char	**servers;
+	/* SRV */
+	char	*domain;
+	char	*service;
+
+	/* data for connect_loop() */
+	char	**srvhosts;	/* jobs for resolver */
+	char	**ips;		/* preferred IPs to connect */
+	char	**ips2;		/* unpreferred IPs to connect */
+
+	/* data provided by user */
+	GSocketFamily	prefer_family;		/* preferred address family */
+	int	default_port;			/* default port of a protocol */
+	int	port;
+	ekg2_connect_handler_t connect_handler;
+	ekg2_connect_failure_t connect_failure_handler;
+	/* private */
+	GIOChannel *channel;
+	int pipe_watch_id;
+	int pipe_in;
+	int pipe_out;
+};
+
+struct connection_data_t {
+	GError	*error;
+	gchar	*sess_id;
+	/* private */
+	/* connection */
+	int		watch_id;
+	gboolean	tls;
+	GSocket		*socket;
+	GIOStream	*conn;
+	GIOChannel	*channel;
+	GInputStream	*in_stream;
+	GOutputStream	*out_stream;
+	/* buffers */
+	GString		*in_buf;
+	GString		*out_buf;
+	/* handlers */
+	ekg2_connection_input_callback_t
+			input_callback;
+	ekg2_connection_failure_t
+			failure_callback;
+	ekg2_connection_disconnect_t
+			disconnect_handler;
+	/* private */
+	connection_starter_t *cs;
+};
+
+typedef enum {
+	EKG2_AR_SRV,
+	EKG2_AR_RESOLVER,
+	EKG2_AR_ERROR,
+} aresolv_t;
+
 GQuark ekg_connection_error_quark() {
 	return g_quark_from_static_string("ekg-connection-error-quark");
 }
 
-struct ekg_connection;
+connection_data_t *ekg2_connection_new(session_t *session, guint16 defport) {
+	int fd[2];
+	connection_data_t *cd;
+	connection_starter_t *cs;
 
-typedef void (*ekg_flush_handler_t) (struct ekg_connection *conn);
+	cd = g_new0(struct connection_data_t, 1);
 
-struct ekg_connection {
-	GSocketConnection *conn;
-	GDataInputStream *instream;
-	GDataOutputStream *outstream;
-	GCancellable *cancellable;
+	cd->in_buf = g_string_new("");
+	cd->out_buf = g_string_new("");
 
-	gpointer priv_data;
-	ekg_input_callback_t callback;
-	ekg_failure_callback_t failure_callback;
+	cd->sess_id = g_strdup(session_uid_get(session));
 
-	ekg_flush_handler_t flush_handler;
-
-	GString *wr_buffer;
-
-#if NEED_SLAVERY
-	struct ekg_connection *master;
-	struct ekg_connection *slave;
-#endif
-};
-
-static GSList *connections = NULL;
-
-static void setup_async_read(struct ekg_connection *c);
-static gboolean setup_async_connect(GSocketClient *sock, struct ekg_connection_starter *cs);
-
-#ifdef HAVE_LIBGNUTLS
-static void ekg_gnutls_new_session(
-		GSocketClient *sockclient,
-		GSocketConnection *sock,
-		struct ekg_connection_starter *cs);
-
-#define EKG_GNUTLS_ERROR ekg_gnutls_error_quark()
-static G_GNUC_CONST GQuark ekg_gnutls_error_quark() {
-	return g_quark_from_static_string("ekg-gnutls-error-quark");
-}
-#endif
-
-static void ekg_connection_remove(struct ekg_connection *c) {
-	if (g_input_stream_has_pending(G_INPUT_STREAM(c->instream))) {
-		debug_warn("ekg_connection_remove(%x) input stream has pending!\n", c);
-		g_input_stream_clear_pending(G_INPUT_STREAM(c->instream));
-	}
-#if 0 /* XXX */
-	g_assert(!g_output_stream_has_pending(
-				G_OUTPUT_STREAM(c->outstream)));
-#endif
-
-	connections = g_slist_remove(connections, c);
-
-	g_string_free(c->wr_buffer, TRUE);
-	g_object_unref(c->cancellable);
-	g_object_unref(c->instream);
-	g_object_unref(c->outstream);
-	g_slice_free(struct ekg_connection, c);
-}
-
-static struct ekg_connection *get_connection_by_outstream(GDataOutputStream *s) {
-	GSList *el;
-
-	gint conn_find_outstream(gconstpointer list_elem, gconstpointer comp_elem) {
-		const struct ekg_connection *c = list_elem;
-
-		return c->outstream == comp_elem ? 0 : -1;
+	cs = g_new0(struct connection_starter_t, 1);
+	cs->port = defport;
+	cs->default_port = defport;
+	cs->prefer_family = G_SOCKET_FAMILY_IPV4;
+	if (pipe(fd) != -1) {
+		cs->pipe_in = fd[0];
+		cs->pipe_out = fd[1];
 	}
 
-	el = g_slist_find_custom(connections, s, conn_find_outstream);
-	return el ? el->data : NULL;
+	cd->cs	= cs;
+
+	return cd;
 }
 
-#if NEED_SLAVERY
-static struct ekg_connection *get_slave_connection_by_conn(GSocketConnection *c) {
-	GSList *el;
+static void connect_starter_free(connection_data_t *cd) {
+	connection_starter_t *cs = cd->cs;
 
-	gint conn_find_slaveless_conn(gconstpointer list_elem, gconstpointer comp_elem) {
-		const struct ekg_connection *c = list_elem;
-
-		return (!c->slave && c->conn == comp_elem) ? 0 : -1;
-	}
-
-	el = g_slist_find_custom(connections, c, conn_find_slaveless_conn);
-	return el ? el->data : NULL;
-}
-#endif
-
-
-static void done_async_read(GObject *obj, GAsyncResult *res, gpointer user_data) {
-	struct ekg_connection *c = user_data;
-	GError *err = NULL;
-	gssize rsize;
-	GBufferedInputStream *instr = G_BUFFERED_INPUT_STREAM(obj);
-
-	rsize = g_buffered_input_stream_fill_finish(instr, res, &err);
-
-	if (rsize <= 0) {
-		if (rsize == -1) /* error */
-			debug_error("done_async_read(), read failed: %s\n", err ? err->message : NULL);
-		else { /* EOF */
-#if NEED_SLAVERY
-			if (c->master) /* let the master handle it */
-				return;
-#endif
-			debug_function("done_async_read(), EOF\n");
-			if (g_buffered_input_stream_get_available(instr) > 0)
-				c->callback(c->instream, c->priv_data);
-
-			err = g_error_new_literal(
-					EKG_CONNECTION_ERROR,
-					EKG_CONNECTION_ERROR_EOF,
-					"Connection terminated");
-		}
-
-		c->failure_callback(c->instream, err, c->priv_data);
-		ekg_connection_remove(c);
-		g_error_free(err);
+	g_return_if_fail(cd != NULL);
+	if (!cs)
 		return;
+
+	g_free(cs->domain);
+	g_free(cs->service);
+	g_strfreev(cs->servers);
+	g_strfreev(cs->srvhosts);
+	g_strfreev(cs->ips);
+	g_strfreev(cs->ips2);
+
+	g_source_remove(cs->pipe_watch_id);
+
+	close(cs->pipe_out);
+	close(cs->pipe_in);
+
+	g_free(cs);
+	cd->cs = NULL;
+}
+
+void ekg2_connection_close(connection_data_t **acd) {
+	connection_data_t *cd = *acd;
+	session_t *s;
+	GError *error = NULL;
+
+	g_return_if_fail(cd != NULL);
+
+	connect_starter_free(cd);
+
+	s = session_find(cd->sess_id);
+
+	debug_function("ekg2_connection_close(%s)\n", session_uid_get(s));
+
+	g_source_remove(cd->watch_id);
+
+	g_string_free(cd->in_buf, TRUE);
+	g_string_free(cd->out_buf, TRUE);
+
+	if (cd->conn) {
+		if (!g_io_stream_close(cd->conn, NULL, &error))
+			debug_error("Error closing connection: %s\n", error->message);
+		g_object_unref(cd->conn);
+	} else {
+		if (cd->socket && !g_socket_close(cd->socket, &error))
+			debug_error("Error closing master socket: %s\n", error->message);
 	}
 
-	debug_function("done_async_read(): read %d bytes\n", rsize);
+	if (cd->socket) g_object_unref(cd->socket);
 
-	c->callback(c->instream, c->priv_data);
-	setup_async_read(c);
+	if (cd->error) g_error_free(cd->error);
+	if (error) g_error_free(error);
+
+	g_free(cd->sess_id);
+
+	g_free(cd);
+
+	*acd = NULL;
 }
 
-static void setup_async_read(struct ekg_connection *c) {
-	g_buffered_input_stream_fill_async(
-			G_BUFFERED_INPUT_STREAM(c->instream),
-			-1, /* fill the buffer */
-			G_PRIORITY_DEFAULT,
-			c->cancellable,
-			done_async_read,
-			c);
+void ekg2_connection_set_servers(connection_data_t *cd, const gchar *servers) {
+	g_return_if_fail(cd != NULL);
+	g_return_if_fail(cd->cs != NULL);
+
+	g_strfreev(cd->cs->servers);
+	cd->cs->servers = g_strsplit(servers, ",", 0);
 }
 
-static void failed_write(struct ekg_connection *c) {
-	/* XXX? */
+void ekg2_connection_set_srv(connection_data_t *cd, gchar *service, gchar *domain) {
+	debug_function("ekg2_connection_set_srv(%s,%s)\n",service,domain);	// XXX-temp
+	g_return_if_fail(service != NULL);
+	g_return_if_fail(domain != NULL);
+
+	g_free(cd->cs->domain);
+	cd->cs->domain = g_strdup(domain);
+	g_free(cd->cs->service);
+	cd->cs->service = g_strdup(service);
 }
 
-static void done_async_write(GObject *obj, GAsyncResult *res, gpointer user_data) {
-	struct ekg_connection *c = user_data;
-	GError *err = NULL;
-	gboolean ret;
-	GOutputStream *of = G_OUTPUT_STREAM(obj);
-
-	ret = g_output_stream_flush_finish(of, res, &err);
-
-	if (!ret) {
-		debug_error("done_async_write(), write failed: %s\n", err ? err->message : NULL);
-		/* XXX */
-		failed_write(c);
-		g_error_free(err);
-		return;
-	}
-
-	if (c->wr_buffer->len > 0) {
-		/* the stream should not have any pending writes ATM
-		 * we need to ensure that to have the data written to stream
-		 * rather than re-appended to the buffer*/
-		g_assert(!g_output_stream_has_pending(of));
-
-		ekg_connection_write_buf(G_DATA_OUTPUT_STREAM(of),
-				c->wr_buffer->str, c->wr_buffer->len);
-		g_string_truncate(c->wr_buffer, 0);
-	}
-
-	/* XXX: anything to do? */
+void ekg2_connection_set_tls(connection_data_t *cd, gboolean use_tls) {
+	cd->tls = use_tls;
 }
 
-static void setup_async_write(struct ekg_connection *c) {
-	g_output_stream_flush_async(
-			G_OUTPUT_STREAM(c->outstream),
-			G_PRIORITY_DEFAULT,
-			c->cancellable, /* XXX */
-			done_async_write,
-			c);
+GError *ekg2_connection_get_error(connection_data_t *cd) {
+	// XXX
+	return cd->error;
 }
 
-GDataOutputStream *ekg_connection_add(
-		GSocketConnection *conn,
-		GInputStream *raw_instream,
-		GOutputStream *raw_outstream,
-		ekg_input_callback_t callback,
-		ekg_failure_callback_t failure_callback,
-		gpointer priv_data)
-{
-	struct ekg_connection *c = g_slice_new(struct ekg_connection);
-	GOutputStream *bout = g_buffered_output_stream_new(raw_outstream);
-
-	c->conn = conn;
-	c->instream = g_data_input_stream_new(raw_instream);
-	c->outstream = g_data_output_stream_new(bout);
-	c->cancellable = g_cancellable_new();
-	c->wr_buffer = g_string_new("");
-
-	c->callback = callback;
-	c->failure_callback = failure_callback;
-	c->priv_data = priv_data;
-
-#if NEED_SLAVERY
-	c->master = get_slave_connection_by_conn(conn);
-	c->slave = NULL;
-
-		/* be a good slave.. er, servant */
-	if (G_UNLIKELY(c->master)) {
-		struct ekg_connection *ci;
-		c->master->slave = c;
-
-		/* shift flush handlers (if set)
-		 * this is required in order to be able to easily set flush
-		 * handlers for future slaves */
-		for (ci = c;
-				ci->master && (ci->master->flush_handler != setup_async_write);
-				ci = ci->master)
-			ci->flush_handler = ci->master->flush_handler;
-		ci->flush_handler = setup_async_write;
-	} else
-#endif
-		c->flush_handler = setup_async_write;
-
-		/* LF works fine for CRLF */
-	g_data_input_stream_set_newline_type(c->instream, G_DATA_STREAM_NEWLINE_TYPE_LF);
-		/* disallow any blocking writes */
-	g_buffered_output_stream_set_auto_grow(G_BUFFERED_OUTPUT_STREAM(bout), TRUE);
-
-	connections = g_slist_prepend(connections, c);
-#if NEED_SLAVERY
-	if (G_LIKELY(!c->master))
-#endif
-		setup_async_read(c);
-
-	return c->outstream;
+session_t *ekg2_connection_get_session(connection_data_t *cd) {
+	// XXX
+	return session_find(cd->sess_id);
 }
 
-void ekg_disconnect_by_outstream(GDataOutputStream *f) {
-	struct ekg_connection *c = get_connection_by_outstream(f);
-
-	if (!c) {
-		debug_warn("ekg_disconnect_by_outstream() - connection not found\n");
-		return;
-	}
-
-	debug_function("ekg_disconnect_by_outstream(%x)\n",c);
-
-	ekg_connection_remove(c);
-}
-
-void ekg_connection_write_buf(GDataOutputStream *f, gconstpointer buf, gsize len) {
-	struct ekg_connection *c = get_connection_by_outstream(f);
-	GError *err = NULL;
-	gssize out;
-	GOutputStream *of = G_OUTPUT_STREAM(f);
-
-	/* we can't write to buffer if it has pending ops;
-	 * yes, it is stupid. */
-	if (g_output_stream_has_pending(of)) {
-		c->wr_buffer = g_string_append_len(c->wr_buffer, buf, len);
-		return;
-	}
-
-	out = g_output_stream_write(of, buf, len, NULL, &err);
-	if (out != len) {
-		debug_error("ekg_connection_write_string() failed (wrote %d out of %d): %s\n",
-				out, len, err ? err->message : "(no error?!)");
-		failed_write(c);
-		g_error_free(err);
-
-		return;
-	}
-
-	debug_function("ekg_connection_write_buf(), wrote %d bytes\n", out);
-
-	c->flush_handler(c);
-}
-
-void ekg_connection_write(GDataOutputStream *f, const gchar *format, ...) {
-	static GString *buf = NULL;
+static void ekg2_conneciton_set_error(connection_data_t *cd, GError **err, const gchar *format, ...) {
+	static GString *buffer = NULL;
 	va_list args;
 
-	if (G_LIKELY(format)) {
-		if (!buf)
-			buf = g_string_sized_new(120);
+	if (cd->error)
+		g_error_free(cd->error);
+	cd->error = g_error_copy(*err);
+	g_clear_error(err);
 
-		va_start(args, format);
-		g_string_vprintf(buf, format, args);
-		va_end(args);
+	if (!buffer)
+		buffer = g_string_sized_new(256);
 
-		ekg_connection_write_buf(f, buf->str, buf->len);
-	} else {
-		struct ekg_connection *c = get_connection_by_outstream(f);
-		c->flush_handler(c);
-	}
+	va_start(args, format);
+	g_string_vprintf(buffer, format, args);
+	va_end(args);
+
+	g_prefix_error(&cd->error, buffer->str);
+	debug_error("%s\n", cd->error->message);
+
 }
 
-struct ekg_connection_starter {
-	GCancellable *cancellable;
+int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize length) {
+	GError *error = NULL;
+	gint b_written = 0;
 
-	gchar *bind_hostname;
+	while (length > 0) {
+		b_written = g_output_stream_write(cd->out_stream, buffer, length, NULL, &error);
 
-	gchar *service;
-	gchar *domain;
-
-	gchar **servers;
-	gchar **current_server;
-	guint16 defport;
-
-	gboolean use_tls;
-
-	ekg_connection_callback_t callback;
-	ekg_connection_failure_callback_t failure_callback;
-	gpointer priv_data;
-};
-
-static void failed_async_connect(
-		GSocketClient *sock,
-		GError *err,
-		struct ekg_connection_starter *cs)
-{
-	debug_error("done_async_connect(), connect failed: %s\n",
-			err ? err->message : "(reason unknown)");
-	if (g_error_matches(err, G_IO_ERROR, G_IO_ERROR_CANCELLED) || !setup_async_connect(sock, cs)) {
-		cs->failure_callback(err, cs->priv_data);
-		ekg_connection_starter_free(cs);
-		g_object_unref(sock);
-	}
-}
-
-static void succeeded_async_connect(
-		GSocketClient *sock,
-		GSocketConnection *conn,
-		struct ekg_connection_starter *cs,
-		GInputStream *instream,
-		GOutputStream *outstream)
-{
-	cs->callback(conn, instream, outstream, cs->priv_data);
-	ekg_connection_starter_free(cs);
-	g_object_unref(sock);
-}
-
-static void done_async_connect(GObject *obj, GAsyncResult *res, gpointer user_data) {
-	GSocketClient *sock = G_SOCKET_CLIENT(obj);
-	struct ekg_connection_starter *cs = user_data;
-	GSocketConnection *conn;
-	GError *err = NULL;
-
-	conn = g_socket_client_connect_finish(sock, res, &err);
-	if (conn) {
-#ifdef HAVE_LIBGNUTLS
-		if (cs->use_tls) {
-			ekg_gnutls_new_session(sock, conn, cs);
-		} else
-#endif
-		{
-			GIOStream *cio = G_IO_STREAM(conn);
-			succeeded_async_connect(
-					sock, conn, cs,
-					g_io_stream_get_input_stream(cio),
-					g_io_stream_get_output_stream(cio));
-		}
-	} else {
-		failed_async_connect(sock, err, cs);
-		g_error_free(err);
-	}
-}
-
-static gboolean setup_async_connect(GSocketClient *sock, struct ekg_connection_starter *cs) {
-	if (*(cs->current_server)) {
-		debug_function("setup_async_connect(), trying %s (defport: %d)\n",
-				*(cs->current_server), cs->defport);
-		g_socket_client_connect_to_host_async(
-				sock, *(cs->current_server), cs->defport,
-				cs->cancellable,
-				done_async_connect,
-				cs);
-		cs->current_server++;
-		return TRUE;
-	} else
-		return FALSE;
-}
-
-ekg_connection_starter_t ekg_connection_starter_new(guint16 defport) {
-	struct ekg_connection_starter *cs = g_slice_new0(struct ekg_connection_starter);
-
-	cs->defport = defport;
-
-	return cs;
-}
-
-void ekg_connection_starter_free(ekg_connection_starter_t cs) {
-	g_free(cs->bind_hostname);
-	g_free(cs->service);
-	g_free(cs->domain);
-	g_strfreev(cs->servers);
-	g_object_unref(cs->cancellable);
-	g_slice_free(struct ekg_connection_starter, cs);
-}
-
-void ekg_connection_starter_bind(
-		ekg_connection_starter_t cs,
-		const gchar *hostname)
-{
-	g_free(cs->bind_hostname);
-	cs->bind_hostname = g_strdup(hostname);
-}
-
-void ekg_connection_starter_set_srv_resolver(
-		ekg_connection_starter_t cs,
-		const gchar *service,
-		const gchar *domain)
-{
-	g_free(cs->service);
-	g_free(cs->domain);
-	cs->service = g_strdup(service);
-	cs->domain = g_strdup(domain);
-}
-
-void ekg_connection_starter_set_servers(
-		ekg_connection_starter_t cs,
-		const gchar *servers)
-{
-	g_strfreev(cs->servers);
-	cs->servers = g_strsplit(servers, ",", 0);
-}
-
-void ekg_connection_starter_set_use_tls(
-		ekg_connection_starter_t cs,
-		gboolean use_tls) /* XXX */
-{
-	cs->use_tls = use_tls;
-}
-
-GCancellable *ekg_connection_starter_run(
-		ekg_connection_starter_t cs,
-		GSocketClient *sock,
-		ekg_connection_callback_t callback,
-		ekg_connection_failure_callback_t failure_callback,
-		gpointer priv_data)
-{
-	cs->callback = callback;
-	cs->failure_callback = failure_callback;
-	cs->priv_data = priv_data;
-
-	cs->cancellable = g_cancellable_new();
-	cs->current_server = cs->servers;
-
-	if (cs->bind_hostname) {
-		GResolver *res = g_resolver_get_default();
-		GList *addrs;
-		GError *err = NULL;
-
-		addrs = g_resolver_lookup_by_name(
-				res,
-				cs->bind_hostname,
-				NULL,
-				&err);
-
-		if (!addrs) {
-				/* XXX: delay calling that */
-			failed_async_connect(sock, err, cs);
-			g_error_free(err);
-			return cs->cancellable;
+		if (0 == b_written) {
+			ekg2_conneciton_set_error(cd, &error, _("Nothing was written."));
+			cd->failure_callback(cd);
+			return -1;
 		}
 
-		g_socket_client_set_local_address(sock,
-				g_inet_socket_address_new(
-					G_INET_ADDRESS(g_list_nth_data(addrs, 0)), 0));
-
-		g_resolver_free_addresses(addrs);
-		g_object_unref(res);
-	}
-
-		/* if we have the domain name, try SRV lookup first */
-	if (cs->domain) {
-		g_assert(cs->service);
-
-			/* fallback to domainname lookup if 'servers' not set */
-		if (!cs->servers || !cs->servers[0])
-			ekg_connection_starter_set_servers(cs, cs->domain);
-
-		debug_function("ekg_connection_start(), trying _%s._tcp.%s\n",
-				cs->service, cs->domain);
-		g_socket_client_connect_to_service_async(
-				sock, cs->domain, cs->service,
-				cs->cancellable,
-				done_async_connect,
-				cs);
-	} else /* otherwise, just begin with servers */
-		g_assert(setup_async_connect(sock, cs));
-
-	return cs->cancellable;
-}
-
-#ifdef HAVE_LIBGNUTLS
-struct ekg_gnutls_connection {
-	struct ekg_connection *connection;
-	GMemoryInputStream *instream;
-	GMemoryOutputStream *outstream;
-
-	GError *connection_error;
-	gnutls_session_t session;
-	gnutls_certificate_credentials_t cred;
-};
-
-struct ekg_gnutls_connection_starter {
-	struct ekg_connection_starter *parent;
-	struct ekg_gnutls_connection *conn;
-	GSocketClient *sockclient;
-};
-
-static void ekg_gnutls_free_connection(struct ekg_gnutls_connection *conn) {
-	gnutls_deinit(conn->session);
-	gnutls_certificate_free_credentials(conn->cred);
-	g_slice_free(struct ekg_gnutls_connection, conn);
-}
-
-static void ekg_gnutls_free_connection_starter(struct ekg_gnutls_connection_starter *gcs) {
-	g_slice_free(struct ekg_gnutls_connection_starter, gcs);
-}
-
-static gssize ekg_gnutls_pull(gnutls_transport_ptr_t connptr, gpointer buf, gsize len) {
-	struct ekg_gnutls_connection *conn = connptr;
-	GBufferedInputStream *s = G_BUFFERED_INPUT_STREAM(conn->connection->instream);
-	gsize avail_bytes = g_buffered_input_stream_get_available(s);
-
-	/* XXX: EOF? */
-
-	g_assert(len > 0);
-
-	if (avail_bytes == 0) {
-		if (conn->connection_error)
-			return 0; /* EOF */
-
-		gnutls_transport_set_errno(conn->session, EAGAIN);
-		return -1;
-	} else {
-		GError *err = NULL;
-		gssize ret = g_input_stream_read(
-				G_INPUT_STREAM(s),
-				buf,
-				MIN(avail_bytes, len),
-				NULL,
-				&err);
-
-		if (ret == -1) {
-			debug_error("ekg_gnutls_pull() failed: %s\n", err->message);
-			g_error_free(err);
-		}
-
-		return ret;
-	}
-
-	g_assert_not_reached();
-}
-
-static gssize ekg_gnutls_push(gnutls_transport_ptr_t connptr, gconstpointer buf, gsize len) {
-	struct ekg_gnutls_connection *conn = connptr;
-
-	g_assert(len > 0);
-
-		/* XXX: handle failures better? */
-	ekg_connection_write_buf(conn->connection->outstream, buf, len);
-	return len;
-}
-
-static void ekg_gnutls_handle_data_failure(GDataInputStream *s, GError *err, gpointer data) {
-	struct ekg_gnutls_connection *gc = data;
-
-	gc->connection_error = g_error_copy(err);
-}
-
-static void ekg_gnutls_handle_data(GDataInputStream *s, gpointer data) {
-	struct ekg_gnutls_connection *gc = data;
-	ssize_t ret;
-	char buf[4096];
-
-	g_assert(gc->connection->slave);
-
-	do {
-		ret = gnutls_record_recv(gc->session, buf, sizeof(buf));
-
-		if (ret > 0)
-			g_memory_input_stream_add_data(
-					gc->instream,
-					g_memdup(buf, ret),
-					ret,
-					g_free);
-		else if (ret != GNUTLS_E_INTERRUPTED && ret != GNUTLS_E_AGAIN) {
-			GError *err;
-
-			if (ret != 0)
-				err = g_error_new_literal(EKG_GNUTLS_ERROR,
-						ret, gnutls_strerror(ret));
-			else {
-				debug_function("ekg_gnutls_handle_data(), got EOF from gnutls\n");
-				err = g_error_new_literal(
-						EKG_CONNECTION_ERROR,
-						EKG_CONNECTION_ERROR_EOF,
-						"Connection terminated");
+		if (b_written < 0) {
+			if (g_error_matches(error, G_IO_ERROR, G_IO_ERROR_WOULD_BLOCK)) {
+				debug_warn("Socket send would block.\n");
+				g_error_free(error);
+				error = NULL;
+				continue;
+			} else {
+				ekg2_conneciton_set_error(cd, &error, _("Error sending to socket: "));
+				cd->failure_callback(cd);
+				return -1;
 			}
+		}
 
-			gc->connection->slave->failure_callback(
-					gc->connection->slave->instream,
-					err,
-					gc->connection->slave->priv_data);
-			g_error_free(err);
-			ekg_connection_remove(gc->connection->slave);
-			ekg_connection_remove(gc->connection);
+		debug_function("ekg2_connection_write_buf() write %d bytes\n", b_written);
+
+		length -= b_written;
+	}
+
+	return b_written;
+}
+
+static gboolean async_read_callback(GIOChannel *channel, GIOCondition condition, gpointer data) {
+	connection_data_t *cd = data;
+	gchar	buffer[1024];
+	gsize	bytes_read;
+	GError	*error = NULL;
+
+	bytes_read = g_input_stream_read(cd->in_stream, buffer, sizeof buffer, NULL, &error);
+	if (bytes_read>0) {
+		session_t *s = session_find(cd->sess_id);
+		g_string_append_len(cd->in_buf, buffer, bytes_read);
+		debug_function("async_read_callback(%s) read %d bytes (%d bytes in buffer)\n", s?session_uid_get(s):"", bytes_read, cd->in_buf->len);
+		cd->input_callback(cd, cd->in_buf);
+	} else {
+		error = g_error_new_literal(EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF, _("Connection terminated"));
+		ekg2_conneciton_set_error(cd, &error, _("Read stream: "));
+		cd->failure_callback(cd);
+	}
+
+	return TRUE;
+}
+
+
+static gboolean
+accept_certificate(GTlsClientConnection *conn, GTlsCertificate *cert, GTlsCertificateFlags errors, gpointer data) {
+	// XXX
+	return TRUE;
+}
+
+
+static void ekg2_failure_callback(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
+	GError *err = cd->error;
+
+	if (s->disconnecting && g_error_matches(err, EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF))
+		cd->disconnect_handler(s, NULL, EKG_DISCONNECT_USER);
+	else
+		cd->disconnect_handler(s, err->message, EKG_DISCONNECT_NETWORK);
+}
+
+static void ekg2_connect_failure_handler(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
+	GError *err = cd->error;
+
+	cd->disconnect_handler(s, err ? err->message : "", EKG_DISCONNECT_FAILURE);
+}
+
+
+
+static char *socket_address_toa(GSocketAddress *address) {
+	static GString *buffer = NULL;
+	GInetAddress *inet_addr;
+	char *str, *format;
+
+	if (!buffer)
+		buffer = g_string_sized_new(256);
+
+	inet_addr = g_inet_socket_address_get_address(G_INET_SOCKET_ADDRESS(address));
+	str = g_inet_address_to_string(inet_addr);
+	format = (AF_INET6 == g_inet_address_get_family(inet_addr)) ? "[%s]:%d" : "%s:%d";
+	g_string_printf(buffer, format, str, g_inet_socket_address_get_port(G_INET_SOCKET_ADDRESS(address)));
+	g_free(str);
+	return buffer->str;
+}
+
+static gboolean
+connection_open(connection_data_t *cd, const char *hostip, int port, GSocketFamily family) {
+	GSocketAddress *address = NULL;
+	GError	*error = NULL;
+	connection_starter_t *cs = cd->cs;
+
+	cd->socket = g_socket_new(family, G_SOCKET_TYPE_STREAM, 0, &error);
+	if (NULL == cd->socket) {
+		ekg2_conneciton_set_error(cd, &error, "");
+		return FALSE;
+	}
+
+//	g_socket_set_timeout(cd->socket, timeout);
+
+	if (port <= 0 || port > G_MAXUINT16)
+		port = cs->default_port;
+
+	if (AF_INET == family) {
+		struct sockaddr_in *ipv4;
+		ipv4 = xmalloc(sizeof(struct sockaddr_in));
+		ipv4->sin_family = AF_INET;
+		ipv4->sin_port = g_htons(port);
+		inet_pton(AF_INET, hostip, &(ipv4->sin_addr));
+		address = g_socket_address_new_from_native(ipv4, sizeof(struct sockaddr_in));
+		g_free(ipv4);
+	} else if (AF_INET6 == family) {
+		struct sockaddr_in6 *ipv6;
+		ipv6 = xmalloc(sizeof(struct sockaddr_in6));
+		ipv6->sin6_family = AF_INET6;
+		ipv6->sin6_port = g_htons(port);
+		inet_pton(AF_INET6, hostip, &(ipv6->sin6_addr));
+		address = g_socket_address_new_from_native(ipv6, sizeof(struct sockaddr_in6));
+		g_free(ipv6);
+	} else {
+		debug_error("connection_open(), unknown addr family %d!\n", family);
+		return FALSE;
+	}
+
+	if (!g_socket_connect(cd->socket, address, NULL, &error)) {
+		ekg2_conneciton_set_error(cd, &error, "Connection to %s failed. ", socket_address_toa(address));
+		g_object_unref(address);
+		return FALSE;
+	}
+
+	{	/* debug */
+		GSocketAddress *local = g_socket_get_local_address(cd->socket, &error);
+		if (!local) {
+			ekg2_conneciton_set_error(cd, &error, _("Error getting local address. "), socket_address_toa(address));
+			return FALSE;
+		}
+		debug_ok("Connected to: %s\n", socket_address_toa(address));
+		debug_ok("Local address: %s\n", socket_address_toa(local));
+		g_object_unref(local);
+	}
+
+	g_object_unref(address);
+
+	cd->conn = G_IO_STREAM(g_socket_connection_factory_create_connection(cd->socket));
+
+	if (cd->tls) {
+		GSocketConnectable *connectable;
+		GIOStream *tls_conn;
+
+		if (!(connectable = g_network_address_parse(hostip, port, &error))) {
+			ekg2_conneciton_set_error(cd, &error, "");
+			return FALSE;
+		}
+		tls_conn = g_tls_client_connection_new(cd->conn, connectable, &error);
+		g_object_unref(connectable);
+
+		if (!tls_conn) {
+			ekg2_conneciton_set_error(cd, &error, _("Could not create TLS connection. "));
+			return FALSE;
+		}
+
+		g_signal_connect(tls_conn, "accept-certificate", G_CALLBACK(accept_certificate), cd);
+
+		//g_tls_connection_set_certificate(G_TLS_CONNECTION(tls_conn), certificate);
+
+		g_object_unref(cd->conn);
+		cd->conn = G_IO_STREAM(tls_conn);
+
+		if (!g_tls_connection_handshake(G_TLS_CONNECTION(tls_conn), NULL, &error)) {
+			ekg2_conneciton_set_error(cd, &error, _("Error during TLS handshake. "));
+			return FALSE;
+		}
+	}
+
+
+	if (cd->conn) {
+		cd->in_stream = g_io_stream_get_input_stream(cd->conn);
+		cd->out_stream = g_io_stream_get_output_stream(cd->conn);
+	}
+
+	cs->connect_handler(cd);
+
+	cd->channel = g_io_channel_unix_new(g_socket_get_fd(cd->socket));
+	g_io_channel_set_encoding(cd->channel, NULL, NULL);
+	g_io_channel_set_buffered(cd->channel, FALSE);
+
+	cd->watch_id = g_io_add_watch(cd->channel, G_IO_IN, async_read_callback, cd);
+
+	return TRUE;
+}
+
+static void aresolv_write_answer(int fd, int what, char *buf) {
+	size_t len = xstrlen(buf);
+	write(fd, &what, sizeof(what));
+	write(fd, &len, sizeof(len));
+	write(fd, buf, len);
+}
+
+void connect_loop(connection_data_t *cd);
+
+static gboolean aresolv_handler(GIOChannel *channel, GIOCondition condition, gpointer data) {
+	/* handle aresolv_write_answer */
+	connection_data_t *cd = data;
+	connection_starter_t *cs = cd->cs;
+	int type;
+	size_t len;
+	char *buf, *response, **results = NULL;
+
+	read(cs->pipe_in, &type, sizeof(type));
+	read(cs->pipe_in, &len, sizeof(len));
+	buf = g_malloc0(len+1);
+	read(cs->pipe_in, buf, len);
+	response = g_strndup(buf, len);
+	g_free(buf);
+
+	debug_function("aresolv_handler(%d)\n", type);	// XXX-temp
+
+	if (EKG2_AR_RESOLVER == type) {
+		/* resolver answers */
+		results = array_make(response, "\n", 0, 0, 0);
+		while (results) {
+			char *res = array_shift(&results);
+			int family = AF_INET;
+			char *p = xstrrchr(res, ' ');
+			if (p) family=atoi(p+1);
+			if (family == cs->prefer_family)
+				array_add(&cd->cs->ips, res);
+			else
+				array_add(&cd->cs->ips2, res);
+		}
+	} else if (EKG2_AR_SRV == type) {
+		/* SRV answers */
+		results = array_make(response, "\n", 0, 0, 0);
+		while (results)
+			array_add(&cd->cs->srvhosts, array_shift(&results));
+	} else {
+		GError *error = NULL;
+		g_set_error_literal(&error, G_IO_ERROR, G_IO_ERROR_FAILED, response);
+		ekg2_conneciton_set_error(cd, &error, "");
+	}
+
+	g_free(response);
+	g_strfreev(results);
+
+	connect_loop(cd);
+
+	return TRUE;
+}
+
+static void async_resolvers(connection_data_t *cd, char *query, aresolv_t type) {
+	connection_starter_t *cs = cd->cs;
+	GPid pid;
+	GError *error = NULL;
+	GResolver *resolver;
+	gchar **results = NULL;
+	gchar *response;
+
+	debug_function("async_resolvers(%d)\n", type);		// XXX-tmp
+
+	if (-1 == (pid = fork())) {
+		// XXX - add message here
+		return;
+	}
+
+	if (pid > 0)
+		return;
+
+	/* children */
+
+	resolver = g_resolver_get_default();
+
+	if (EKG2_AR_SRV == type) {
+		GList *targets, *item;
+
+		targets = g_resolver_lookup_service(resolver, cs->service, "tcp", cs->domain, NULL, &error);
+
+		for (item=targets; item; item = item->next) {
+			GSrvTarget *target = item->data;
+			const char *host = g_srv_target_get_hostname(target);
+			int port = g_srv_target_get_port(target);
+
+			array_add(&results, saprintf("%s %d", host, port));
+		}
+
+		g_resolver_free_targets(targets);
+	} else {
+		GList *addrs, *item;
+		char *port;
+
+		if ((port = xstrchr(query, ' '))) *port++ = 0;	// XXX port separator?
+
+		addrs = g_resolver_lookup_by_name(resolver, query, NULL, &error);
+
+		for (item=addrs; item; item = item->next) {
+			GInetAddress *addr = item->data;
+			char *ip = g_inet_address_to_string(addr);
+			int family = g_inet_address_get_family(addr);
+
+			array_add(&results, saprintf("%s %s %d", ip, (port?port:""), family));
+			g_free(ip);
+		}
+		g_resolver_free_addresses(addrs);
+		g_free(query);
+	}
+
+	g_object_unref(resolver);
+
+	if (error) {
+		aresolv_write_answer(cs->pipe_out, EKG2_AR_ERROR, error->message);
+		g_error_free(error);
+	} else {
+		response = array_join_count(results, "\n", g_strv_length(results));
+		aresolv_write_answer(cs->pipe_out, type, response);
+		g_free(response);
+	}
+
+	g_strfreev(results);
+
+	exit(0);
+}
+
+void connect_loop(connection_data_t *cd) {
+	connection_starter_t *cs = cd->cs;
+
+	if (cs->ips || cs->ips2) {
+		char *q;
+		while ((q = array_shift(&cs->ips)) || (q = array_shift(&cs->ips2))) {
+			char **arg = array_make(q, " ", 3, 0, 0);
+			char *hostip = arg[0];
+			int port = *arg[1] ? atoi(arg[1]) : cs->port;
+			int family = atoi(arg[2]);
+
+			if (connection_open(cd, hostip, port, family)) {
+				connect_starter_free(cd);
+				g_strfreev(arg);
+				return;
+			}
+			g_strfreev(arg);
+			g_free(q);
+		}
+	}
+
+	if (cs->srvhosts) {
+		char *q;
+		if ((q = array_shift(&cs->srvhosts))) {
+			async_resolvers(cd, q, EKG2_AR_RESOLVER);
+			g_free(q);
 			return;
 		}
-	} while (ret > 0 || ret == GNUTLS_E_INTERRUPTED);
+	}
 
-		/* not necessarily async but be lazy */
-	if (!g_input_stream_has_pending(G_INPUT_STREAM(gc->connection->slave->instream)))
-		setup_async_read(gc->connection->slave);
-}
+	if (cs->servers) {
+		char *q, *end, *tmp;
+		char *name = NULL, *port = NULL;
 
-static void ekg_gnutls_flush(struct ekg_connection *c) {
-	struct ekg_gnutls_connection *gc = c->master->priv_data;
-	GMemoryOutputStream *dos = gc->outstream;
-	ssize_t ret;
-	gconstpointer bufp;
-	gsize bufleft;
+		if ((q = array_shift(&cs->servers))) {
+			name = q;
+			/* parse host and port */
+			if (('[' == *q) && (end = strchr(q, ']'))) {
+				/* [2001:bad::1]:123 */
+				*end = '\0';
+				name = q + 1;
+				if (*++end == ':')
+					port = end + 1;
+			} else if ((port = strchr(q, ':')) && !strchr(port + 1, ':')) {
+				/*  one ':' in string */
+				*port++ = '\0';
+			}
+			tmp = g_strdup_printf("%s %s", name, port ? port : ekg_itoa(cs->port));
 
-		/* GMemoryOutputStream is not supposed to fail */
-	g_assert(g_output_stream_flush(
-			G_OUTPUT_STREAM(c->outstream),
-			NULL,
-			NULL));
+			async_resolvers(cd, tmp, EKG2_AR_RESOLVER);
 
-		/* now pass the written data to gnutls */
-	bufp = g_memory_output_stream_get_data(dos);
-	bufleft = g_memory_output_stream_get_data_size(dos);
-	do {
-		ret = gnutls_record_send(gc->session, bufp, bufleft);
-
-		if (ret > 0) {
-			g_assert(ret <= bufleft);
-			bufp += ret;
-			bufleft -= ret;
-		} else if (ret != GNUTLS_E_INTERRUPTED && ret != GNUTLS_E_AGAIN) {
-			debug_error("gnutls_flush(), write failed: %s\n",
-					gnutls_strerror(ret));
-			/* XXX */
-			failed_write(c);
+			g_free(tmp);
+			g_free(q);
+			return;
 		}
-	} while (bufleft > 0);
-
-	{
-		GSeekable *sos = G_SEEKABLE(dos);
-		g_assert(g_seekable_seek(sos, 0, G_SEEK_SET, NULL, NULL));
-		g_assert(g_seekable_truncate(sos, 0, NULL, NULL));
 	}
+
+	connect_starter_free(cd);
+	cs->connect_failure_handler(cd);
 }
 
-static void ekg_gnutls_handle_handshake_failure(GDataInputStream *s, GError *err, gpointer data) {
-	struct ekg_gnutls_connection_starter *gcs = data;
+static void ekg2_connect_common(connection_data_t *cd) {
+	session_t *s = session_find(cd->sess_id);
+	connection_starter_t *cs = cd->cs;
+	const int pref	= session_int_get(s, "prefer_family");
 
-	failed_async_connect(gcs->sockclient, err, gcs->parent);
-	ekg_connection_remove(gcs->conn->connection);
-	ekg_gnutls_free_connection(gcs->conn);
-	ekg_gnutls_free_connection_starter(gcs);
+	if (4 == pref)
+		cd->cs->prefer_family = G_SOCKET_FAMILY_IPV4;
+	else if (6 == pref)
+		cd->cs->prefer_family = G_SOCKET_FAMILY_IPV6;
+
+	cs->channel = g_io_channel_unix_new(cs->pipe_in);
+	g_io_channel_set_encoding(cs->channel, NULL, NULL);
+	g_io_channel_set_buffered(cs->channel, FALSE);
+	cs->pipe_watch_id = g_io_add_watch(cs->channel, G_IO_IN, aresolv_handler, cd);
+
+	if (cs->domain)
+		async_resolvers(cd, NULL, EKG2_AR_SRV);
+	else
+		connect_loop(cd);
 }
 
-static void ekg_gnutls_async_handshake(struct ekg_gnutls_connection_starter *gcs) {
-	gint ret = gnutls_handshake(gcs->conn->session);
-
-	switch (ret) {
-		case GNUTLS_E_SUCCESS:
-			{
-				struct ekg_gnutls_connection *gc = gcs->conn;
-				struct ekg_connection_starter *cs = gcs->parent;
-
-				GInputStream *mi = g_memory_input_stream_new();
-				GOutputStream *mo = g_memory_output_stream_new(
-						NULL, 0, g_realloc, g_free);
-
-					/* set streams */
-				gc->instream = G_MEMORY_INPUT_STREAM(mi);
-				gc->outstream = G_MEMORY_OUTPUT_STREAM(mo);
-
-					/* switch handlers */
-				gc->connection->callback = ekg_gnutls_handle_data;
-				gc->connection->failure_callback = ekg_gnutls_handle_data_failure;
-				gc->connection->priv_data = gc;
-				gc->connection->flush_handler = ekg_gnutls_flush;
-
-					/* this cleans up the socket, and cs */
-				succeeded_async_connect(gcs->sockclient, gc->connection->conn,
-						cs, mi, mo);
-					/* and this cleans up gcs */
-				ekg_gnutls_free_connection_starter(gcs);
-			}
-			break;
-		case GNUTLS_E_AGAIN:
-		case GNUTLS_E_INTERRUPTED:
-			break;
-		default:
-			{
-				GError *err = g_error_new_literal(EKG_GNUTLS_ERROR,
-						ret, gnutls_strerror(ret));
-				ekg_gnutls_handle_handshake_failure(NULL, err, gcs);
-				g_error_free(err);
-			}
-	}
-}
-
-static void ekg_gnutls_handle_handshake_input(GDataInputStream *s, gpointer data) {
-	struct ekg_gnutls_connection_starter *gcs = data;
-
-	ekg_gnutls_async_handshake(gcs);
-}
-
-static void ekg_gnutls_new_session(
-		GSocketClient *sockclient,
-		GSocketConnection *sock,
-		struct ekg_connection_starter *cs)
+void
+ekg2_connect_full(
+	connection_data_t *cd,
+	ekg2_connect_handler_t connect_handler,
+	ekg2_connect_failure_t connect_failure_handler,
+	ekg2_connection_input_callback_t input_callback,
+	ekg2_connection_failure_t failure_callback)
 {
-	gnutls_session_t s;
-	gnutls_certificate_credentials_t cred;
-	struct ekg_gnutls_connection *conn = g_slice_new(struct ekg_gnutls_connection);
-	struct ekg_gnutls_connection_starter *gcs = g_slice_new(struct ekg_gnutls_connection_starter);
+	connection_starter_t *cs = cd->cs;
 
-	g_assert(!gnutls_certificate_allocate_credentials(&cred));
-	g_assert(!gnutls_init(&s, GNUTLS_CLIENT));
-	g_assert(!gnutls_priority_set_direct(s, "PERFORMANCE", NULL)); /* XXX */
-	g_assert(!gnutls_credentials_set(s, GNUTLS_CRD_CERTIFICATE, cred));
+	cs->connect_handler = connect_handler;
+	cs->connect_failure_handler = connect_failure_handler;
 
-	gnutls_transport_set_pull_function(s, ekg_gnutls_pull);
-	gnutls_transport_set_push_function(s, ekg_gnutls_push);
-	gnutls_transport_set_ptr(s, conn);
+	cd->input_callback = input_callback;
+	cd->failure_callback = failure_callback;
 
-	gcs->parent = cs;
-	gcs->conn = conn;
-	gcs->sockclient = sockclient;
-
-	conn->session = s;
-	conn->cred = cred;
-	conn->connection_error = NULL;
-	conn->connection = get_connection_by_outstream(
-			ekg_connection_add(
-				sock,
-				g_io_stream_get_input_stream(G_IO_STREAM(sock)),
-				g_io_stream_get_output_stream(G_IO_STREAM(sock)),
-				ekg_gnutls_handle_handshake_input,
-				ekg_gnutls_handle_handshake_failure,
-				gcs)
-			);
-	g_assert(conn->connection);
-	ekg_gnutls_async_handshake(gcs);
+	ekg2_connect_common(cd);
 }
 
-static void ekg_gnutls_log(gint level, const char *msg) {
-	debug_ext(DEBUG_GGMISC, "[gnutls:%d] %s", level, msg);
-}
-#endif
+void
+ekg2_connect(connection_data_t *cd,
+		ekg2_connect_handler_t connect_handler,
+		ekg2_connection_input_callback_t input_callback,
+		ekg2_connection_disconnect_t disconnect_handler)
+{
+	connection_starter_t *cs = cd->cs;
 
-void ekg_tls_init(void) {
-#ifdef HAVE_LIBGNUTLS
-	g_assert(!gnutls_global_init()); /* XXX: error handling */
+	cs->connect_handler = connect_handler;
+	cs->connect_failure_handler = ekg2_connect_failure_handler;
 
-	gnutls_global_set_log_function(ekg_gnutls_log);
-	gnutls_global_set_log_level(3);
-#endif
-}
+	cd->input_callback = input_callback;
+	cd->failure_callback = ekg2_failure_callback;
 
-void ekg_tls_deinit(void) {
-#ifdef HAVE_LIBGNUTLS
-	gnutls_global_deinit();
-#endif
+	cd->disconnect_handler = disconnect_handler;
+
+	ekg2_connect_common(cd);
 }

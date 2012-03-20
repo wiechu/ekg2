@@ -739,7 +739,6 @@ int main(int argc, char **argv)
 	if (session_read(NULL) == -1)
 		no_config = 1;
 
-	ekg_tls_init();
 	config_postread();
 
 	/* status window takes first session if not set before*/
@@ -954,7 +953,6 @@ void ekg_exit()
 
 	buffer_free(&buffer_debug);	buffer_free(&buffer_speech);
 	event_free();
-	ekg_tls_deinit();
 
 	/* free internal read_file() buffer */
 	read_file(NULL, -1);

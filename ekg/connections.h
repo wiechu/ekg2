@@ -1,7 +1,6 @@
 /*
- *  Asynchronous read/write handling for connections
- *
- *  (C) Copyright 2011 EKG2 team
+ *  (C) Copyright 2012
+ *			Wiesław Ochmiński <wiechu at wiechu dot com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License Version 2 as
@@ -17,73 +16,69 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __EKG_CONNECTIONS_H
-#define __EKG_CONNECTIONS_H
+#ifndef __EKG_CONNECTION_H
+#define __EKG_CONNECTION_H
+#ifndef EKG2_WIN32_NOFUNCTION
 
-#define EKG_CONNECTION_ERROR ekg_connection_error_quark()
-G_GNUC_CONST GQuark ekg_connection_error_quark();
+#include "plugins.h"
+#include "sessions.h"
+#include "srv.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum ekg_connection_error {
 	EKG_CONNECTION_ERROR_EOF
 };
 
-typedef void (*ekg_input_callback_t) (
-		GDataInputStream *instream,
-		gpointer data);
-typedef void (*ekg_failure_callback_t) (
-		GDataInputStream *instream,
-		GError *err,
-		gpointer data);
-typedef void (*ekg_connection_callback_t) (
-		GSocketConnection *conn,
-		GInputStream *instream,
-		GOutputStream *outstream,
-		gpointer data);
-typedef void (*ekg_connection_failure_callback_t) (
-		GError *err,
-		gpointer data);
+typedef struct connection_data_t connection_data_t;
 
-GDataOutputStream *ekg_connection_add(
-		GSocketConnection *conn,
-		GInputStream *rawinstream,
-		GOutputStream *rawoutstream,
-		ekg_input_callback_t callback,
-		ekg_failure_callback_t failure_callback,
-		gpointer priv_data);
+typedef void (*ekg2_connect_handler_t) (connection_data_t *cd);
+typedef void (*ekg2_connect_failure_t) (connection_data_t *cd);
+typedef void (*ekg2_connection_input_callback_t) (connection_data_t *cd, GString *buffer);
+typedef void (*ekg2_connection_failure_t) (connection_data_t *cd);
+typedef void (*ekg2_connection_disconnect_t) (session_t *s, const char *reason, int type);
 
-void ekg_disconnect_by_outstream(GDataOutputStream *f);
+connection_data_t *ekg2_connection_new(session_t *session, guint16 defport);
 
-void ekg_connection_write_buf(GDataOutputStream *f, gconstpointer buf, gsize len);
+void ekg2_connection_set_servers(connection_data_t *cd, const gchar *servers);
+void ekg2_connection_set_srv(connection_data_t *cd, gchar *service, gchar *domain);
+void ekg2_connection_set_tls(connection_data_t *cd, gboolean use_tls);
 
-void ekg_connection_write(
-		GDataOutputStream *f,
-		const gchar *format,
-		...) G_GNUC_PRINTF(2,3);
 
-typedef struct ekg_connection_starter *ekg_connection_starter_t;
+GError *ekg2_connection_get_error(connection_data_t *cd);
+session_t *ekg2_connection_get_session(connection_data_t *cd);
 
-ekg_connection_starter_t ekg_connection_starter_new(guint16 defport);
-void ekg_connection_starter_free(ekg_connection_starter_t cs);
+void
+ekg2_connect_full(connection_data_t *cd,
+		ekg2_connect_handler_t connect_handler,
+		ekg2_connect_failure_t connect_failure_handler,
+		ekg2_connection_input_callback_t input_callback,
+		ekg2_connection_failure_t failure_callback);
 
-void ekg_connection_starter_bind(
-		ekg_connection_starter_t cs,
-		const gchar *hostname);
-void ekg_connection_starter_set_srv_resolver(
-		ekg_connection_starter_t cs,
-		const gchar *service,
-		const gchar *domain);
-void ekg_connection_starter_set_servers(
-		ekg_connection_starter_t cs,
-		const gchar *servers);
-void ekg_connection_starter_set_use_tls(
-		ekg_connection_starter_t cs,
-		gboolean use_tls); /* XXX */
+void
+ekg2_connect(connection_data_t *cd,
+		ekg2_connect_handler_t connect_handler,
+		ekg2_connection_input_callback_t input_callback,
+		ekg2_connection_disconnect_t disconnect_handler);
 
-GCancellable *ekg_connection_starter_run(
-		ekg_connection_starter_t cs,
-		GSocketClient *sock,
-		ekg_connection_callback_t callback,
-		ekg_connection_failure_callback_t failure_callback,
-		gpointer priv_data);
 
-#endif /* __EKG_CONNECTIONS_H */
+int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize length);
+
+void ekg2_connection_close(connection_data_t **acd);
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* EKG2_WIN32_NOFUNCTION */
+#endif /* __EKG_CONNECTION_H */
+
+/*
+ * Local Variables:
+ * mode: c
+ * c-file-style: "k&r"
+ * c-basic-offset: 8
+ * indent-tabs-mode: t
+ * End:
+ */
