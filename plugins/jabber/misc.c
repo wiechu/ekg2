@@ -14,6 +14,19 @@
 #include "jabber.h"
 #include "jabber-ssl.h"
 
+void jabber_write(session_t *session, const char *format, ...) {
+	char		*text;
+	va_list		ap;
+
+	va_start(ap, format);
+	text = vsaprintf(format, ap);
+	va_end(ap);
+
+	watch_write((session && session->priv) ? jabber_private(session)->send_watch : NULL, text);
+
+	g_free(text);
+}
+
 /* XXX, It's the same function from mcjabber, but uses one buffor. */
 static char *jabber_gpg_strip_header_footer(char *data) {
 	char *p, *q;

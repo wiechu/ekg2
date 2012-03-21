@@ -217,7 +217,7 @@ int jabber_privacy_free(jabber_private_t *j);
 int jabber_bookmarks_free(jabber_private_t *j);
 int jabber_iq_stanza_free(jabber_private_t *j);
 
-#define jabber_write(s, args...) watch_write((s && s->priv) ? jabber_private(s)->send_watch : NULL, args);
+void jabber_write(session_t *session, const char *format, ...);
 WATCHER_LINE(jabber_handle_write);
 
 void xmlnode_handle_end(void *data, const char *name);
