@@ -54,15 +54,21 @@ ekg2_connection_connect_full(
 		ekg2_connection_failure_t failure_callback);
 
 void
-ekg2_connection_connect(connection_data_t *cd,
+ekg2_connection_connect(
+		connection_data_t *cd,
 		ekg2_connect_handler_t connect_handler,
 		ekg2_connection_input_callback_t input_callback,
 		ekg2_connection_disconnect_t disconnect_handler);
 
-
 int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize length);
+int ekg2_connection_buffer_write(connection_data_t *cd, gconstpointer buffer, gsize length);
+int ekg2_connection_buffer_flush(connection_data_t *cd);
+
+
+gboolean ekg2_connection_start_tls(connection_data_t *cd);
 
 void ekg2_connection_close(connection_data_t **acd);
+
 
 #ifdef __cplusplus
 }

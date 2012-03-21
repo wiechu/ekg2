@@ -185,8 +185,6 @@ void ekg2_connection_set_servers(connection_data_t *cd, const gchar *servers) {
 
 void ekg2_connection_set_srv(connection_data_t *cd, gchar *service, gchar *domain) {
 	debug_function("ekg2_connection_set_srv(%s,%s)\n",service,domain);	// XXX-temp
-	g_return_if_fail(service != NULL);
-	g_return_if_fail(domain != NULL);
 
 	g_free(cd->cs->domain);
 	cd->cs->domain = g_strdup(domain);
@@ -230,8 +228,15 @@ static void ekg2_conneciton_set_error(connection_data_t *cd, GError **err, const
 }
 
 int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize length) {
+	session_t *s = session_find(cd->sess_id);
 	GError *error = NULL;
 	gint b_written = 0;
+
+	g_return_val_if_fail(cd != NULL, -1);
+	g_return_val_if_fail(length != 0, -1);
+
+	if (length < 0)
+		length = xstrlen((char *)buffer);
 
 	while (length > 0) {
 		b_written = g_output_stream_write(cd->out_stream, buffer, length, NULL, &error);
@@ -255,12 +260,27 @@ int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize len
 			}
 		}
 
-		debug_function("ekg2_connection_write_buf() write %d bytes\n", b_written);
+		debug_function("[%s]ekg2_connection_write_buf() write %d bytes\n", session_uid_get(s), b_written);
 
 		length -= b_written;
 	}
 
 	return b_written;
+}
+
+int ekg2_connection_buffer_write(connection_data_t *cd, gconstpointer buffer, gsize length) {
+	g_return_val_if_fail(cd != NULL, -1);
+	g_return_val_if_fail(length != 0, -1);
+	if (length < 0)
+		length = xstrlen((char *)buffer);
+	g_string_append_len(cd->out_buf, buffer, length);
+	return length;
+}
+
+int ekg2_connection_buffer_flush(connection_data_t *cd) {
+	int result = ekg2_connection_write(cd, cd->out_buf->str, cd->out_buf->len);
+	g_string_set_size(cd->out_buf, 0);
+	return result;
 }
 
 static gboolean async_read_callback(GIOChannel *channel, GIOCondition condition, gpointer data) {
@@ -273,7 +293,7 @@ static gboolean async_read_callback(GIOChannel *channel, GIOCondition condition,
 	if (bytes_read>0) {
 		session_t *s = session_find(cd->sess_id);
 		g_string_append_len(cd->in_buf, buffer, bytes_read);
-		debug_function("async_read_callback(%s) read %d bytes (%d bytes in buffer)\n", s?session_uid_get(s):"", bytes_read, cd->in_buf->len);
+		debug_function("[%s]async_read_callback() read %d bytes (%d bytes in buffer)\n", s?session_uid_get(s):"", bytes_read, cd->in_buf->len);
 		cd->input_callback(cd, cd->in_buf);
 	} else {
 		error = g_error_new_literal(EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF, _("Connection terminated"));
@@ -325,6 +345,37 @@ static char *socket_address_toa(GSocketAddress *address) {
 	g_string_printf(buffer, format, str, g_inet_socket_address_get_port(G_INET_SOCKET_ADDRESS(address)));
 	g_free(str);
 	return buffer->str;
+}
+
+gboolean ekg2_connection_start_tls(connection_data_t *cd) {
+	// XXX - add failure_handler support
+	GError *error = NULL;
+	GIOStream *tls_conn;
+
+	if (!(tls_conn = g_tls_client_connection_new(cd->conn, NULL, &error))) {
+		ekg2_conneciton_set_error(cd, &error, _("Could not create TLS connection. "));
+		return FALSE;
+	}
+
+	g_signal_connect(tls_conn, "accept-certificate", G_CALLBACK(accept_certificate), cd);
+
+	//g_tls_connection_set_certificate(G_TLS_CONNECTION(tls_conn), certificate);
+
+	g_object_unref(cd->conn);
+	cd->conn = G_IO_STREAM(tls_conn);
+
+	if (!g_tls_connection_handshake(G_TLS_CONNECTION(tls_conn), NULL, &error)) {
+		ekg2_conneciton_set_error(cd, &error, _("Error during TLS handshake. "));
+		return FALSE;
+	}
+
+	g_source_remove(cd->watch_id);
+	cd->in_stream = g_io_stream_get_input_stream(cd->conn);
+	cd->out_stream = g_io_stream_get_output_stream(cd->conn);
+
+	cd->watch_id = g_io_add_watch(cd->channel, G_IO_IN, async_read_callback, cd);
+
+	return TRUE;
 }
 
 static gboolean
@@ -387,17 +438,9 @@ connection_open(connection_data_t *cd, const char *hostip, int port, GSocketFami
 	cd->conn = G_IO_STREAM(g_socket_connection_factory_create_connection(cd->socket));
 
 	if (cd->tls) {
-		GSocketConnectable *connectable;
 		GIOStream *tls_conn;
 
-		if (!(connectable = g_network_address_parse(hostip, port, &error))) {
-			ekg2_conneciton_set_error(cd, &error, "");
-			return FALSE;
-		}
-		tls_conn = g_tls_client_connection_new(cd->conn, connectable, &error);
-		g_object_unref(connectable);
-
-		if (!tls_conn) {
+		if (!(tls_conn = g_tls_client_connection_new(cd->conn, NULL, &error))) {
 			ekg2_conneciton_set_error(cd, &error, _("Could not create TLS connection. "));
 			return FALSE;
 		}
@@ -682,3 +725,4 @@ ekg2_connection_connect(
 
 	ekg2_connect_common(cd);
 }
+
