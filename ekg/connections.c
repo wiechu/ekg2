@@ -277,24 +277,22 @@ int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize len
 int ekg2_connection_buffer_write(connection_data_t *cd, gconstpointer buffer, gsize length) {
 	session_t *s = session_find(cd->sess_id);
 	g_return_val_if_fail(cd != NULL, -1);
-	g_return_val_if_fail(length != 0, -1);
-	if (length < 0)
-		length = xstrlen((char *)buffer);
+	g_return_val_if_fail(length > 0, -1);
 	g_string_append_len(cd->out_buf, buffer, length);
+debug_white("XXX(add):%s\n", cd->out_buf->str);
 	debug_function("[%s] ekg2_connection_buffer_write() add %d bytes to buffer. Buffer length=%d\n", session_uid_get(s), length, cd->out_buf->len);
 	return length;
 }
 
 int ekg2_connection_buffer_flush(connection_data_t *cd) {
+	session_t *s = session_find(cd->sess_id);
 	int result;
-	gboolean save = cd->use_out_buf;
+
+	debug_function("[%s] ekg2_connection_buffer_flush()\n", session_uid_get(s));
 
 	cd->use_out_buf = FALSE;
-
 	result = ekg2_connection_write(cd, cd->out_buf->str, cd->out_buf->len);
 	g_string_set_size(cd->out_buf, 0);
-
-	cd->use_out_buf = save;
 
 	return result;
 }
