@@ -60,10 +60,10 @@ ekg2_connection_connect(
 		ekg2_connection_input_callback_t input_callback,
 		ekg2_connection_disconnect_t disconnect_handler);
 
+void ekg2_connection_write_use_buffer(connection_data_t *cd, gboolean use_buffer);
 int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize length);
 int ekg2_connection_buffer_write(connection_data_t *cd, gconstpointer buffer, gsize length);
 int ekg2_connection_buffer_flush(connection_data_t *cd);
-
 
 gboolean ekg2_connection_start_tls(connection_data_t *cd);
 

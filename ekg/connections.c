@@ -65,6 +65,7 @@ struct connection_data_t {
 	GOutputStream	*out_stream;
 	/* buffers */
 	GString		*in_buf;
+	gboolean	use_out_buf;
 	GString		*out_buf;
 	/* handlers */
 	ekg2_connection_input_callback_t
@@ -201,6 +202,11 @@ GError *ekg2_connection_get_error(connection_data_t *cd) {
 	return cd->error;
 }
 
+void ekg2_connection_write_use_buffer(connection_data_t *cd, gboolean use_buffer) {
+	// XXX
+	cd->use_out_buf = use_buffer;
+}
+
 session_t *ekg2_connection_get_session(connection_data_t *cd) {
 	// XXX
 	return session_find(cd->sess_id);
@@ -233,10 +239,10 @@ int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize len
 	gint b_written = 0;
 
 	g_return_val_if_fail(cd != NULL, -1);
-	g_return_val_if_fail(length != 0, -1);
+	g_return_val_if_fail(length > 0, -1);
 
-	if (length < 0)
-		length = xstrlen((char *)buffer);
+	if (cd->use_out_buf)
+		return ekg2_connection_buffer_write(cd, buffer, length);
 
 	while (length > 0) {
 		b_written = g_output_stream_write(cd->out_stream, buffer, length, NULL, &error);
@@ -260,7 +266,7 @@ int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize len
 			}
 		}
 
-		debug_function("[%s]ekg2_connection_write_buf() write %d bytes\n", session_uid_get(s), b_written);
+		debug_function("[%s] ekg2_connection_write() write %d bytes\n", session_uid_get(s), b_written);
 
 		length -= b_written;
 	}
@@ -269,17 +275,27 @@ int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize len
 }
 
 int ekg2_connection_buffer_write(connection_data_t *cd, gconstpointer buffer, gsize length) {
+	session_t *s = session_find(cd->sess_id);
 	g_return_val_if_fail(cd != NULL, -1);
 	g_return_val_if_fail(length != 0, -1);
 	if (length < 0)
 		length = xstrlen((char *)buffer);
 	g_string_append_len(cd->out_buf, buffer, length);
+	debug_function("[%s] ekg2_connection_buffer_write() add %d bytes to buffer. Buffer length=%d\n", session_uid_get(s), length, cd->out_buf->len);
 	return length;
 }
 
 int ekg2_connection_buffer_flush(connection_data_t *cd) {
-	int result = ekg2_connection_write(cd, cd->out_buf->str, cd->out_buf->len);
+	int result;
+	gboolean save = cd->use_out_buf;
+
+	cd->use_out_buf = FALSE;
+
+	result = ekg2_connection_write(cd, cd->out_buf->str, cd->out_buf->len);
 	g_string_set_size(cd->out_buf, 0);
+
+	cd->use_out_buf = save;
+
 	return result;
 }
 
@@ -293,7 +309,7 @@ static gboolean async_read_callback(GIOChannel *channel, GIOCondition condition,
 	if (bytes_read>0) {
 		session_t *s = session_find(cd->sess_id);
 		g_string_append_len(cd->in_buf, buffer, bytes_read);
-		debug_function("[%s]async_read_callback() read %d bytes (%d bytes in buffer)\n", s?session_uid_get(s):"", bytes_read, cd->in_buf->len);
+		debug_function("[%s] async_read_callback() read %d bytes (%d bytes in buffer)\n", s?session_uid_get(s):"", bytes_read, cd->in_buf->len);
 		cd->input_callback(cd, cd->in_buf);
 	} else {
 		error = g_error_new_literal(EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF, _("Connection terminated"));
@@ -370,6 +386,7 @@ gboolean ekg2_connection_start_tls(connection_data_t *cd) {
 	}
 
 	g_source_remove(cd->watch_id);
+
 	cd->in_stream = g_io_stream_get_input_stream(cd->conn);
 	cd->out_stream = g_io_stream_get_output_stream(cd->conn);
 
