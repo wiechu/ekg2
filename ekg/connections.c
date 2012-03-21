@@ -645,7 +645,7 @@ static void ekg2_connect_common(connection_data_t *cd) {
 }
 
 void
-ekg2_connect_full(
+ekg2_connection_connect_full(
 	connection_data_t *cd,
 	ekg2_connect_handler_t connect_handler,
 	ekg2_connect_failure_t connect_failure_handler,
@@ -664,7 +664,8 @@ ekg2_connect_full(
 }
 
 void
-ekg2_connect(connection_data_t *cd,
+ekg2_connection_connect(
+		connection_data_t *cd,
 		ekg2_connect_handler_t connect_handler,
 		ekg2_connection_input_callback_t input_callback,
 		ekg2_connection_disconnect_t disconnect_handler)

@@ -652,7 +652,7 @@ void icq_connect(session_t *session, const char *server, int port) {
 
 	ekg2_connection_set_servers(cd, server);
 
-	ekg2_connect(cd,
+	ekg2_connection_connect(cd,
 			icq_handle_connect,
 			icq_handle_stream,
 			icq_handle_disconnect);

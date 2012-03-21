@@ -566,7 +566,7 @@ static void irc_really_connect(session_t *session, char *server, int port, gbool
 
 	ekg2_connection_set_tls(cd, (1 == session_int_get(session, "use_tls")));
 
-	ekg2_connect(cd,
+	ekg2_connection_connect(cd,
 			irc_handle_connect,
 			irc_handle_line,
 			irc_handle_disconnect);

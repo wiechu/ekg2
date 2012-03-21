@@ -18,11 +18,6 @@
 
 #ifndef __EKG_CONNECTION_H
 #define __EKG_CONNECTION_H
-#ifndef EKG2_WIN32_NOFUNCTION
-
-#include "plugins.h"
-#include "sessions.h"
-#include "srv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,14 +46,15 @@ GError *ekg2_connection_get_error(connection_data_t *cd);
 session_t *ekg2_connection_get_session(connection_data_t *cd);
 
 void
-ekg2_connect_full(connection_data_t *cd,
+ekg2_connection_connect_full(
+		connection_data_t *cd,
 		ekg2_connect_handler_t connect_handler,
 		ekg2_connect_failure_t connect_failure_handler,
 		ekg2_connection_input_callback_t input_callback,
 		ekg2_connection_failure_t failure_callback);
 
 void
-ekg2_connect(connection_data_t *cd,
+ekg2_connection_connect(connection_data_t *cd,
 		ekg2_connect_handler_t connect_handler,
 		ekg2_connection_input_callback_t input_callback,
 		ekg2_connection_disconnect_t disconnect_handler);
@@ -67,11 +63,11 @@ ekg2_connect(connection_data_t *cd,
 int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize length);
 
 void ekg2_connection_close(connection_data_t **acd);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* EKG2_WIN32_NOFUNCTION */
 #endif /* __EKG_CONNECTION_H */
 
 /*

@@ -390,7 +390,7 @@ static COMMAND(polchat_command_connect) {
 	j->connection = cd = ekg2_connection_new(session, port);
 	ekg2_connection_set_servers(cd, server);
 
-	ekg2_connect(cd,
+	ekg2_connection_connect(cd,
 			polchat_handle_connect,
 			polchat_handle_stream,
 			polchat_handle_disconnect);
