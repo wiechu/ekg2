@@ -7,8 +7,6 @@
  #include <expat.h>
 #endif
 
-#include "jabber-ssl.h"
-
 #define DEFAULT_CLIENT_NAME "EKG2 -- http://www.ekg2.org"
 #define JABBER_DEFAULT_RESOURCE "ekg2"
 
@@ -128,17 +126,12 @@ typedef struct {
  * jabber_private_t contains priv_data data of jabber/tlen session.
  */
 typedef struct {
+	connection_data_t *connection;
 	int fd;				/**< connection's fd */
 	unsigned int istlen	: 2;	/**< whether this is a tlen session, 2 if connecting to tlen hub (XXX: ugly hack) */
 
 	enum jabber_compression_method using_compress;	/**< whether we're using compressed connection, and what method */
-#ifdef JABBER_HAVE_SSL
 	unsigned char using_ssl	: 2;	/**< 1 if we're using SSL, 2 if we're using TLS, else 0 */
-	SSL_SESSION ssl_session;	/**< SSL session */
-#ifdef HAVE_LIBGNUTLS
-	gnutls_certificate_credentials xcred;	/**< gnutls credentials (?) */
-#endif
-#endif
 	int id;				/**< queries ID */
 	XML_Parser parser;		/**< expat instance */
 	char *server;			/**< server name */
@@ -187,7 +180,6 @@ extern const char *jabber_authtypes[];
 void jabber_register_commands(void);
 XML_Parser jabber_parser_recreate(XML_Parser parser, void *data);
 
-int JABBER_COMMIT_DATA(watch_t *w);
 void jabber_handle(void *data, xmlnode_t *n);
 
 int jabber_privacy_freeone(jabber_private_t *j, jabber_iq_privacy_t *item);
@@ -218,7 +210,6 @@ int jabber_bookmarks_free(jabber_private_t *j);
 int jabber_iq_stanza_free(jabber_private_t *j);
 
 void jabber_write(session_t *session, const char *format, ...);
-WATCHER_LINE(jabber_handle_write);
 
 void xmlnode_handle_end(void *data, const char *name);
 void xmlnode_handle_cdata(void *data, const char *text, int len);

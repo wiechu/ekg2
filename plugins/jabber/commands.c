@@ -259,7 +259,7 @@ static COMMAND(jabber_command_msg)
 		msg2 = msg;
 
 /* writing: */
-	if (j->send_watch) j->send_watch->transfer_limit = -1;
+	ekg2_connection_write_use_buffer(j->connection, TRUE);
 
 	if (ismuc)
 		jabber_write(session, "<message type='groupchat' to='%s' id='%d'>", uid+5, time(NULL));
@@ -315,7 +315,7 @@ nomsg:
 			( chat && ((config_jabber_disable_chatstates & 7) != 7) ? "<active xmlns='http://jabber.org/protocol/chatstates'/>" : ""));
 
 	jabber_write(session, "</message>");
-	JABBER_COMMIT_DATA(j->send_watch);
+	ekg2_connection_buffer_flush(j->connection);
 
 msgdisplay:
 	if (!quiet && !ismuc) { /* if (1) ? */
@@ -512,7 +512,7 @@ static COMMAND(jabber_command_auth) {
 	if (!xstrcmp(target, "*")) {
 		if (!(ul = session->userlist))
 			return -1;
-		j->send_watch->transfer_limit = -1;
+		ekg2_connection_write_use_buffer(j->connection, TRUE);
 		u   = ul;
 		multi = 1;
 	} else if ((__uid = jid_target2uid(session, target, quiet))) {
@@ -588,7 +588,7 @@ static COMMAND(jabber_command_auth) {
 	} while ( multi && (u = next) );
 
 	if (multi)
-		JABBER_COMMIT_DATA(j->send_watch);
+		ekg2_connection_buffer_flush(j->connection);
 
 	return result;
 }
@@ -703,7 +703,7 @@ static COMMAND(jabber_command_modify) {
 	if (!nickname && !addcom)
 		nickname = tlenjabber_escape(u->nickname);		/* use current nickname */
 
-	if (j->send_watch) j->send_watch->transfer_limit = -1;	/* let's send this in one/two packets not in 7 or more. */
+	ekg2_connection_write_use_buffer(j->connection, TRUE);	/* let's send this in one/two packets not in 7 or more. */
 
 	jabber_write(session, "<iq type='set'><query xmlns='jabber:iq:roster'>");
 
@@ -723,7 +723,7 @@ static COMMAND(jabber_command_modify) {
 		jabber_write(session, "</item>");
 
 	jabber_write(session, "</query></iq>");
-	JABBER_COMMIT_DATA(j->send_watch);
+	ekg2_connection_buffer_flush(j->connection);
 
 	xfree(nickname);
 	if (addcom) {
@@ -747,7 +747,7 @@ static COMMAND(jabber_command_del) {
 			return 1;
 		}
 
-		if (j->send_watch) j->send_watch->transfer_limit = -1;
+		ekg2_connection_write_use_buffer(j->connection, TRUE);
 
 		jabber_write(session, "<iq type='set' id='roster'><query xmlns='jabber:iq:roster'>");
 
@@ -758,7 +758,7 @@ static COMMAND(jabber_command_del) {
 		}
 
 		jabber_write(session, "</query></iq>");
-		JABBER_COMMIT_DATA(j->send_watch);
+		ekg2_connection_buffer_flush(j->connection);
 
 		printq("user_cleared_list", session_name(session));
 		return 0;
@@ -1060,7 +1060,7 @@ static COMMAND(jabber_command_search) {
 		return 1;
 	}
 
-	if (j->send_watch) j->send_watch->transfer_limit = -1;
+	ekg2_connection_write_use_buffer(j->connection, TRUE);
 
 	jabber_write(session,
 		"<iq type='%s' to='%s' id='%s'><query xmlns='jabber:iq:search'>", params[1] ? "set" : "get", server, id);
@@ -1087,7 +1087,7 @@ static COMMAND(jabber_command_search) {
 	jabber_write(session, "</query></iq>");
 	g_strfreev(splitted);
 
-	JABBER_COMMIT_DATA(j->send_watch);
+	ekg2_connection_buffer_flush(j->connection);
 
 	return 0;
 }
@@ -1344,7 +1344,7 @@ privacy_delete_ok:
 
 		last_order = 0;
 
-		if (j->send_watch)	j->send_watch->transfer_limit = -1;
+		ekg2_connection_write_use_buffer(j->connection, TRUE);
 
 		jabber_write(session, "<iq type='set' id='privacy%d'><query xmlns='jabber:iq:privacy'><list name='%s'>", j->id++, val ? val : "ekg2");
 
@@ -1374,7 +1374,7 @@ privacy_delete_ok:
 		jabber_write(session, "</list></query></iq>");
 		xfree(val);
 
-		JABBER_COMMIT_DATA(j->send_watch);
+		ekg2_connection_buffer_flush(j->connection);
 
 		return 0;
 	}
@@ -1501,7 +1501,7 @@ static COMMAND(jabber_command_private) {
 			return 1;
 		}
 
-		if (j->send_watch) j->send_watch->transfer_limit = -1;
+		ekg2_connection_write_use_buffer(j->connection, TRUE);
 
 		jabber_write(session, "<iq type='set' id='%s'><query xmlns='jabber:iq:private'><%s>", id, namespace);
 
@@ -1630,7 +1630,7 @@ put_finish:
 
 			xfree(beg);
 		}
-		JABBER_COMMIT_DATA(j->send_watch);
+		ekg2_connection_buffer_flush(j->connection);
 		return 0;
 	}
 
@@ -1673,12 +1673,14 @@ static COMMAND(jabber_command_register)
 	}
 
 	if (!j->send_watch) return -1;
-	j->send_watch->transfer_limit = -1;
 
 	if (g_strv_length((char **) params) > 1 && !(splitted = jabber_params_split(params[1], 0))) {
 		printq("not_enough_params", name);
 		return -1;
 	}
+
+	ekg2_connection_write_use_buffer(j->connection, TRUE);
+
 	jabber_write(session, "<iq type='%s' to='%s' id='transpreg%d'><query xmlns='jabber:iq:register'>", params[1] || unregister ? "set" : "get", server, j->id++);
 	if (unregister)
 		jabber_write(session, "<remove/>");
@@ -1702,7 +1704,8 @@ static COMMAND(jabber_command_register)
 	jabber_write(session, "</query></iq>");
 	g_strfreev(splitted);
 
-	JABBER_COMMIT_DATA(j->send_watch);
+	ekg2_connection_buffer_flush(j->connection);
+
 	return 0;
 }
 
@@ -1944,7 +1947,7 @@ static COMMAND(jabber_muc_command_admin) {
 			return 1;
 		}
 
-		if (j->send_watch) j->send_watch->transfer_limit = -1;
+		ekg2_connection_write_use_buffer(j->connection, TRUE);
 
 		jabber_write(session,
 				"<iq type='set' to='%s' id='%s'>"
@@ -1963,7 +1966,8 @@ static COMMAND(jabber_muc_command_admin) {
 		}
 		g_strfreev(splitted);
 		jabber_write(session, "</x></query></iq>");
-		JABBER_COMMIT_DATA(j->send_watch);
+
+		ekg2_connection_buffer_flush(j->connection);
 	}
 	return 0;
 }
@@ -2168,7 +2172,7 @@ static COMMAND(jabber_command_reply)
 		return -1;
 	}
 
-	debug("[jabber]_reply(), thread %d, thread-id = %s, subject = %s, uid = %s...\n", id, thr->thread, thr->subject, thr->uid);
+	debug("[%s]_reply(), thread %d, thread-id = %s, subject = %s, uid = %s...\n", session_uid_get(session), id, thr->thread, thr->subject, thr->uid);
 
 		/* subject here */
 	if (thr->subject && (!config_subject_prefix || xstrncmp(params[1], config_subject_prefix, subjectlen))) {

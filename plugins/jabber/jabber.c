@@ -54,12 +54,7 @@
 #include <ekg/net.h>
 
 #include "jabber.h"
-#include "jabber-ssl.h"
 #include "jabber_dcc.h"
-
-#ifdef HAVE_LIBSSL
-SSL_CTX *jabberSslCtx;
-#endif
 
 char *jabber_default_search_server = NULL;
 char *jabber_default_pubsub_server = NULL;
@@ -69,7 +64,6 @@ const char *jabber_authtypes[] = { "none", "from", "to", "both" };
 
 static int session_postinit;
 static int jabber_theme_init();
-WATCHER_SESSION(jabber_handle_connect_ssl);
 PLUGIN_DEFINE(jabber, PLUGIN_PROTOCOL, jabber_theme_init);
 
 /**
@@ -103,12 +97,6 @@ static QUERY(jabber_session_init) {
 	else
 		ekg_recode_iso2_inc();
 
-#ifdef HAVE_LIBGNUTLS
-	gnutls_certificate_allocate_credentials(&(j->xcred));
-	/* XXX - ~/.ekg/certs/server.pem */
-	gnutls_certificate_set_x509_trust_file(j->xcred, "brak", GNUTLS_X509_FMT_PEM);
-#endif
-
 	s->priv = j;
 
 	return 0;
@@ -139,9 +127,7 @@ static QUERY(jabber_session_deinit) {
 		return 1;
 
 	s->priv = NULL;
-#ifdef HAVE_LIBGNUTLS
-	gnutls_certificate_free_credentials(j->xcred);
-#endif
+
 	if (!j->istlen)
 		ekg_recode_utf8_dec();
 	else
@@ -402,21 +388,12 @@ void jabber_handle_disconnect(session_t *s, const char *reason, int type) {
 	watch_remove(&jabber_plugin, j->fd, WATCH_READ);
 
 	j->using_compress = JABBER_COMPRESSION_NONE;
-#ifdef JABBER_HAVE_SSL
-	if (j->using_ssl && j->ssl_session)
-		SSL_BYE(j->ssl_session);
-#endif
 	if (j->fd != -1) {
 		close(j->fd);
 		j->fd = -1;
 	}
 
-#ifdef JABBER_HAVE_SSL
-	if (j->using_ssl && j->ssl_session)
-		SSL_DEINIT(j->ssl_session);
 	j->using_ssl	= 0;
-	j->ssl_session	= NULL;
-#endif
 
 	jabber_iq_stanza_free(j);
 
@@ -454,7 +431,7 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 	jabber_private_t *j;
 
 	if (!s || !(j = s->priv) || !name) {
-		debug_error("[jabber] xmlnode_handle_start() invalid parameters\n");
+		debug_error("[%] xmlnode_handle_start() invalid parameters\n", session_uid_get(s));
 		return;
 	}
 
@@ -551,10 +528,9 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 	}
 }
 
-static WATCHER_SESSION(jabber_handle_stream) {
-#define BUFFER_LEN 4096
+static void jabber_handle_stream(connection_data_t *cd, GString *buffer) {
+	session_t *s = ekg2_connection_get_session(cd);
 	jabber_private_t *j;
-
 	XML_Parser parser;				/* j->parser */
 	char *uncompressed	= NULL;
 	char *buf;
@@ -563,64 +539,27 @@ static WATCHER_SESSION(jabber_handle_stream) {
 
 	/* session dissapear, shouldn't happen */
 	if (!s || !(j = s->priv))
-		return -1;
+		return;
+
+#ifdef FIXME_NEW_CONNECTION
 	if (!(j->send_watch) || (j->send_watch->type == WATCH_NONE)) /* TLS in progress; XXX: check if it doesn't collide with sth */
 		return 0;
+#endif
 
 /*	s->activity = time(NULL); */
 
-	/* we got disconnected? */
-	if (type == 1) {
-		debug("[jabber] jabber_handle_stream() type == 1, exitting\n");
-		jabber_handle_disconnect(s, NULL, EKG_DISCONNECT_NETWORK);
-		return 0;
-	}
+	debug_function("[%s]_handle_stream()\n", session_uid_get(s));
 
-#ifdef JABBER_HAVE_SSL
-			/* we need to loop ssl-reading, 'cause gnutls may be using quite large buffer
-			 * and if it reads all data from fd, our handler won't be called again until
-			 * more data arrives, and some current data will be left in gnutls buffer.
-			 *
-			 * This feature really needs testing, it might cause real problems.*/
-	do {
-#endif
-
-	debug_function("[jabber] jabber_handle_stream()\n");
 	parser = j->parser;
 
-	if (!(buf = XML_GetBuffer(parser, BUFFER_LEN))) {
+	len = buffer->len;
+	if (!(buf = XML_GetBuffer(parser, len + 1))) {
 		jabber_handle_disconnect(s, "XML_GetBuffer failed", EKG_DISCONNECT_NETWORK);
-		return -1;
+		return;
 	}
 
-#ifdef JABBER_HAVE_SSL
-	if (j->using_ssl && j->ssl_session) {
-
-		len = SSL_RECV(j->ssl_session, buf, BUFFER_LEN-1);
-#ifdef HAVE_LIBSSL
-		if ((len == 0 && SSL_get_error(j->ssl_session, len) == SSL_ERROR_ZERO_RETURN)); /* connection shut down cleanly */
-		else if (len < 0)
-			len = SSL_get_error(j->ssl_session, len);
-/* XXX, When an SSL_read() operation has to be repeated because of SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE, it must be repeated with the same arguments. */
-#endif
-
-		if (SSL_E_AGAIN(len)) {
-			// will be called again
-			ekg_yield_cpu();
-			return 0;
-		}
-
-		if (len < 0) {
-			jabber_handle_disconnect(s, SSL_ERROR(len), EKG_DISCONNECT_NETWORK);
-			return -1;
-		}
-	} else
-#endif
-		if ((len = read(fd, buf, BUFFER_LEN-1)) < 1) {
-			if (len == -1 && (errno == EINPROGRESS || errno == EAGAIN)) return 0;
-			jabber_handle_disconnect(s, len == -1 ? strerror(errno) : "got disconnected", EKG_DISCONNECT_NETWORK);
-			return -1;
-		}
+	strncpy(buf, buffer->str, len);
+	g_string_set_size(buffer, 0);
 
 	buf[len] = 0;
 	rlen = len;
@@ -630,12 +569,12 @@ static WATCHER_SESSION(jabber_handle_stream) {
 #ifdef HAVE_LIBZ
 			uncompressed = jabber_zlib_decompress(buf, &rlen);
 #else
-			debug_error("[jabber] jabber_handle_stream() compression zlib, but no zlib support.. you're joking, right?\n");
+			debug_error("[%s] jabber_handle_stream() compression zlib, but no zlib support.. you're joking, right?\n", session_uid_get(s));
 #endif
 			break;
 
 		case JABBER_COMPRESSION_LZW:
-			debug_error("[jabber] jabber_handle_stream() j->using_compress XXX implement LZW!\n");
+			debug_error("[%s] jabber_handle_stream() j->using_compress XXX implement LZW!\n", session_uid_get(s));
 			break;
 
 		case JABBER_COMPRESSION_NONE:
@@ -644,10 +583,10 @@ static WATCHER_SESSION(jabber_handle_stream) {
 			break;
 
 		default:
-			debug_error("[jabber] jabber_handle_stream() j->using_compress wtf? unknown! %d\n", j->using_compress);
+			debug_error("[%s] jabber_handle_stream() j->using_compress wtf? unknown! %d\n", session_uid_get(s), j->using_compress);
 	}
 
-	debug_iorecv("[jabber] (%db/%db) recv: %s\n", rlen, len, uncompressed ? uncompressed : buf);
+	debug_iorecv("[%s] (%db/%db) recv: %s\n", session_uid_get(s), rlen, len, uncompressed ? uncompressed : buf);
 /*
 	if (uncompressed) {
 		memcpy(buf, uncompressed, rlen);
@@ -667,15 +606,11 @@ static WATCHER_SESSION(jabber_handle_stream) {
 		xfree(tmp);
 
 		xfree(uncompressed);
-		return -1;
+		return;
 	}
 	if ((!j->parser && parser) || (parser != j->parser)) XML_ParserFree(parser);
 	xfree(uncompressed);
-#ifdef JABBER_HAVE_SSL
-	} while (j->using_ssl && j->ssl_session);
-#endif
 
-	return 0;
 }
 
 static TIMER_SESSION(jabber_ping_timer_handler) {
@@ -702,69 +637,56 @@ static TIMER_SESSION(jabber_ping_timer_handler) {
 	return 0;
 }
 
-static WATCHER(jabber_handle_connect_tlen_hub);
+static void jabber_handle_connect_tlen_hub(connection_data_t *cd);
 
-static WATCHER(jabber_handle_connect) {
-	session_t *s = (session_t *) data;
+static void jabber_handle_connect(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
 	jabber_private_t *j = jabber_private(s);
 	int tlenishub;
 
-	if (type)
-		return -1;
-
-	debug_function("[jabber] socket() = %d\n", fd);
+	debug_function("[%s]_handle_connect()", session_uid_get(s));
 
 	tlenishub = (j->istlen > 1);
-	j->fd = fd;
 
 	if (tlenishub) {
-		char *req, *esc;
+		char *esc;
 
 		j->istlen = 1;		/* reset */
 
 		esc = tlen_encode(s->uid+5);
-		req = saprintf("GET /4starters.php?u=%s&v=10 HTTP/1.0\r\nHost: %s\r\n\r\n", esc, TLEN_HUB);	/* libtlen */
-		write(fd, req, xstrlen(req));
-		xfree(req);
+		jabber_write(s, "GET /4starters.php?u=%s&v=10 HTTP/1.0\r\nHost: %s\r\n\r\n", esc, TLEN_HUB);	/* libtlen */
 		xfree(esc);
 
 		/* XXX, timeout? */
+#ifdef FIXME_NEW_CONNECTION
 		watch_add(&jabber_plugin, fd, WATCH_READ, jabber_handle_connect_tlen_hub, data);	/* WATCH_READ_LINE? */
-		return -1;
-	} else	{
-		session_t *s = (session_t *) data;
-		jabber_private_t *j = session_private_get(s);
-
-		session_int_set(s, "__roster_retrieved", 0);
-
-		watch_add_session(s, fd, WATCH_READ, jabber_handle_stream);
-		j->using_compress = JABBER_COMPRESSION_NONE;
-
-#ifdef JABBER_HAVE_SSL
-		j->send_watch = watch_add_line(&jabber_plugin, fd, WATCH_WRITE_LINE, j->using_ssl ? jabber_handle_write : NULL, j);
-#else
-		j->send_watch = watch_add_line(&jabber_plugin, fd, WATCH_WRITE_LINE, NULL, NULL);
 #endif
-		if (!(j->istlen)) {
-			jabber_write(s,
-					"<?xml version='1.0' encoding='utf-8'?><stream:stream to='%s' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'%s>",
-					j->server, (session_int_get(s, "disable_sasl") != 2) ? " version='1.0'" : "");
-		} else {
-			jabber_write(s, "<s v=\'2\'>");
-		}
-
-		j->id = 1;
-		j->parser = jabber_parser_recreate(NULL, s);
-
-		if (j->istlen || (session_int_get(s, "ping_server") != 0)) {
-			if (timer_find_session(s, "ping") == NULL) {
-				/* w/g dokumentacji do libtlen powinnismy wysylac pinga co 60 sekund */
-				timer_add_session(s, "ping", j->istlen ? 60 : 180, 1, jabber_ping_timer_handler);
-			}
-		}
-
+		return;
 	}
-	return -1;
+
+	session_int_set(s, "__roster_retrieved", 0);
+
+	j->using_compress = JABBER_COMPRESSION_NONE;
+
+	if (!(j->istlen)) {
+		jabber_write(s,
+				"<?xml version='1.0' encoding='utf-8'?><stream:stream to='%s' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'%s>",
+				j->server, (session_int_get(s, "disable_sasl") != 2) ? " version='1.0'" : "");
+	} else {
+		jabber_write(s, "<s v='2'>");
+	}
+
+	j->id = 1;
+	j->parser = jabber_parser_recreate(NULL, s);
+
+	if (j->istlen || (session_int_get(s, "ping_server") != 0)) {
+		if (timer_find_session(s, "ping") == NULL) {
+			/* w/g dokumentacji do libtlen powinnismy wysylac pinga co 60 sekund */
+			timer_add_session(s, "ping", j->istlen ? 60 : 180, 1, jabber_ping_timer_handler);
+		}
+	}
+
+	return;
 }
 
 static WATCHER(jabber_handle_connect2) {
@@ -784,14 +706,11 @@ static WATCHER(jabber_handle_connect2) {
 		return 0;
 	}
 
-#ifdef JABBER_HAVE_SSL
-	if (session_int_get(s, "use_ssl")) {
-		jabber_handle_connect_ssl(-1, fd, 0, s);
-		return -1;
-	}
-#endif
-
+#ifdef FIXME_NEW_CONNECTION
 	return jabber_handle_connect(type, fd, watch, data);
+#else
+	return 0;
+#endif
 }
 
 COMMAND(jabber_command_connect)
@@ -839,27 +758,33 @@ COMMAND(jabber_command_connect)
 	}
 
 	{
+		connection_data_t *cd;
 		int port = session_int_get(session, "port");
-#ifdef JABBER_HAVE_SSL
 		int ssl_port = session_int_get(session, "ssl_port");
 		int use_ssl = session_int_get(session, "use_ssl");
 		j->using_ssl = 0;
-#endif
 
 		if (j->istlen && !xstrcmp(realserver, TLEN_HUB))
 			j->port = 80;
-		else
-#ifdef JABBER_HAVE_SSL
-		if (use_ssl)
+		else if (use_ssl) {
 			j->port = ssl_port < 1 ? 5223 : ssl_port;
-		else
-#endif
+		} else {
 			j->port = port < 1 ? 5222 : port;
-
-		if (!(( j->connect_watch = ekg_connect(session, realserver, 5222, j->port, jabber_handle_connect2)))) {
-			printq("generic_error", strerror(errno));
-			return -1;
 		}
+
+		j->connection = cd = ekg2_connection_new(session, j->port);
+
+		ekg2_connection_set_servers(cd, session_get(session, "server"));
+
+		ekg2_connection_set_tls(cd, 1 == use_ssl);
+
+		if (!j->istlen && !use_ssl)
+			ekg2_connection_set_srv(cd, "xmpp-client", j->server);
+
+		ekg2_connection_connect(cd,
+			jabber_handle_connect,
+			jabber_handle_stream,
+			jabber_handle_disconnect);
 
 	}
 
@@ -878,18 +803,14 @@ COMMAND(jabber_command_connect)
 	return 0;
 }
 
-static WATCHER(jabber_handle_connect_tlen_hub) {	/* tymczasowy */
-	session_t *s = (session_t *) data;
+static void jabber_handle_connect_tlen_hub(connection_data_t *cd) {	/* tymczasowy */
+#ifdef FIXME_NEW_CONNECTION
+	session_t *s = (session_t *) cd;
 	jabber_private_t *j = jabber_private(s);
 
 	char *header, *body;
 	char buf[1024];
 	int len;
-
-	if (type) {
-		close(fd);
-		return 0;
-	}
 
 	/* libtlen */
 
@@ -936,6 +857,7 @@ static WATCHER(jabber_handle_connect_tlen_hub) {	/* tymczasowy */
 	/* XXX: hm? */
 	if (len == 0)	return -1;
 	else		return 0;
+#endif
 }
 
 XML_Parser jabber_parser_recreate(XML_Parser parser, void *data) {
@@ -950,217 +872,6 @@ XML_Parser jabber_parser_recreate(XML_Parser parser, void *data) {
 
 	return parser;
 }
-
-#ifdef JABBER_HAVE_SSL
-
-/**
- * jabber_ssl_cert_verify()
- *
- * Initial version of routine to test if certificate used by SSL_SESSION is 100% correct.
- * If not, return error why isn't ok.
- *
- * @note	Code to handle SSL_get_verify_result() result copied from qssl.cpp<br>
- *		qssl.cpp - Qt OpenSSL plugin Copyright (C) 2001, 2002  Justin Karneges under LGPL 2.1
- *
- * @todo	It's testing function, so it don't catch all not 100% valid certificates.
- *		If you can and you know smth/ a lot about either OpenSSL or GnuTLS. Could you look at it?
- *
- * @param ssl - SSL_SESSION
- *
- * @return	NULL if certificate is correct.<br>
- *		else NUL terminated string with error description.
- */
-
-static const char *jabber_ssl_cert_verify(const SSL_SESSION ssl) {
-#ifdef HAVE_LIBSSL
-	X509 *peer_cert = SSL_get_peer_certificate(ssl);
-	long ret;
-
-	if (!peer_cert) return _("No peer certificate");
-
-	switch ((ret = SSL_get_verify_result(ssl))) {
-		/* copied from qssl.cpp - Qt OpenSSL plugin Copyright (C) 2001, 2002  Justin Karneges under LGPL 2.1  */
-		case X509_V_OK:						return NULL;
-		case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:		return _("Unable to get issuer certificate");
-		case X509_V_ERR_UNABLE_TO_GET_CRL:			return _("Unable to get certificate CRL");
-		case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:	return _("Unable to decrypt certificate's signature");
-		case X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE:	return _("Unable to decrypt CRL's signature");
-		case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:	return _("Unable to decode issuer public key");
-		case X509_V_ERR_CERT_SIGNATURE_FAILURE:			return _("Invalid certificate signature");
-		case X509_V_ERR_CRL_SIGNATURE_FAILURE:			return _("Invalid CRL signature");
-		case X509_V_ERR_CERT_NOT_YET_VALID:			return _("Certificate not yet valid");
-		case X509_V_ERR_CERT_HAS_EXPIRED:			return _("Certificate has expired");
-		case X509_V_ERR_CRL_NOT_YET_VALID:			return _("CRL not yet valid");
-		case X509_V_ERR_CRL_HAS_EXPIRED:			return _("CRL has expired");
-		case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:		return _("Invalid time in certifiate's notBefore field");
-		case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:		return _("Invalid time in certificate's notAfter field");
-		case X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD:		return _("Invalid time in CRL's lastUpdate field");
-		case X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD:		return _("Invalid time in CRL's nextUpdate field");
-		case X509_V_ERR_OUT_OF_MEM:				return _("Out of memory while checking the certificate chain");
-		case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:		return _("Certificate is self-signed but isn't found in the list of trusted certificates");
-		case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:		return _("Certificate chain ends in a self-signed cert that isn't found in the list of trusted certificates");
-		case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:	return _("Unable to get issuer certificate locally");
-		case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:	return _("Certificate chain contains only one certificate and it's not self-signed");
-		case X509_V_ERR_CERT_CHAIN_TOO_LONG:			return _("Certificate chain too long");
-		case X509_V_ERR_CERT_REVOKED:				return _("Certificate is revoked");
-		case X509_V_ERR_INVALID_CA:				return _("Invalid CA certificate");
-		case X509_V_ERR_PATH_LENGTH_EXCEEDED:			return _("Maximum certificate chain length exceeded");
-		case X509_V_ERR_INVALID_PURPOSE:			return _("Invalid certificate purpose");
-		case X509_V_ERR_CERT_UNTRUSTED:				return _("Certificate not trusted for the required purpose");
-		case X509_V_ERR_CERT_REJECTED:				return _("Root CA is marked to reject the specified purpose");
-		case X509_V_ERR_SUBJECT_ISSUER_MISMATCH:		return _("Subject issuer mismatch");
-		case X509_V_ERR_AKID_SKID_MISMATCH:			return _("Subject Key Identifier doesn't match the Authority Key Identifier");
-		case X509_V_ERR_AKID_ISSUER_SERIAL_MISMATCH:		return _("Subject Key Identifier serial number doesn't match the Authority's");
-		case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:			return _("Key Usage doesn't include certificate signing");
-		default:	debug_error("[jabber] SSL_get_verify_result() unknown retcode: %d\n", ret);
-				return _("Unknown/Generic SSL_get_verify_result() result");
-	}
-	return NULL;	/* never here */
-#else
-	static char buf[100];
-	int res;
-	unsigned int ret;
-
-	if ((res = gnutls_certificate_verify_peers2(ssl, &ret)) != 0)
-		return gnutls_strerror(res);
-
-	buf[0] = '\0';
-		/* ret is bitmask of gnutls_certificate_status_t */
-	if (ret & GNUTLS_CERT_INVALID)		xstrcat(buf, "Certificate is invalid:");	/* 23b */
-	if (ret & GNUTLS_CERT_REVOKED)		xstrcat(buf, " revoked");			/* 08b */
-	if (ret & GNUTLS_CERT_SIGNER_NOT_FOUND)	xstrcat(buf, " signer not found");		/* 17b */
-	if (ret & GNUTLS_CERT_SIGNER_NOT_CA)	xstrcat(buf, " signer not a CA");		/* 16b */
-/*	if (ret & GNUTLS_CERT_INSECURE_ALGORITHM) xstrcat(buf, " INSECURE ALGO?"); */
-
-	return (buf[0] != '\0') ? buf : NULL;
-#endif
-
-/* XXX czy sie dane zgadzaja z j->server */
-}
-
-/*
- * jabber_handle_connect_ssl()
- *
- * Asynchronic connection to jabberd server by SSL or TLS [XXX].
- * TEMPORARY, Session watch.<br>
- * If @a type is -1 than it try to create ssl structs.
- *
- * @todo Some xxx's to fix.
- *
- */
-
-WATCHER_SESSION(jabber_handle_connect_ssl) {
-	jabber_private_t *j;
-	int ret;
-	const char *certret;
-
-	if (!s || !(j = s->priv))
-		return -1;
-
-	if (type == -1) {
-		/* XXX here. old tls code do: j->parser = NULL. check if needed */
-#ifdef HAVE_LIBGNUTLS
-		/* Allow connections to servers that have OpenPGP keys as well. */
-		const int cert_type_priority[3] = {GNUTLS_CRT_X509, GNUTLS_CRT_OPENPGP, 0};
-		const int comp_type_priority[3] = {GNUTLS_COMP_ZLIB, GNUTLS_COMP_NULL, 0};
-#endif
-
-		if ((ret = SSL_INIT(j->ssl_session))) {
-			/* XXX, OpenSSL error value XXX */
-			print("conn_failed_tls");
-			jabber_handle_disconnect(s, SSL_ERROR(ret), EKG_DISCONNECT_FAILURE);
-			return -1;
-		}
-
-#ifdef HAVE_LIBGNUTLS
-		gnutls_set_default_priority(j->ssl_session);
-		gnutls_certificate_type_set_priority(j->ssl_session, cert_type_priority);
-		gnutls_credentials_set(j->ssl_session, GNUTLS_CRD_CERTIFICATE, j->xcred);
-		gnutls_compression_set_priority(j->ssl_session, comp_type_priority);
-
-		/* we use read/write instead of recv/send */
-		gnutls_transport_set_pull_function(j->ssl_session, (gnutls_pull_func)read);
-		gnutls_transport_set_push_function(j->ssl_session, (gnutls_push_func)write);
-#endif
-		if (SSL_SET_FD(j->ssl_session, fd) == 0) {	/* gnutls never fail */
-			print("conn_failed_tls");
-			SSL_DEINIT(j->ssl_session);
-			j->ssl_session = NULL;
-			jabber_handle_disconnect(s, SSL_ERROR(ret), EKG_DISCONNECT_FAILURE);
-			return -1;
-		}
-
-		watch_add_session(s, fd, WATCH_WRITE, jabber_handle_connect_ssl);
-		/* XXX, continue type = 0; and let's rock */
-	}
-
-	if (type)
-		return 0;
-
-	ret = SSL_HELLO(j->ssl_session);
-#ifdef HAVE_LIBSSL
-	if (ret != -1)
-		goto handshake_ok;			/* ssl was ok */
-
-	ret = SSL_get_error(j->ssl_session, ret);
-#endif
-
-	if (SSL_E_AGAIN(ret)) {
-		int direc = SSL_WRITE_DIRECTION(j->ssl_session, ret) ? WATCH_WRITE : WATCH_READ;
-		int newfd = SSL_GET_FD(j->ssl_session, fd);
-
-		/* don't create && destroy watch if data is the same... */
-		if (newfd == fd && direc == watch) {
-			ekg_yield_cpu();
-			return 0;
-		}
-
-		watch_add_session(s, fd, direc, jabber_handle_connect_ssl);
-		ekg_yield_cpu();
-		return -1;
-	} else {
-#ifdef HAVE_LIBGNUTLS
-		if (ret >= 0) goto handshake_ok;	/* gnutls was ok */
-
-/* XXX, move it to jabber_handle_disconnect() */
-		SSL_DEINIT(j->ssl_session);
-		j->using_ssl = 0;	/* XXX, hack, peres has reported that here j->using_ssl can be 1 (how possible?) hack to avoid double free */
-#endif
-		jabber_handle_disconnect(s, SSL_ERROR(ret), EKG_DISCONNECT_FAILURE);
-		return -1;
-
-	}
-
-handshake_ok:
-
-	if ((certret = jabber_ssl_cert_verify(j->ssl_session))) {
-		debug_error("[jabber] jabber_ssl_cert_verify() %s retcode = %s\n", s->uid, certret);
-		print("generic2", certret);
-	}
-
-	/* if we already got send_watch, then it's TLS connection HACK XXX */
-	if (j->send_watch) {
-		j->using_ssl = 2;
-	/* XXX, recv watch */
-	/* send watch. */
-		j->send_watch->type	= WATCH_WRITE;
-		j->send_watch->handler	= jabber_handle_write;
-	/* reset parser */
-		j->parser = jabber_parser_recreate(NULL, XML_GetUserData(j->parser));
-
-	/* reinitialize stream */
-		jabber_write(s,
-				"<stream:stream to='%s' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>",
-				j->server);
-	} else {
-		// handshake successful
-		j->using_ssl = 1;
-		watch_add(&jabber_plugin, fd, WATCH_WRITE, jabber_handle_connect, s);
-	}
-
-	return -1;
-}
-#endif
 
 static QUERY(jabber_protocol_ignore) {
 	char *sesion	= *(va_arg(ap, char **));
@@ -1212,11 +923,7 @@ static QUERY(jabber_status_show_handle) {
 	xfree(tmp);
 
 	// serwer
-#ifdef JABBER_HAVE_SSL
 	print(j->using_ssl ? "show_status_server_tls" : "show_status_server", j->server, ekg_itoa(j->port));
-#else
-	print("show_status_server", j->server, ekg_itoa(j->port));
-#endif
 
 	if (session_int_get(s, "__gpg_enabled") == 1)
 		print("jabber_gpg_sok", session_name(s), session_get(s, "gpg_key"));
@@ -1731,9 +1438,7 @@ EXPORT int jabber_plugin_init(int prio) {
 					EKG_CHATSTATE_GONE, 0, "gone"), NULL);
 
 	jabber_register_commands();
-#ifdef JABBER_HAVE_SSL
-	SSL_GLOBAL_INIT();
-#endif
+
 	return 0;
 }
 
@@ -1749,9 +1454,7 @@ EXPORT int jabber_plugin_init(int prio) {
  */
 
 static int jabber_plugin_destroy() {
-#ifdef JABBER_HAVE_SSL
-	SSL_GLOBAL_DEINIT();
-#endif
+
 	plugin_unregister(&jabber_plugin);
 
 	return 0;

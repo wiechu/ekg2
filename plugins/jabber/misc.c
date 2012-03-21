@@ -12,18 +12,52 @@
 
 
 #include "jabber.h"
-#include "jabber-ssl.h"
 
 void jabber_write(session_t *session, const char *format, ...) {
-	char		*text;
-	va_list		ap;
+	jabber_private_t *j = session->priv;
+	char *text, *compressed = NULL;
+	va_list	ap;
+	int len;
 
 	va_start(ap, format);
 	text = vsaprintf(format, ap);
 	va_end(ap);
 
-	watch_write((session && session->priv) ? jabber_private(session)->send_watch : NULL, text);
+	len = xstrlen(text);
 
+	debug_io("(%s)write: %s\n", session_uid_get(session), text);
+
+	if (!j->using_compress) {
+		ekg2_connection_write(j->connection, text, len);
+		g_free(text);
+		return;
+	}
+
+	switch (j->using_compress) {
+		case JABBER_COMPRESSION_NONE:
+		case JABBER_COMPRESSION_LZW_INIT:
+		case JABBER_COMPRESSION_ZLIB_INIT:
+			break;
+
+		case JABBER_COMPRESSION_ZLIB:
+#ifdef HAVE_LIBZ
+			if (!(compressed = jabber_zlib_compress(text, &len))) return;	// XXX ?
+#else
+			debug_error("[jabber] jabber_handle_write() compression zlib, but no zlib support.. you're joking, right?\n");
+#endif
+			break;
+
+		case JABBER_COMPRESSION_LZW:	/* XXX */
+		default:
+			debug_error("[jabber] jabber_handle_write() unknown compression: %d\n", j->using_compress);
+	}
+
+	if (compressed)	{
+		ekg2_connection_write(j->connection, compressed, len);
+	} else
+		ekg2_connection_write(j->connection, text, len);
+
+	g_free(compressed);
 	g_free(text);
 }
 
@@ -169,18 +203,6 @@ char *jabber_zlib_decompress(const char *buf, int *len) {
 	return (char *) uncompressed;
 }
 #endif
-
-int JABBER_COMMIT_DATA(watch_t *w) {
-#ifdef FIXME_WATCHES_TRANSFER_LIMITS
-	if (w) {
-		w->transfer_limit = 0;
-		return watch_handle_write(w);
-	}
-	return -1;
-#else
-	return 0;
-#endif
-}
 
 char *jabber_attr(char **atts, const char *att)
 {
@@ -330,89 +352,6 @@ char *tlen_decode(const char *what) {
 	return ekg_iso2_to_core((char *) retval);
 }
 
-/*
- * jabber_handle_write()
- *
- * obsługa możliwości zapisu do socketa. wypluwa z bufora ile się da
- * i jeśli coś jeszcze zostanie, ponawia próbę.
- */
-WATCHER_LINE(jabber_handle_write) /* tylko gdy jest wlaczona kompresja lub TLS/SSL. dla zwyklych polaczen jest watch_handle_write() */
-{
-	jabber_private_t *j = data;
-	char *compressed = NULL;
-	int res = 0, len;
-
-	if (type) {
-		/* XXX, do we need to make jabber_handle_disconnect() or smth simillar? */
-		j->send_watch = NULL;
-		return 0;
-	}
-
-	if (
-#ifdef JABBER_HAVE_SSL
-	!j->using_ssl &&
-#endif
-	!j->using_compress) {
-		/* XXX ? */
-		debug_error("[jabber] jabber_handle_write() nor j->using_ssl nor j->using_compression.... wtf?!\n");
-		return 0;
-	}
-
-	len = xstrlen(watch);
-
-	switch (j->using_compress) {
-		case JABBER_COMPRESSION_NONE:
-		case JABBER_COMPRESSION_LZW_INIT:
-		case JABBER_COMPRESSION_ZLIB_INIT:
-			break;
-
-		case JABBER_COMPRESSION_ZLIB:
-#ifdef HAVE_LIBZ
-			res = len;
-			if (!(compressed = jabber_zlib_compress(watch, &len))) return 0;
-#else
-			debug_error("[jabber] jabber_handle_write() compression zlib, but no zlib support.. you're joking, right?\n");
-#endif
-			break;
-
-		case JABBER_COMPRESSION_LZW:	/* XXX */
-		default:
-			debug_error("[jabber] jabber_handle_write() unknown compression: %d\n", j->using_compress);
-	}
-
-	if (compressed) watch = (const char *) compressed;
-
-#ifdef JABBER_HAVE_SSL
-	if (j->using_ssl) {
-		res = SSL_SEND(j->ssl_session, watch, (size_t) len);
-
-#ifdef HAVE_LIBSSL		/* OpenSSL */
-		if ((res == 0 && SSL_get_error(j->ssl_session, res) == SSL_ERROR_ZERO_RETURN)); /* connection shut down cleanly */
-		else if (res < 0)
-			res = SSL_get_error(j->ssl_session, res);
-		/* XXX, When an SSL_write() operation has to be repeated because of SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE, it must be repeated with the same arguments. */
-#endif
-
-		if (SSL_E_AGAIN(res)) {
-			ekg_yield_cpu();
-			return 0;
-		}
-
-		if (res < 0) {
-			print("generic_error", SSL_ERROR(res));
-		}
-
-		xfree(compressed);
-		return res;
-	}
-#endif
-
-/* here we call write() */
-	write(fd, watch, len);
-	xfree(compressed);
-
-	return res;
-}
 
 /* conversations */
 
