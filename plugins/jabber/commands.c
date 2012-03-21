@@ -48,8 +48,6 @@
 #  include <expat.h>
 #endif
 
-#include <ekg/net.h>
-
 #include "jabber.h"
 #include "jabber_dcc.h"
 
@@ -357,10 +355,12 @@ static COMMAND(jabber_command_xml)
 {
 	jabber_private_t *j = session_private_get(session);
 
+#ifdef FIXME_NEW_CONNECTION
 	if (!(j->send_watch)) {
 		printq("not_connected", session_name(session));
 		return -1;
 	}
+#endif
 
 	jabber_write(session, "%s", params[0]);
 	return 0;
@@ -1672,7 +1672,9 @@ static COMMAND(jabber_command_register)
 		return -1;
 	}
 
+#ifdef FIXME_NEW_CONNECTION
 	if (!j->send_watch) return -1;
+#endif
 
 	if (g_strv_length((char **) params) > 1 && !(splitted = jabber_params_split(params[1], 0))) {
 		printq("not_enough_params", name);

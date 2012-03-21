@@ -51,8 +51,6 @@
 # include "zlib.h"
 #endif
 
-#include <ekg/net.h>
-
 #include "jabber.h"
 #include "jabber_dcc.h"
 
@@ -89,7 +87,6 @@ static QUERY(jabber_session_init) {
 		return 1;
 
 	j = xmalloc(sizeof(jabber_private_t));
-	j->fd = -1;
 	j->istlen = (tolower(s->uid[0]) == 't');	/* mark if this is tlen protocol */
 
 	if (!j->istlen)
@@ -372,8 +369,11 @@ void jabber_handle_disconnect(session_t *s, const char *reason, int type) {
 	if (!s->connected && !s->connecting)
 		return;
 
+	ekg2_connection_close(&j->connection);
+
 	protocol_disconnected_emit(s, reason, type);
 
+#ifdef FIXME_NEW_CONNECTION
 	if (j->connect_watch) {
 		watch_free(j->connect_watch);
 		j->connect_watch = NULL;
@@ -392,8 +392,7 @@ void jabber_handle_disconnect(session_t *s, const char *reason, int type) {
 		close(j->fd);
 		j->fd = -1;
 	}
-
-	j->using_ssl	= 0;
+#endif
 
 	jabber_iq_stanza_free(j);
 
@@ -528,6 +527,7 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 	}
 }
 
+
 static void jabber_handle_stream(connection_data_t *cd, GString *buffer) {
 	session_t *s = ekg2_connection_get_session(cd);
 	jabber_private_t *j;
@@ -637,32 +637,13 @@ static TIMER_SESSION(jabber_ping_timer_handler) {
 	return 0;
 }
 
-static void jabber_handle_connect_tlen_hub(connection_data_t *cd);
 
 static void jabber_handle_connect(connection_data_t *cd) {
 	session_t *s = ekg2_connection_get_session(cd);
 	jabber_private_t *j = jabber_private(s);
-	int tlenishub;
 
 	debug_function("[%s]_handle_connect()", session_uid_get(s));
 
-	tlenishub = (j->istlen > 1);
-
-	if (tlenishub) {
-		char *esc;
-
-		j->istlen = 1;		/* reset */
-
-		esc = tlen_encode(s->uid+5);
-		jabber_write(s, "GET /4starters.php?u=%s&v=10 HTTP/1.0\r\nHost: %s\r\n\r\n", esc, TLEN_HUB);	/* libtlen */
-		xfree(esc);
-
-		/* XXX, timeout? */
-#ifdef FIXME_NEW_CONNECTION
-		watch_add(&jabber_plugin, fd, WATCH_READ, jabber_handle_connect_tlen_hub, data);	/* WATCH_READ_LINE? */
-#endif
-		return;
-	}
 
 	session_int_set(s, "__roster_retrieved", 0);
 
@@ -689,32 +670,79 @@ static void jabber_handle_connect(connection_data_t *cd) {
 	return;
 }
 
-static WATCHER(jabber_handle_connect2) {
-	session_t *s = (session_t *) data;
+static void jabber_handle_stream_tlen_hub(connection_data_t *cd, GString *buffer) {
+	session_t *s = ekg2_connection_get_session(cd);
 	jabber_private_t *j = jabber_private(s);
+	char *header, *body, *buf;
 
-	j->connect_watch = NULL;
-	if (type == -1) {	/* special ekg_connect() state */
-		jabber_handle_disconnect(s, _("No server could be reached"), EKG_DISCONNECT_FAILURE);
-		/* fd == -1 */
-		return 0;
+	/* libtlen */
+
+	buf = buffer->str;
+
+	header	= xstrstr(buf, "\r\n");
+	body	= xstrstr(buf, "\r\n\r\n");
+	if (header && body) {
+		*header = '\0';
+		body += 4;
+		debug_function("[TLEN, HUB]: %s / %s\n", buf, body);
+		if (!xstrstr(buf, " 200 "))
+			return;	// XXX
+
+		/* XXX: use XML parser instead of hardcoded lengths */
+		/* <t s='s1.tlen.pl' p='443' v='91' c='0' i='83.20.106.210'>91</t> */
+		{
+			char *end, *endb;
+
+			body += 6;
+			if ((end = xstrchr(body, '\''))) {
+				*end	= 0;
+				end	+= 5;
+				if ((endb = xstrchr(end, '\'')))
+					*endb	= 0;
+
+				const int newport	= atoi(end);
+				if (newport != 0)
+					j->port	= newport;
+			}
+		}
+
+		debug_function("[%s, HUB]: host = %s, port = %d\n", session_uid_get(s), body, j->port);
+
+		ekg2_connection_close(&j->connection);
+
+		j->connection = cd = ekg2_connection_new(s, j->port);
+
+		ekg2_connection_set_servers(cd, body);
+
+		ekg2_connection_connect(cd,
+			jabber_handle_connect,
+			jabber_handle_stream,
+			jabber_handle_disconnect);
+
+		return;
 	}
-
-	if (type == 2) {
-		jabber_handle_disconnect(s, _("No server could be reached"), EKG_DISCONNECT_FAILURE);
-		/* XXX, session timeouted */
-		return 0;
-	}
-
 #ifdef FIXME_NEW_CONNECTION
-	return jabber_handle_connect(type, fd, watch, data);
-#else
-	return 0;
+	/* XXX: hm? */
+	if (len == 0)	return -1;
+	else		return 0;
 #endif
 }
 
-COMMAND(jabber_command_connect)
-{
+static void jabber_handle_connect_tlen_hub(connection_data_t *cd) {	/* tymczasowy */
+	session_t *s = ekg2_connection_get_session(cd);
+	jabber_private_t *j = jabber_private(s);
+	char *esc;
+
+	debug_function("[%s]_handle_connect_tlen_hub()", session_uid_get(s));
+
+	j->istlen = 1;		/* reset */
+
+	esc = tlen_encode(s->uid+5);
+	jabber_write(s, "GET /4starters.php?u=%s&v=10 HTTP/1.0\r\nHost: %s\r\n\r\n", esc, TLEN_HUB);	/* libtlen */
+	xfree(esc);
+}
+
+COMMAND(jabber_command_connect) {
 	const char *realserver	= session_get(session, "server");
 	const char *resource	= session_get(session, "resource");
 	const char *server;
@@ -739,7 +767,7 @@ COMMAND(jabber_command_connect)
 	if (command_exec(NULL, session, "/session --lock", 0) == -1)
 		return -1;
 
-	debug("session->uid = %s\n", session->uid);
+	debug("[%s]_command_connect\n", session->uid);
 		/* XXX, nie wymagac od usera podania calego uida w postaci: tlen:ktostam@tlen.pl tylko samo tlen:ktostam? */
 	if (!(server = xstrchr(session->uid, '@'))) {
 		printq("wrong_id", session->uid);
@@ -747,7 +775,7 @@ COMMAND(jabber_command_connect)
 	}
 
 	xfree(j->server);
-	j->server	= xstrdup(++server);
+	j->server = xstrdup(++server);
 
 	if (!realserver) {
 		if (j->istlen) {
@@ -762,7 +790,6 @@ COMMAND(jabber_command_connect)
 		int port = session_int_get(session, "port");
 		int ssl_port = session_int_get(session, "ssl_port");
 		int use_ssl = session_int_get(session, "use_ssl");
-		j->using_ssl = 0;
 
 		if (j->istlen && !xstrcmp(realserver, TLEN_HUB))
 			j->port = 80;
@@ -774,7 +801,7 @@ COMMAND(jabber_command_connect)
 
 		j->connection = cd = ekg2_connection_new(session, j->port);
 
-		ekg2_connection_set_servers(cd, session_get(session, "server"));
+		ekg2_connection_set_servers(cd, realserver);
 
 		ekg2_connection_set_tls(cd, 1 == use_ssl);
 
@@ -782,8 +809,8 @@ COMMAND(jabber_command_connect)
 			ekg2_connection_set_srv(cd, "xmpp-client", j->server);
 
 		ekg2_connection_connect(cd,
-			jabber_handle_connect,
-			jabber_handle_stream,
+			(j->istlen>1) ? jabber_handle_connect_tlen_hub : jabber_handle_connect,
+			(j->istlen>1) ? jabber_handle_stream_tlen_hub : jabber_handle_stream,
 			jabber_handle_disconnect);
 
 	}
@@ -803,62 +830,6 @@ COMMAND(jabber_command_connect)
 	return 0;
 }
 
-static void jabber_handle_connect_tlen_hub(connection_data_t *cd) {	/* tymczasowy */
-#ifdef FIXME_NEW_CONNECTION
-	session_t *s = (session_t *) cd;
-	jabber_private_t *j = jabber_private(s);
-
-	char *header, *body;
-	char buf[1024];
-	int len;
-
-	/* libtlen */
-
-	len = read(fd, buf, sizeof(buf));
-	buf[len] = 0;
-
-	header	= xstrstr(buf, "\r\n");
-	body	= xstrstr(buf, "\r\n\r\n");
-	if (header && body) {
-		*header = '\0';
-		body += 4;
-		debug_function("[TLEN, HUB]: %s / %s\n", buf, body);
-		if (!xstrstr(buf, " 200 "))
-			return -1;
-
-		/* XXX: use XML parser instead of hardcoded lengths */
-		/* <t s='s1.tlen.pl' p='443' v='91' c='0' i='83.20.106.210'>91</t> */
-		{
-			char *end, *endb;
-
-			body += 6;
-			if ((end = xstrchr(body, '\''))) {
-				*end	= 0;
-				end	+= 5;
-				if ((endb = xstrchr(end, '\'')))
-					*endb	= 0;
-
-				const int newport	= atoi(end);
-				if (newport != 0)
-					j->port	= newport;
-			}
-		}
-
-		debug_function("[TLEN, HUB]: host = %s, port = %d\n", body, j->port);
-
-		if (!ekg_connect(s, body, 5222, j->port, jabber_handle_connect2)) {
-			/* XXX, we should have disconnect here.. */
-			print("generic_error", strerror(errno));
-			return -1;
-		}
-
-		return -1;
-	}
-	/* XXX: hm? */
-	if (len == 0)	return -1;
-	else		return 0;
-#endif
-}
 
 XML_Parser jabber_parser_recreate(XML_Parser parser, void *data) {
 /*	debug_function("jabber_parser_recreate() 0x%x 0x%x\n", parser, data); */
@@ -923,7 +894,7 @@ static QUERY(jabber_status_show_handle) {
 	xfree(tmp);
 
 	// serwer
-	print(j->using_ssl ? "show_status_server_tls" : "show_status_server", j->server, ekg_itoa(j->port));
+	print((session_int_get(s, "use_tls") || session_int_get(s, "use_ssl")) ? "show_status_server_tls" : "show_status_server", j->server, ekg_itoa(j->port));
 
 	if (session_int_get(s, "__gpg_enabled") == 1)
 		print("jabber_gpg_sok", session_name(s), session_get(s, "gpg_key"));
@@ -1382,7 +1353,6 @@ static plugins_params_t jabber_plugin_vars[] = {
  *
  * Register jabber plugin, assign plugin params [jabber_plugin_vars], connect to most important events<br>
  * register global jabber variables, register commands with call to jabber_register_commands()<br>
- * And call SSL_GLOBAL_INIT() if jabber is built with ssl support<br>
  *
  * @todo We should set default global jabber variables with set-vars-default
  *
@@ -1445,8 +1415,7 @@ EXPORT int jabber_plugin_init(int prio) {
 /**
  * jabber_plugin_destroy()
  *
- * Call SSL_GLOBAL_DEINIT() if jabber is built with ssl support<br>
- * and unregister jabber plugin.
+ * Unregister jabber plugin.
  *
  * @sa jabber_plugin_init()
  *

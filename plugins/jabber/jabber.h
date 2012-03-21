@@ -127,11 +127,9 @@ typedef struct {
  */
 typedef struct {
 	connection_data_t *connection;
-	int fd;				/**< connection's fd */
 	unsigned int istlen	: 2;	/**< whether this is a tlen session, 2 if connecting to tlen hub (XXX: ugly hack) */
 
 	enum jabber_compression_method using_compress;	/**< whether we're using compressed connection, and what method */
-	unsigned char using_ssl	: 2;	/**< 1 if we're using SSL, 2 if we're using TLS, else 0 */
 	int id;				/**< queries ID */
 	XML_Parser parser;		/**< expat instance */
 	char *server;			/**< server name */
@@ -143,9 +141,6 @@ typedef struct {
 	list_t privacy;			/**< for jabber:iq:privacy */
 	list_t bookmarks;		/**< for jabber:iq:private <storage xmlns='storage:bookmarks'> */
 	list_t iq_stanzas;
-
-	watch_t *send_watch;
-	watch_t *connect_watch;
 
 	xmlnode_t *node;		/**< current XML branch */
 	jabber_conversation_t *conversations;	/**< known conversations */

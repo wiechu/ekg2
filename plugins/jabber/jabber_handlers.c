@@ -259,7 +259,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 			CHECK_CONNECT(1, 0, continue)
 			CHECK_XMLNS(n, "urn:ietf:params:xml:ns:xmpp-tls", continue)
 
-			if (!j->using_ssl && session_int_get(s, "use_tls") == 1 && session_int_get(s, "use_ssl") == 0) {
+			if (session_int_get(s, "use_tls") == 1 && session_int_get(s, "use_ssl") == 0) {
 				debug_function("[%s] stream:features && TLS! let's rock.\n", session_uid_get(s));
 
 				jabber_write(s, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>");
