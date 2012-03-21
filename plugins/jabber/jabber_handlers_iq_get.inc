@@ -17,7 +17,7 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_disco) {
 
 	if (!xstrcmp(jabber_attr(n->atts, "node"), "http://jabber.org/protocol/commands")) {	/* jesli node commandowe */
 		/* XXX, check if $uid can do it */
-		watch_write(j->send_watch, 
+		jabber_write(s, 
 				"<iq to='%s' type='result' id='%s'>"
 				"<query xmlns='http://jabber.org/protocol/disco#items' node='http://jabber.org/protocol/commands'>"
 				"<item jid='%s/%s' name='Set Status' node='http://jabber.org/protocol/rc#set-status'/>"
@@ -46,9 +46,7 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_disco) {
  */
 
 JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_disco_info) {
-	jabber_private_t *j = s->priv;
-
-	watch_write(j->send_watch, "<iq to='%s' type='result' id='%s'>"
+	jabber_write(s, "<iq to='%s' type='result' id='%s'>"
 			"<query xmlns='http://jabber.org/protocol/disco#info'>"
 				"<feature var='jabber:iq:last'/>"						/* jabber_handle_iq_get_last() */
 				"<feature var='jabber:iq:version'/>"						/* jabber_handle_iq_get_version() */
@@ -76,9 +74,7 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_disco_info) {
  */
 
 JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_last) {
-	jabber_private_t *j = s->priv;
-
-	watch_write(j->send_watch, 
+	jabber_write(s, 
 			"<iq to='%s' type='result' id='%s'>"
 			"<query xmlns='jabber:iq:last' seconds='%d'>"
 			"</query></iq>", from, id, (time(NULL)-s->activity));
@@ -103,8 +99,6 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_last) {
  */
 
 JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_version) {
-	jabber_private_t *j = s->priv;
-
 	const char *ver_os;
 	const char *tmp;
 
@@ -126,7 +120,7 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_version) {
 		osversion = jabber_escape(ver_os);	/* ver_os session variable */
 	}
 
-	watch_write(j->send_watch, "<iq to='%s' type='result' id='%s'>" 
+	jabber_write(s, "<iq to='%s' type='result' id='%s'>" 
 			"<query xmlns='jabber:iq:version'>"
 			"<name>%s</name>"
 			"<version>%s</version>"
@@ -151,10 +145,7 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_version) {
  */
 
 JABBER_HANDLER_GET_REPLY(jabber_handle_iq_ping) {
-	jabber_private_t *j = s->priv;
-
-	watch_write(j->send_watch, "<iq to='%s' id='%s' type='result'/>\n",
-			from, id);
+	jabber_write(s, "<iq to='%s' id='%s' type='result'/>\n", from, id);
 }
 
 static const struct jabber_iq_generic_handler jabber_iq_get_handlers[] = {

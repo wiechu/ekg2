@@ -344,7 +344,7 @@ void jabber_dcc_close_handler(struct dcc_s *d) {
 
 		if (!s || !(j= session_private_get(s))) return;
 
-		watch_write(j->send_watch, "<iq type='error' to='%s' id='%s'><error code='403'>Declined</error></iq>",
+		jabber_write(s, "<iq type='error' to='%s' id='%s'><error code='403'>Declined</error></iq>",
 			d->uid+5, p->req);
 	}
 

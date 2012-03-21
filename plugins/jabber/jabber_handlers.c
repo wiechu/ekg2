@@ -170,7 +170,7 @@ void jabber_iq_auth_send(session_t *s, const char *username, const char *passwd,
 		saprintf("<digest>%s</digest>", jabber_digest(stream_id, passwd2, j->istlen)) :	/* hash */
 		saprintf("<password>%s</password>", epasswd);				/* plaintext */
 
-	watch_write(j->send_watch,
+	jabber_write(s,
 			"<iq type='set' id='auth' to='%s'><query xmlns='jabber:iq:auth'>%s<username>%s</username>%s<resource>%s</resource></query></iq>",
 			j->server, host, username, authpass, resource);
 	xfree(authpass);
@@ -265,7 +265,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 			if (!j->using_ssl && session_int_get(s, "use_tls") == 1 && session_int_get(s, "use_ssl") == 0) {
 				debug_function("[jabber] stream:features && TLS! let's rock.\n");
 
-				watch_write(j->send_watch, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>");
+				jabber_write(s, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>");
 				return;
 			}
 #endif
@@ -330,7 +330,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 				continue;
 			}
 
-			watch_write(j->send_watch,
+			jabber_write(s,
 					"<compress xmlns='http://jabber.org/protocol/compress'><method>%s</method></compress>", method_comp);
 			return;
 		} else {
@@ -343,7 +343,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 	if (use_fjuczers & 2) {	/* bind */
 		char *resource = jabber_escape(j->resource);
 
-		watch_write(j->send_watch,
+		jabber_write(s,
 				"<iq type='set' id='bind%d'><bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'><resource>%s</resource></bind></iq>",
 				j->id++, resource);
 		xfree(resource);
@@ -352,7 +352,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 	}
 	else		/* else here, to avoid : 'stanza sent before session start' */
 	if (use_fjuczers & 1) {	/* session */
-		watch_write(j->send_watch,
+		jabber_write(s,
 				"<iq type='set' id='auth'><session xmlns='urn:ietf:params:xml:ns:xmpp-session'/></iq>",
 				j->id++);
 	}
@@ -399,7 +399,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 
 			case JABBER_SASL_AUTH_DIGEST_MD5:
 				debug_function("[jabber] SASL chosen: JABBER_SASL_AUTH_DIGEST_MD5\n");
-				watch_write(j->send_watch,
+				jabber_write(s,
 					"<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='DIGEST-MD5'/>");
 			break;
 			case JABBER_SASL_AUTH_PLAIN:
@@ -413,7 +413,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 
 				encoded = base64_encode(str->str, str->len);
 
-				watch_write(j->send_watch,
+				jabber_write(s,
 					"<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='PLAIN'>%s</auth>", encoded);
 
 				xfree(encoded);
@@ -457,7 +457,7 @@ JABBER_HANDLER(jabber_handle_compressed) {
 	j->parser = jabber_parser_recreate(NULL, XML_GetUserData(j->parser));
 	j->send_watch->handler	= jabber_handle_write;
 
-	watch_write(j->send_watch,
+	jabber_write(s,
 			"<stream:stream to='%s' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>",
 			j->server);
 }
@@ -518,7 +518,7 @@ JABBER_HANDLER(jabber_handle_challenge) {
 
 		if (!xstrcmp(tmp, rspauth)) {
 			debug_function("[jabber] KEYS MATCHED, THX FOR USING SASL SUPPORT IN EKG2.\n");
-			watch_write(j->send_watch, "<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>");
+			jabber_write(s, "<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>");
 		} else {
 			debug_error("[jabber] RSPAUTH BUT KEYS DON'T MATCH!!! IS: %s EXCEPT: %s, DISCONNECTING\n", __(rspauth), __(tmp));
 			j->parser = NULL; jabber_handle_disconnect(s, "IE, SASL RSPAUTH DOESN'T MATCH!!", EKG_DISCONNECT_FAILURE);
@@ -563,7 +563,7 @@ JABBER_HANDLER(jabber_handle_challenge) {
 		string_append(str, ",charset=utf-8");
 
 		encoded = base64_encode(str->str, str->len);					/* XXX base64_encoded() CHANGED!! str->len+1 ? */
-		watch_write(j->send_watch, "<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>", encoded);
+		jabber_write(s, "<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>", encoded);
 		xfree(encoded);
 
 		string_free(str, 1);
@@ -615,7 +615,7 @@ JABBER_HANDLER(jabber_handle_success) {
 	CHECK_XMLNS(n, "urn:ietf:params:xml:ns:xmpp-sasl", return)
 
 	j->parser = jabber_parser_recreate(NULL, XML_GetUserData(j->parser));	/* here could be passed j->parser to jabber_parser_recreate() but unfortunetly expat makes SIGSEGV */
-	watch_write(j->send_watch,
+	jabber_write(s,
 			"<stream:stream to='%s' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>",
 			j->server);
 }
@@ -785,17 +785,17 @@ JABBER_HANDLER(jabber_handle_message) {
 
 					if (j->send_watch) j->send_watch->transfer_limit = -1;
 
-					watch_write(j->send_watch, "<message to='%s'><x xmlns='jabber:x:event'>", from);
+					jabber_write(s, "<message to='%s'><x xmlns='jabber:x:event'>", from);
 
 					if (our_status == EKG_STATUS_INVISIBLE) {
-						watch_write(j->send_watch, "<offline/>");
+						jabber_write(s, "<offline/>");
 					} else {
 						if (acktype & 1)
-							watch_write(j->send_watch, "<delivered/>");
+							jabber_write(s, "<delivered/>");
 						if (acktype & 2)
-							watch_write(j->send_watch, "<displayed/>");
+							jabber_write(s, "<displayed/>");
 					};
-					watch_write(j->send_watch, "<id>%s</id></x></message>", id);
+					jabber_write(s, "<id>%s</id></x></message>", id);
 
 					JABBER_COMMIT_DATA(j->send_watch);
 				}
@@ -1675,9 +1675,9 @@ static void jabber_session_connected(session_t *s) {
 	userlist_free(s);
 		/* Send it before roster query, so that we can use __roster_retrieved */
 	if (!j->istlen)
-		watch_write(j->send_watch, "<iq type='get' to='%s'><query xmlns='http://jabber.org/protocol/disco#info'/></iq>",
+		jabber_write(s, "<iq type='get' to='%s'><query xmlns='http://jabber.org/protocol/disco#info'/></iq>",
 				j->server);
-	watch_write(j->send_watch, "<iq type='get'><query xmlns='jabber:iq:roster'/></iq>");
+	jabber_write(s, "<iq type='get'><query xmlns='jabber:iq:roster'/></iq>");
 
 	if (session_int_get(s, "auto_bookmark_sync") != 0) command_exec(NULL, s, ("/xmpp:bookmark --get"), 1);
 	if (session_int_get(s, "auto_privacylist_sync") != 0) {
@@ -1775,7 +1775,6 @@ again:
 }
 
 const char *jabber_iq_send(session_t *s, const char *prefix, jabber_iq_type_t iqtype, const char *to, const char *type, const char *xmlns) {
-	jabber_private_t *j = jabber_private(s);
 	const char *id;
 
 	char *tmp;
@@ -1792,7 +1791,7 @@ const char *jabber_iq_send(session_t *s, const char *prefix, jabber_iq_type_t iq
 		return NULL;
 
 	tmp = jabber_escape(to);	/* XXX: really worth escaping? */
-	watch_write(j->send_watch, "<iq id='%s' to='%s' type='%s'><%s xmlns='%s'/></iq>", id, tmp, aiqtype, type, xmlns);
+	jabber_write(s, "<iq id='%s' to='%s' type='%s'><%s xmlns='%s'/></iq>", id, tmp, aiqtype, type, xmlns);
 	xfree(tmp);
 
 	return id;
