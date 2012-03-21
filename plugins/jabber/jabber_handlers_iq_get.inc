@@ -18,15 +18,15 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_disco) {
 	if (!xstrcmp(jabber_attr(n->atts, "node"), "http://jabber.org/protocol/commands")) {	/* jesli node commandowe */
 		/* XXX, check if $uid can do it */
 		watch_write(j->send_watch, 
-				"<iq to=\"%s\" type=\"result\" id=\"%s\">"
-				"<query xmlns=\"http://jabber.org/protocol/disco#items\" node=\"http://jabber.org/protocol/commands\">"
-				"<item jid=\"%s/%s\" name=\"Set Status\" node=\"http://jabber.org/protocol/rc#set-status\"/>"
-				"<item jid=\"%s/%s\" name=\"Forward Messages\" node=\"http://jabber.org/protocol/rc#forward\"/>"
-				"<item jid=\"%s/%s\" name=\"Set Options\" node=\"http://jabber.org/protocol/rc#set-options\"/>"
-				"<item jid=\"%s/%s\" name=\"Set ALL ekg2 Options\" node=\"http://ekg2.org/jabber/rc#ekg-set-all-options\"/>"
-				"<item jid=\"%s/%s\" name=\"Manage ekg2 plugins\" node=\"http://ekg2.org/jabber/rc#ekg-manage-plugins\"/>"
-				"<item jid=\"%s/%s\" name=\"Manage ekg2 plugins\" node=\"http://ekg2.org/jabber/rc#ekg-manage-sessions\"/>"
-				"<item jid=\"%s/%s\" name=\"Execute ANY command in ekg2\" node=\"http://ekg2.org/jabber/rc#ekg-command-execute\"/>"
+				"<iq to='%s' type='result' id='%s'>"
+				"<query xmlns='http://jabber.org/protocol/disco#items' node='http://jabber.org/protocol/commands'>"
+				"<item jid='%s/%s' name='Set Status' node='http://jabber.org/protocol/rc#set-status'/>"
+				"<item jid='%s/%s' name='Forward Messages' node='http://jabber.org/protocol/rc#forward'/>"
+				"<item jid='%s/%s' name='Set Options' node='http://jabber.org/protocol/rc#set-options'/>"
+				"<item jid='%s/%s' name='Set ALL ekg2 Options' node='http://ekg2.org/jabber/rc#ekg-set-all-options'/>"
+				"<item jid='%s/%s' name='Manage ekg2 plugins' node='http://ekg2.org/jabber/rc#ekg-manage-plugins'/>"
+				"<item jid='%s/%s' name='Manage ekg2 plugins' node='http://ekg2.org/jabber/rc#ekg-manage-sessions'/>"
+				"<item jid='%s/%s' name='Execute ANY command in ekg2' node='http://ekg2.org/jabber/rc#ekg-command-execute'/>"
 				"</query></iq>", from, id, 
 				s->uid+5, j->resource, s->uid+5, j->resource, 
 				s->uid+5, j->resource, s->uid+5, j->resource,
@@ -48,18 +48,18 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_disco) {
 JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_disco_info) {
 	jabber_private_t *j = s->priv;
 
-	watch_write(j->send_watch, "<iq to=\"%s\" type=\"result\" id=\"%s\">"
-			"<query xmlns=\"http://jabber.org/protocol/disco#info\">"
-				"<feature var=\"jabber:iq:last\"/>"						/* jabber_handle_iq_get_last() */
-				"<feature var=\"jabber:iq:version\"/>"						/* jabber_handle_iq_get_version() */
-				"<feature var=\"urn:xmpp:ping\"/>"						/* jabber_handle_iq_ping() */
-				"<feature var=\"http://jabber.org/protocol/chatstates\"/>"
+	watch_write(j->send_watch, "<iq to='%s' type='result' id='%s'>"
+			"<query xmlns='http://jabber.org/protocol/disco#info'>"
+				"<feature var='jabber:iq:last'/>"						/* jabber_handle_iq_get_last() */
+				"<feature var='jabber:iq:version'/>"						/* jabber_handle_iq_get_version() */
+				"<feature var='urn:xmpp:ping'/>"						/* jabber_handle_iq_ping() */
+				"<feature var='http://jabber.org/protocol/chatstates'/>"
 			"</query></iq>", from, id);
 #if 0
-				"<feature var=\"http://jabber.org/protocol/commands\"/>"
-				"<feature var=\"http://jabber.org/protocol/bytestreams\"/>"
-				"<feature var=\"http://jabber.org/protocol/si\"/>"
-				"<feature var=\"http://jabber.org/protocol/si/profile/file-transfer\"/>"
+				"<feature var='http://jabber.org/protocol/commands'/>"
+				"<feature var='http://jabber.org/protocol/bytestreams'/>"
+				"<feature var='http://jabber.org/protocol/si'/>"
+				"<feature var='http://jabber.org/protocol/si/profile/file-transfer'/>"
 #endif
 
 }
@@ -79,8 +79,8 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_last) {
 	jabber_private_t *j = s->priv;
 
 	watch_write(j->send_watch, 
-			"<iq to=\"%s\" type=\"result\" id=\"%s\">"
-			"<query xmlns=\"jabber:iq:last\" seconds=\"%d\">"
+			"<iq to='%s' type='result' id='%s'>"
+			"<query xmlns='jabber:iq:last' seconds='%d'>"
 			"</query></iq>", from, id, (time(NULL)-s->activity));
 }
 
@@ -126,8 +126,8 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_version) {
 		osversion = jabber_escape(ver_os);	/* ver_os session variable */
 	}
 
-	watch_write(j->send_watch, "<iq to=\"%s\" type=\"result\" id=\"%s\">" 
-			"<query xmlns=\"jabber:iq:version\">"
+	watch_write(j->send_watch, "<iq to='%s' type='result' id='%s'>" 
+			"<query xmlns='jabber:iq:version'>"
 			"<name>%s</name>"
 			"<version>%s</version>"
 			"<os>%s</os></query></iq>", 
@@ -153,7 +153,7 @@ JABBER_HANDLER_GET_REPLY(jabber_handle_iq_get_version) {
 JABBER_HANDLER_GET_REPLY(jabber_handle_iq_ping) {
 	jabber_private_t *j = s->priv;
 
-	watch_write(j->send_watch, "<iq to=\"%s\" id=\"%s\" type=\"result\"/>\n",
+	watch_write(j->send_watch, "<iq to='%s' id='%s' type='result'/>\n",
 			from, id);
 }
 

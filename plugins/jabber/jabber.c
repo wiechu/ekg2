@@ -301,7 +301,7 @@ static QUERY(jabber_window_kill) {
 	if (w && w->id && w->target && session_check(w->session, 1, "xmpp") && (c = newconference_find(w->session, w->target)) &&
 			(j = jabber_private(w->session)) && session_connected_get(w->session)) {
 														/* XXX: check really needed? vv */
-		watch_write(j->send_watch, "<presence to=\"%s/%s\" type=\"unavailable\">%s</presence>", w->target + 5, c->priv_data, status ? status : "");
+		watch_write(j->send_watch, "<presence to='%s/%s' type='unavailable'>%s</presence>", w->target + 5, c->priv_data, status ? status : "");
 		newconference_destroy(c, 0);
 	}
 
@@ -348,19 +348,19 @@ int jabber_write_status(session_t *s) {
 
 			signpresence = jabber_openpgp(s, NULL, JABBER_OPENGPG_SIGN, signpresence, NULL, NULL);
 			if (signpresence) {
-				x_signed = saprintf("<x xmlns=\"jabber:x:signed\">%s</x>", signpresence);
+				x_signed = saprintf("<x xmlns='jabber:x:signed'>%s</x>", signpresence);
 				xfree(signpresence);
 			}
 		}
 
 		if ((tmp = session_get(s, "photo_hash")))
-			x_vcard = saprintf("<x xmlns=\"vcard-temp:x:update\"><photo>%s</photo></x>", tmp);
+			x_vcard = saprintf("<x xmlns='vcard-temp:x:update'><photo>%s</photo></x>", tmp);
 	}
 #define P(x) (x ? x : "")
 	if (!j->istlen && (status == EKG_STATUS_AVAIL))
 		watch_write(j->send_watch, "<presence>%s%s%s%s%s</presence>", P(real), P(priority), P(x_signed), P(x_vcard), JABBER_EKG_CAPS);
 	else if (status == EKG_STATUS_INVISIBLE)
-		watch_write(j->send_watch, "<presence type=\"invisible\">%s%s</presence>", P(real), P(priority));
+		watch_write(j->send_watch, "<presence type='invisible'>%s%s</presence>", P(real), P(priority));
 	else {
 		const char *status_s;
 
@@ -483,8 +483,8 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 		if (!j->istlen && !j->sasl_connecting && session_get(s, "__new_account")) {
 			char *epasswd	= jabber_escape(passwd);
 			watch_write(j->send_watch,
-				"<iq type=\"set\" to=\"%s\" id=\"register%d\">"
-				"<query xmlns=\"jabber:iq:register\"><username>%s</username><password>%s</password></query></iq>",
+				"<iq type='set' to='%s' id='register%d'>"
+				"<query xmlns='jabber:iq:register'><username>%s</username><password>%s</password></query></iq>",
 				j->server, j->id++, username, epasswd ? epasswd : ("foo"));
 
 			xfree(epasswd);
@@ -493,8 +493,8 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 		if (!j->istlen && session_int_get(s, "disable_sasl") != 2) {
 			if (session_int_get(s, "disable_sasl") == 1)
 				watch_write(j->send_watch,	/* let's rock with XEP-0078: Non-SASL Authentication */
-					"<iq type=\"get\" id=\"auth1\">"
-					"<query xmlns=\"jabber:iq:auth\"/>"
+					"<iq type='get' id='auth1'>"
+					"<query xmlns='jabber:iq:auth'/>"
 					"</iq>");
 
 			xfree(username);	/* waste */
@@ -697,7 +697,7 @@ static TIMER_SESSION(jabber_ping_timer_handler) {
 	if (session_int_get(s, "ping_server") == 0) return -1;
 
 		/* XEP-0199 */
-	watch_write(j->send_watch, "<iq to=\"%s\" id=\"ping%d\" type=\"get\"><ping xmlns=\"urn:xmpp:ping\"/></iq>\n",
+	watch_write(j->send_watch, "<iq to='%s' id='ping%d' type='get'><ping xmlns='urn:xmpp:ping'/></iq>\n",
 			j->server, j->id++);
 	return 0;
 }
@@ -748,8 +748,8 @@ WATCHER(jabber_handle_connect)
 #endif
 		if (!(j->istlen)) {
 			watch_write(j->send_watch,
-					"<?xml version=\"1.0\" encoding=\"utf-8\"?><stream:stream to=\"%s\" xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\"%s>",
-					j->server, (session_int_get(s, "disable_sasl") != 2) ? " version=\"1.0\"" : "");
+					"<?xml version='1.0' encoding='utf-8'?><stream:stream to='%s' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'%s>",
+					j->server, (session_int_get(s, "disable_sasl") != 2) ? " version='1.0'" : "");
 		} else {
 			watch_write(j->send_watch, "<s v=\'2\'>");
 		}
@@ -1067,7 +1067,7 @@ handshake_ok:
 
 	/* reinitialize stream */
 		watch_write(j->send_watch,
-				"<stream:stream to=\"%s\" xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\">",
+				"<stream:stream to='%s' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>",
 				j->server);
 	} else {
 		// handshake successful
@@ -1512,7 +1512,7 @@ static QUERY(jabber_typing_out) {
 	if (j->istlen) {
 		if (!(chatstate & EKG_CHATSTATE_COMPOSING))
 			return -1;
-		watch_write(j->send_watch, "<m to=\"%s\" tp=\"%c\"/>",
+		watch_write(j->send_watch, "<m to='%s' tp='%c'/>",
 			jid, (chatstate==EKG_CHATSTATE_COMPOSING ? 't' : 'u'));
 		return 0;
 	}
@@ -1529,9 +1529,9 @@ static QUERY(jabber_typing_out) {
 			default: return -1;
 		}
 
-		watch_write(j->send_watch, "<message type=\"chat\" to=\"%s\">"
-			"<x xmlns=\"jabber:x:event\"%s>"
-			"<%s xmlns=\"http://jabber.org/protocol/chatstates\"/>"
+		watch_write(j->send_watch, "<message type='chat' to='%s'>"
+			"<x xmlns='jabber:x:event'%s>"
+			"<%s xmlns='http://jabber.org/protocol/chatstates'/>"
 			"</message>\n", jid, (len ? "><composing/></x" : "/"), csname);
 	}
 

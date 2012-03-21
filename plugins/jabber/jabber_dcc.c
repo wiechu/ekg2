@@ -80,9 +80,9 @@ WATCHER(jabber_dcc_handle_recv) {
 					}
 					case (SOCKS5_AUTH): {
 						jabber_write(p->session,
-							"<iq type=\"result\" to=\"%s\" id=\"%s\">"
-							"<query xmlns=\"http://jabber.org/protocol/bytestreams\">"
-							"<streamhost-used jid=\"%s\"/>"
+							"<iq type='result' to='%s' id='%s'>"
+							"<query xmlns='http://jabber.org/protocol/bytestreams'>"
+							"<streamhost-used jid='%s'/>"
 							"</query></iq>", d->uid+5, p->req, b->streamhost->jid);
 						b->step = SOCKS5_DATA;
 						d->active = 1;
@@ -344,7 +344,7 @@ void jabber_dcc_close_handler(struct dcc_s *d) {
 
 		if (!s || !(j= session_private_get(s))) return;
 
-		watch_write(j->send_watch, "<iq type=\"error\" to=\"%s\" id=\"%s\"><error code=\"403\">Declined</error></iq>",
+		watch_write(j->send_watch, "<iq type='error' to='%s' id='%s'><error code='403'>Declined</error></iq>",
 			d->uid+5, p->req);
 	}
 

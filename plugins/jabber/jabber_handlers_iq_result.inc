@@ -31,7 +31,7 @@ JABBER_HANDLER_RESULT(jabber_handle_iq_result_disco) {
 JABBER_HANDLER_RESULT(jabber_handle_iq_result_new_mail) {
 	jabber_private_t *j = s->priv;
 
-	watch_write(j->send_watch, "<iq type=\"get\" id=\"gmail%d\"><query xmlns=\"google:mail:notify\"/></iq>", j->id++);
+	watch_write(j->send_watch, "<iq type='get' id='gmail%d'><query xmlns='google:mail:notify'/></iq>", j->id++);
 }
 
 JABBER_HANDLER_RESULT(jabber_handle_iq_result_disco_info) {
@@ -965,10 +965,10 @@ JABBER_HANDLER_SET(jabber_handle_iq_set_new_mail) {
 	print("gmail_new_mail", session_name(s));
 	watch_write(j->send_watch, "<iq type='result' id='%s'/>", jabber_attr(n->atts, "id"));
 	if (j->last_gmail_result_time && j->last_gmail_tid)
-		watch_write(j->send_watch, "<iq type=\"get\" id=\"gmail%d\"><query xmlns=\"google:mail:notify\" newer-than-time=\"%s\" newer-than-tid=\"%s\" /></iq>", j->id++, 
+		watch_write(j->send_watch, "<iq type='get' id='gmail%d'><query xmlns='google:mail:notify' newer-than-time='%s' newer-than-tid='%s' /></iq>", j->id++, 
 			j->last_gmail_result_time, j->last_gmail_tid);
 	else
-		watch_write(j->send_watch, "<iq type=\"get\" id=\"gmail%d\"><query xmlns=\"google:mail:notify\"/></iq>", j->id++);
+		watch_write(j->send_watch, "<iq type='get' id='gmail%d'><query xmlns='google:mail:notify'/></iq>", j->id++);
 }
 
 JABBER_HANDLER_SET(jabber_handle_si_set) {
@@ -1068,15 +1068,15 @@ JABBER_HANDLER_RESULT(jabber_handle_si_result) {
 			xfree(p->req);
 			p->req = xstrdup(ekg_itoa(j->id++));
 
-			watch_write(j->send_watch, "<iq type=\"set\" to=\"%s\" id=\"%s\">"
-					"<query xmlns=\"http://jabber.org/protocol/bytestreams\" mode=\"tcp\" sid=\"%s\">", 
+			watch_write(j->send_watch, "<iq type='set' to='%s' id='%s'>"
+					"<query xmlns='http://jabber.org/protocol/bytestreams' mode='tcp' sid='%s'>", 
 					d->uid+5, p->req, p->sid);
 
 			for (l = b->streamlist; l; l = l->next) {
 				struct jabber_streamhost_item *item = l->data;
-				watch_write(j->send_watch, "<streamhost port=\"%d\" host=\"%s\" jid=\"%s\"/>", item->port, item->ip, item->jid);
+				watch_write(j->send_watch, "<streamhost port='%d' host='%s' jid='%s'/>", item->port, item->ip, item->jid);
 			}
-			watch_write(j->send_watch, "<fast xmlns=\"http://affinix.com/jabber/stream\"/></query></iq>");
+			watch_write(j->send_watch, "<fast xmlns='http://affinix.com/jabber/stream'/></query></iq>");
 
 		}
 	} else /* XXX */;
@@ -1087,7 +1087,7 @@ JABBER_HANDLER_RESULT(jabber_handle_bind) {
 	
 	if (session_int_get(s, "__session_need_start") == 1) {
 		watch_write(j->send_watch, 
-				"<iq type=\"set\" id=\"auth\"><session xmlns=\"urn:ietf:params:xml:ns:xmpp-session\"/></iq>",
+				"<iq type='set' id='auth'><session xmlns='urn:ietf:params:xml:ns:xmpp-session'/></iq>",
 				j->id++);
 
 		session_int_set(s, "__session_need_start", 0);
