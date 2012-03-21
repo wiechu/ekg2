@@ -320,8 +320,8 @@ char *tlen_decode(const char *what) {
 /*
  * jabber_handle_write()
  *
- * obs≥uga moøliwo∂ci zapisu do socketa. wypluwa z bufora ile siÍ da
- * i je∂li co∂ jeszcze zostanie, ponawia prÛbÍ.
+ * obs≈Çuga mo≈ºliwo≈õci zapisu do socketa. wypluwa z bufora ile siƒô da
+ * i je≈õli co≈õ jeszcze zostanie, ponawia pr√≥bƒô.
  */
 WATCHER_LINE(jabber_handle_write) /* tylko gdy jest wlaczona kompresja lub TLS/SSL. dla zwyklych polaczen jest watch_handle_write() */
 {

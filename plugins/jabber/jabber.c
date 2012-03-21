@@ -3,8 +3,9 @@
 /*
  *  (C) Copyright 2003-2005 Wojtek Kaniewski <wojtekka@irc.pl>
  *			    Tomasz Torcz <zdzichu@irc.pl>
- *			    Leszek KrupiÒski <leafnode@pld-linux.org>
- *			    Piotr Paw≥ow and other libtlen developers (http://libtlen.sourceforge.net/index.php?theme=teary&page=authors)
+ *			    Leszek Krupi≈Ñski <leafnode@pld-linux.org>
+ *			    Piotr Paw≈Çow and other libtlen developers (http://libtlen.sourceforge.net/index.php?theme=teary&page=authors)
+ *		       2012 Wies≈Çaw Ochmi≈Ñski <wiechu at wiechu dot com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License Version 2 as
@@ -460,12 +461,6 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 	/* XXX, czy tego nie mozna parsowac tak jak wszystko inne w jabber_handle() ?
 	 *	A tutaj tylko tworzyc drzewo xmlowe?
 	 *	XXX, rtfm expat
-	 */
-
-	/* (WO) Nie moøna, bo przetwarzanie rozpoczÍoby siÍ dopiero po skompletowaniu, czyli po otrzymaniu </stream:stream>
-	 * W±tpiÍ, by kto∂ chcia≥ czekaÊ aø to nast±pi, ale ≥adniej by≥oby gdyby ca≥a ta czÍ∂Ê po if wyl±dowa≥a
-	 * w jakiej∂ jabber_just_like_starting_over()
-	 *					-- Wies≥aw OchmiÒski
 	 */
 
 	if (!(s->connected) && (j->istlen ? !xstrcmp(name, "s") : !xstrcmp(name, "http://etherx.jabber.org/streams\033stream"))) {

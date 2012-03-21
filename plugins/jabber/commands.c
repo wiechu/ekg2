@@ -4,6 +4,7 @@
  *  (C) Copyright 2003 Wojtek Kaniewski <wojtekka@irc.pl>
  *		       Tomasz Torcz <zdzichu@irc.pl>
  *		       Libtlen developers (http://libtlen.sourceforge.net/index.php?theme=teary&page=authors)
+ *		  2012 WiesÅ‚aw OchmiÅ„ski <wiechu at wiechu dot com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License Version 2 as
@@ -159,7 +160,7 @@ static COMMAND(jabber_command_disconnect)
 
 	if (session->autoaway)
 		session_status_set(session, EKG_STATUS_AUTOBACK);
-	/* je¶li jest /reconnect, nie mieszamy z opisami */
+	/* jeÅ›li jest /reconnect, nie mieszamy z opisami */
 	if (xstrcmp(name, ("reconnect"))) {
 		if (params[0]) {
 			if (!xstrcmp(params[0], "-"))
@@ -598,7 +599,7 @@ static COMMAND(jabber_command_auth) {
 		u   = ul;
 		multi = 1;
 	} else if ((__uid = jid_target2uid(session, target, quiet))) {
-		tabnick_add(__uid);	/* user jest OK, wiêc lepiej mieæ go pod rêk± */
+		tabnick_add(__uid);	/* user jest OK, wiÄ™c lepiej mieÄ‡ go pod rÄ™kÄ… */
 		if (!(u = userlist_find(session, __uid)))
 			u = userlist_add(session, __uid, NULL);
 	} else
@@ -721,7 +722,7 @@ static COMMAND(jabber_command_modify) {
 		for (i = 0; argv[i]; i++) {
 			if (match_arg(argv[i], 'g', ("group"), 2) && argv[i + 1]) {
 				char **tmp = array_make(argv[++i], ",", 0, 1, 1);
-				int x, off;	/* je¶li zaczyna siê od '@', pomijamy pierwszy znak */
+				int x, off;	/* jeÅ›li zaczyna siÄ™ od '@', pomijamy pierwszy znak */
 
 				for (x = 0; tmp[x]; x++)
 					switch (*tmp[x]) {

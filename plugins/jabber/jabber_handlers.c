@@ -1,8 +1,9 @@
 /*
  *  (C) Copyright 2003-2006 Wojtek Kaniewski <wojtekka@irc.pl>
  *			    Tomasz Torcz <zdzichu@irc.pl>
- *			    Leszek KrupiÒski <leafnode@pld-linux.org>
- *			    Piotr Paw≥ow and other libtlen developers (http://libtlen.sourceforge.net/index.php?theme=teary&page=authors)
+ *			    Leszek Krupi≈Ñski <leafnode@pld-linux.org>
+ *			    Piotr Paw≈Çow and other libtlen developers (http://libtlen.sourceforge.net/index.php?theme=teary&page=authors)
+ *		       2012 Wies≈Çaw Ochmi≈Ñski <wiechu at wiechu dot com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License Version 2 as
@@ -124,7 +125,7 @@ static xmlnode_t *xmlnode_find_child_xmlns(xmlnode_t *n, const char *name, const
  *		But it <b>MUST</b> be implemented for <i>/session disable_sasl 1</i><br>
  *		So it's just <i>jabber:iq:auth</i> for <i>disable_sasl</i> 2.
  *
- * @note	Tlen Authentication was stolen from libtlen calc_passcode() with magic stuff (C) libtlen's developer and Piotr Paw≥ow<br>
+ * @note	Tlen Authentication was stolen from libtlen calc_passcode() with magic stuff (C) libtlen's developer and Piotr Paw≈Çow<br>
  *		see: http://libtlen.sourceforge.net/
  *
  * @param	s		- session to authenticate <b>CANNOT BE NULL</b>
@@ -144,7 +145,7 @@ void jabber_iq_auth_send(session_t *s, const char *username, const char *passwd,
 	char *authpass;					/* <digest>digest</digest> or <password>plaintext_password</password> */
 	const char *host = "";
 
-	/* stolen from libtlen function calc_passcode() Copyrighted by libtlen's developer and Piotr Paw≥ow */
+	/* stolen from libtlen function calc_passcode() Copyrighted by libtlen's developer and Piotr Paw≈Çow */
 	if (j->istlen) {
 		int	magic1 = 0x50305735, magic2 = 0x12345671, sum = 7;
 		char	z;
@@ -798,7 +799,7 @@ JABBER_HANDLER(jabber_handle_message) {
 
 					JABBER_COMMIT_DATA(j->send_watch);
 				}
-				/* je∂li body nie ma, to odpowiedz na nasza prosbe */
+				/* je≈õli body nie ma, to odpowiedz na nasza prosbe */
 				if (!nbody && isack) {
 					int __status  = ((acktype & 1) ? EKG_ACK_DELIVERED :
 							(acktype & 2) ? EKG_ACK_QUEUED :
