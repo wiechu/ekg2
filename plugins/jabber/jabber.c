@@ -704,8 +704,7 @@ static TIMER_SESSION(jabber_ping_timer_handler) {
 
 static WATCHER(jabber_handle_connect_tlen_hub);
 
-WATCHER(jabber_handle_connect)
-{
+static WATCHER(jabber_handle_connect) {
 	session_t *s = (session_t *) data;
 	jabber_private_t *j = jabber_private(s);
 	int tlenishub;
@@ -768,7 +767,7 @@ WATCHER(jabber_handle_connect)
 	return -1;
 }
 
-WATCHER(jabber_handle_connect2) {
+static WATCHER(jabber_handle_connect2) {
 	session_t *s = (session_t *) data;
 	jabber_private_t *j = jabber_private(s);
 
@@ -793,6 +792,90 @@ WATCHER(jabber_handle_connect2) {
 #endif
 
 	return jabber_handle_connect(type, fd, watch, data);
+}
+
+COMMAND(jabber_command_connect)
+{
+	const char *realserver	= session_get(session, "server");
+	const char *resource	= session_get(session, "resource");
+	const char *server;
+
+	jabber_private_t *j = session_private_get(session);
+
+	if (session->connecting) {
+		printq("during_connect", session_name(session));
+		return -1;
+	}
+
+	if (session_connected_get(session)) {
+		printq("already_connected", session_name(session));
+		return -1;
+	}
+
+	if (!session_get(session, "__new_account") && !(session_get(session, "password"))) {
+		printq("no_config");
+		return -1;
+	}
+
+	if (command_exec(NULL, session, "/session --lock", 0) == -1)
+		return -1;
+
+	debug("session->uid = %s\n", session->uid);
+		/* XXX, nie wymagac od usera podania calego uida w postaci: tlen:ktostam@tlen.pl tylko samo tlen:ktostam? */
+	if (!(server = xstrchr(session->uid, '@'))) {
+		printq("wrong_id", session->uid);
+		return -1;
+	}
+
+	xfree(j->server);
+	j->server	= xstrdup(++server);
+
+	if (!realserver) {
+		if (j->istlen) {
+			j->istlen++;
+			realserver = TLEN_HUB;
+		} else
+			realserver = server;
+	}
+
+	{
+		int port = session_int_get(session, "port");
+#ifdef JABBER_HAVE_SSL
+		int ssl_port = session_int_get(session, "ssl_port");
+		int use_ssl = session_int_get(session, "use_ssl");
+		j->using_ssl = 0;
+#endif
+
+		if (j->istlen && !xstrcmp(realserver, TLEN_HUB))
+			j->port = 80;
+		else
+#ifdef JABBER_HAVE_SSL
+		if (use_ssl)
+			j->port = ssl_port < 1 ? 5223 : ssl_port;
+		else
+#endif
+			j->port = port < 1 ? 5222 : port;
+
+		if (!(( j->connect_watch = ekg_connect(session, realserver, 5222, j->port, jabber_handle_connect2)))) {
+			printq("generic_error", strerror(errno));
+			return -1;
+		}
+
+	}
+
+	if (!resource)
+		resource = JABBER_DEFAULT_RESOURCE;
+
+	xfree(j->resource);
+	j->resource = xstrdup(resource);
+
+	session->connecting = 1;
+	j->sasl_connecting = 0;
+
+	printq("connecting", session_name(session));
+	if (session_status_get(session) == EKG_STATUS_NA)
+		session_status_set(session, EKG_STATUS_AVAIL);
+	return 0;
 }
 
 static WATCHER(jabber_handle_connect_tlen_hub) {	/* tymczasowy */
