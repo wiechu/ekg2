@@ -81,7 +81,26 @@ SNAC_SUBHANDLER(icq_snac_new_uin) {
 	return 0;
 }
 
-extern char *icq_md5_digest(const char *password, const unsigned char *key, int key_len);	/* digest.c */
+static char *icq_md5_digest(const char *password, const unsigned char *key, int key_len) {
+	static unsigned char digest[16];
+	const guchar *AOLkey = (guchar *)"AOL Instant Messenger (SM)";
+	GChecksum *chk;
+	gsize size;
+
+	chk = g_checksum_new(G_CHECKSUM_MD5);
+	g_checksum_update(chk, (const guchar *)password, -1);
+	g_checksum_get_digest(chk, digest, &size);
+	g_checksum_free(chk);
+
+	chk = g_checksum_new(G_CHECKSUM_MD5);
+	g_checksum_update(chk, key, key_len);
+	g_checksum_update(chk, digest, sizeof(digest));
+	g_checksum_update(chk, AOLkey, -1);
+	g_checksum_get_digest(chk, digest, &size);
+	g_checksum_free(chk);
+
+	return (char *) digest;
+}
 
 SNAC_SUBHANDLER(icq_snac_sigon_authkey) {
 	/* SNAC(17,07) SRV_AUTH_KEY_RESPONSE	Server md5 authkey response

@@ -314,7 +314,6 @@ plugin_LTLIBRARIES += plugins/icq/icq.la
 
 plugins_icq_icq_la_SOURCES = \
 	$(noinst_HEADERS) \
-	plugins/icq/digest.c \
 	plugins/icq/icq.c \
 	plugins/icq/icq_caps.c \
 	plugins/icq/icq_caps.h \
