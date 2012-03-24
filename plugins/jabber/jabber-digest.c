@@ -159,9 +159,8 @@ static char *sasl_auth_digest_md5(session_t *s, const char *username, const char
 char *jabber_sasl_digest_md5_response(session_t *s, char *challenge, const char *username, const char *password) {
 	jabber_private_t *j =  s->priv;
 	char **arr;
-	char *realm	= NULL;
+	char *retval, *nonce = NULL, *realm = NULL;
 // XXX	char *rspauth	= NULL;
-	char *nonce	= NULL;
 	int i;
 
 	/* maybe we need to change/create another one parser... i'm not sure. please notify me, I'm lazy, sorry */
@@ -189,9 +188,12 @@ char *jabber_sasl_digest_md5_response(session_t *s, char *challenge, const char 
 		i++;
 		if (arr[i]) i++;
 	}
+
+	retval = sasl_auth_digest_md5(s, username, password, nonce, realm);
+
 	g_strfreev(arr);
 
-	return sasl_auth_digest_md5(s, username, password, nonce, realm);
+	return retval;
 }
 
 char *jabber_sasl_cram_md5_response(session_t *s, char *challenge, const char *username, const char *password) {
