@@ -351,17 +351,7 @@ static COMMAND(jabber_command_inline_msg)
 	return jabber_command_msg(("chat"), p, session, target, quiet);
 }
 
-static COMMAND(jabber_command_xml)
-{
-	jabber_private_t *j = session_private_get(session);
-
-#ifdef FIXME_NEW_CONNECTION
-	if (!(j->send_watch)) {
-		printq("not_connected", session_name(session));
-		return -1;
-	}
-#endif
-
+static COMMAND(jabber_command_xml) {
 	jabber_write(session, "%s", params[0]);
 	return 0;
 }
@@ -2390,7 +2380,7 @@ void jabber_register_commands()
 	command_add(&jabber_plugin, "xmpp:ver", "!u", jabber_command_ver,	JABBER_FLAGS_TARGET, NULL); /* ??? ?? ? ?@?!#??#!@? */
 	command_add(&jabber_plugin, "xmpp:voice", "! !", jabber_muc_command_role, JABBER_FLAGS_TARGET, NULL);
 	command_add(&jabber_plugin, "xmpp:xa", "r", jabber_command_away,	JABBER_ONLY, NULL);
-	command_add(&jabber_plugin, "xmpp:xml", "!", jabber_command_xml,	JABBER_ONLY, NULL);
+	command_add(&jabber_plugin, "xmpp:xml", "!", jabber_command_xml,	JABBER_FLAGS, NULL);
 
 	command_add(&jabber_plugin, "tlen:", "?",		jabber_command_inline_msg,	JABBER_ONLY | COMMAND_PASS_UNCHANGED, NULL);
 	command_add(&jabber_plugin, "tlen:_autoaway", "r",	jabber_command_away,		JABBER_ONLY, NULL);

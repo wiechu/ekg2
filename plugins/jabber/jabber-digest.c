@@ -290,6 +290,53 @@ char *tlen_auth_digest(const char *sid, const char *password) {
 	return result;
 }
 
+/**
+ * jabber_dcc_digest()
+ *
+ * Return SHA1 hash for SOCKS5 Bytestreams connections [DCC]<br>
+ * Make SHA1Update()'s on (@a uid, @a initiator and @a target)
+ *
+ * @todo SHA1Update() on NULL params will fail. XXX, no idea what to do.
+ *
+ * @todo We don't reencode params here to utf-8.
+ *
+ * @return <b>static</b> buffer, with 40 digit SHA1 hash + NUL char
+ */
+
+char *jabber_dcc_digest(char *sid, char *initiator, char *target) {
+	GChecksum *ctx;
+	unsigned char digest[20];
+	static char result[41];
+	gsize i, dsize;
+
+	ctx = g_checksum_new(G_CHECKSUM_SHA1);
+	g_checksum_update(ctx, (const guchar *)sid, xstrlen(sid));
+	g_checksum_update(ctx, (const guchar *)initiator, xstrlen(initiator));
+	g_checksum_update(ctx, (const guchar *)target, xstrlen(target));
+	g_checksum_get_digest(ctx, digest, &dsize);
+
+	for (i = 0; i < 20; i++)
+		sprintf(result + i * 2, "%.2x", digest[i]);
+
+	return result;
+}
+
+char *jabber_sha1_generic(char *buf, int len) {
+	GChecksum *ctx;
+	unsigned char digest[20];
+	static char result[41];
+	gsize i, dsize;
+
+	ctx = g_checksum_new(G_CHECKSUM_SHA1);
+	g_checksum_update(ctx, (const guchar *)buf, len);
+	g_checksum_get_digest(ctx, digest, &dsize);
+
+	for (i = 0; i < 20; i++)
+		sprintf(result + i * 2, "%.2x", digest[i]);
+
+	return result;
+}
+
 
 /*
  * Local Variables:

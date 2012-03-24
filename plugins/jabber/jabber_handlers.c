@@ -190,7 +190,6 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 				}
 				continue;
 			}
-#if 0
 			if (!xstrcmp(ch->name, "compression")) {
 				print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "/session use_compression method1,method2,..");
 				for (another = ch->children; another; another = another->next) {
@@ -204,7 +203,6 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 				}
 				continue;
 			}
-#endif
 			if (!xstrcmp(ch->name, "session"))
 				print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "Manage session");
 			else if (!xstrcmp(ch->name, "bind"))
@@ -433,11 +431,6 @@ JABBER_HANDLER(jabber_handle_compressed) {
 			"<stream:stream to='%s' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>",
 			j->server);
 }
-
-// XXX
-char *jabber_sasl_cram_md5_response(session_t *s, char *challenge, const char *username, const char *password);
-char *jabber_sasl_digest_md5_response(session_t *s, char *challenge, const char *username, const char *password);
-char *jabber_sasl_scram_sda1_response(session_t *s, char *challenge, const char *username, const char *password);
 
 JABBER_HANDLER(jabber_handle_challenge) {
 	jabber_private_t *j =  s->priv;

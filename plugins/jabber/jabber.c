@@ -373,28 +373,7 @@ void jabber_handle_disconnect(session_t *s, const char *reason, int type) {
 
 	protocol_disconnected_emit(s, reason, type);
 
-#ifdef FIXME_NEW_CONNECTION
-	if (j->connect_watch) {
-		watch_free(j->connect_watch);
-		j->connect_watch = NULL;
-	}
-	if (j->send_watch) {
-		j->send_watch->type = WATCH_NONE;
-		watch_free(j->send_watch);
-		j->send_watch = NULL;
-	}
-
-	watch_remove(&jabber_plugin, j->fd, WATCH_WRITE);
-	watch_remove(&jabber_plugin, j->fd, WATCH_READ);
-
-#endif
 	j->using_compress = JABBER_COMPRESSION_NONE;
-#if FIXME_NEW_CONNECTION
-	if (j->fd != -1) {
-		close(j->fd);
-		j->fd = -1;
-	}
-#endif
 
 	jabber_iq_stanza_free(j);
 
@@ -540,11 +519,6 @@ static void jabber_handle_stream(connection_data_t *cd, GString *buffer) {
 	/* session dissapear, shouldn't happen */
 	if (!s || !(j = s->priv))
 		return;
-
-#ifdef FIXME_NEW_CONNECTION
-	if (!(j->send_watch) || (j->send_watch->type == WATCH_NONE)) /* TLS in progress; XXX: check if it doesn't collide with sth */
-		return 0;
-#endif
 
 /*	s->activity = time(NULL); */
 
@@ -720,11 +694,6 @@ static void jabber_handle_stream_tlen_hub(connection_data_t *cd, GString *buffer
 
 		return;
 	}
-#ifdef FIXME_NEW_CONNECTION
-	/* XXX: hm? */
-	if (len == 0)	return -1;
-	else		return 0;
-#endif
 }
 
 static void jabber_handle_connect_tlen_hub(connection_data_t *cd) {	/* tymczasowy */

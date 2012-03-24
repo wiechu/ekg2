@@ -203,10 +203,14 @@ int jabber_stanza_freeone(jabber_private_t *j, jabber_stanza_t *stanza);
 const char *jabber_iq_reg(session_t *s, const char *prefix, const char *to, const char *type, const char *xmlns);
 const char *jabber_iq_send(session_t *s, const char *prefix, jabber_iq_type_t iqtype, const char *to, const char *type, const char *xmlns);
 
-/* digest.c hashowanie.. */
+/* jabber-digest.c hashowanie.. */
 char *tlen_auth_digest(const char *sid, const char *password);
 char *jabber_sha1_generic(char *buf, int len);
 char *jabber_dcc_digest(char *sid, char *initiator, char *target);
+char *jabber_sasl_cram_md5_response(session_t *s, char *challenge, const char *username, const char *password);
+char *jabber_sasl_digest_md5_response(session_t *s, char *challenge, const char *username, const char *password);
+char *jabber_sasl_scram_sda1_response(session_t *s, char *challenge, const char *username, const char *password);
+
 
 char *jabber_attr(char **atts, const char *att);
 char *jabber_escape(const char *text);
