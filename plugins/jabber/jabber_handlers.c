@@ -468,6 +468,25 @@ JABBER_HANDLER(jabber_handle_challenge) {
 		case JABBER_SASL_AUTH_CRAM_MD5:	// Challenge Response Authentication Mechanism
 			response = jabber_sasl_cram_md5_response(s, challenge, username, password);
 			break;
+		case JABBER_SASL_AUTH_UNKNOWN:
+		{
+			const char *rspauth, *tmp;
+			if (xstrncmp(challenge, "rspauth=", 8)) {
+				// XXX ?
+				break;
+			}
+			rspauth = challenge + 8;
+			tmp = session_get(s, "__sasl_excepted");
+			if (!xstrcmp(tmp, rspauth)) {
+				debug_ok("[%s] KEYS MATCHED, THX FOR USING SASL SUPPORT IN EKG2.\n", session_uid_get(s));
+				jabber_write(s, "<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>");
+			} else {
+				debug_error("[%s] RSPAUTH BUT KEYS DON'T MATCH!!! IS: %s EXCEPT: %s, DISCONNECTING\n", session_uid_get(s), __(rspauth), __(tmp));
+				j->parser = NULL; jabber_handle_disconnect(s, "IE, SASL RSPAUTH DOESN'T MATCH!!", EKG_DISCONNECT_FAILURE);
+			}
+			session_set(s, "__sasl_excepted", NULL);
+			break;
+		}
 		default:
 			break;
 	}
@@ -485,14 +504,6 @@ JABBER_HANDLER(jabber_handle_challenge) {
 	if (rspauth) {
 		const char *tmp = session_get(s, "__sasl_excepted");
 
-		if (!xstrcmp(tmp, rspauth)) {
-			debug_function("[%s] KEYS MATCHED, THX FOR USING SASL SUPPORT IN EKG2.\n", session_uid_get(s));
-			jabber_write(s, "<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>");
-		} else {
-			debug_error("[%s] RSPAUTH BUT KEYS DON'T MATCH!!! IS: %s EXCEPT: %s, DISCONNECTING\n", session_uid_get(s), __(rspauth), __(tmp));
-			j->parser = NULL; jabber_handle_disconnect(s, "IE, SASL RSPAUTH DOESN'T MATCH!!", EKG_DISCONNECT_FAILURE);
-		}
-		session_set(s, "__sasl_excepted", NULL);
 	}
 #endif
 }
