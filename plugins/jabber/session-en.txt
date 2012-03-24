@@ -90,18 +90,6 @@ display_ctcp
 	
 		1 - any requests will be displayed to you
 
-disable_sasl
-	type: integer
-	default value: 0
-	
-	Possible values:
-	
-		0 - sasl enabled
-	
-		1 - use XEP-0078(Non-SASL Authentication)
-	
-		2 - disable sasl at all 
-
 display_notify
 	type: integer
 	default value: -1
@@ -162,8 +150,7 @@ plaintext_passwd
 	type: bool
 	default value: 0
 	
-	Determines whether password can be sent using plaintext (1) or digest (0)
-	method.
+	Determines whether password can be sent using plaintext when connection is not secure.
 
 ping_server
 	type: integer

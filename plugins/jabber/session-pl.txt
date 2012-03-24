@@ -82,8 +82,8 @@ plaintext_passwd
 	typ: bool
 	domyślna wartość: 0
 	
-	określa, czy hasło ma być przesyłane do serwera jawnym tekstem (1),
-	czy za pomocą skrótu kryptograficznego (0).
+	określa, czy hasło ma być przesyłane do serwera jawnym tekstem
+	w nieszyfrowanym połączeniu.
 
 port
 	typ: liczba

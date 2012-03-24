@@ -51,8 +51,6 @@ static const char *base16_encode(const unsigned char *data) {
  *
  * Return base16 encoded hash for SASL MD5 CHALLENGE
  *
- * @todo MD5Update() on NULL params will fail. XXX, no idea what to do.
- *
  * @return <b>static</b> buffer with 32 digit BASE16 HASH + NUL char
  */
 static const char *challenge_digest(const char *sid, const char *password, const char *nonce, const char *cnonce, const char *xmpp_temp, const char *realm) {
@@ -61,7 +59,7 @@ static const char *challenge_digest(const char *sid, const char *password, const
 	const char *convnode, *convpasswd;	/* sid && password encoded in UTF-8 */
 	char *ha1, *ha2;
 	char *kd;
-	gsize size;
+	gsize size = 16;
 	GChecksum *chksum;
 
 /* ZERO STEP -> recode */
@@ -83,10 +81,10 @@ static const char *challenge_digest(const char *sid, const char *password, const
 
 /* SECOND STEP */
 	kd = g_strdup_printf("xxxxxxxxxxxxxxxx:%s:%s", nonce, cnonce);
-	memcpy(kd, digest, 16);
+	memcpy(kd, digest, size);
 
 	chksum = g_checksum_new(G_CHECKSUM_MD5);
-	g_checksum_update(chksum, (const guchar *)kd, xstrlen(kd));
+	g_checksum_update(chksum, (const guchar *)kd, size + 1 + xstrlen(nonce) + 1 + xstrlen(cnonce));
 	g_checksum_get_digest(chksum, digest, &size);
 	g_checksum_free(chksum);
 
@@ -240,6 +238,54 @@ char *jabber_sasl_cram_md5_response(session_t *s, char *challenge, const char *u
 	g_free(tmp);
 	g_free(digstr);
 	return retval;
+}
+
+/**
+ * tlen_auth_digest()
+ *
+ * @note	Tlen Authentication was stolen from libtlen calc_passcode() with magic stuff (C) libtlen's developer and Piotr Pawłow<br>
+ *		see: http://libtlen.sourceforge.net/
+ *
+ * Return SHA1 hash for tlen auth<br>
+ *
+ * @return <b>static</b> buffer, with 40 digit SHA1 hash + NUL char
+ */
+
+char *tlen_auth_digest(const char *sid, const char *password) {
+	GChecksum *ctx;
+	char *epasswd;
+	unsigned char digest[20];
+	static char result[41];
+	gsize len = 20;
+	int i;
+
+	/* stolen from libtlen function calc_passcode() Copyrighted by libtlen's developer and Piotr Pawłow */
+	int	magic1 = 0x50305735, magic2 = 0x12345671, sum = 7;
+	char	z;
+	while ((z = *password++) != 0) {
+		if (z == ' ' || z == '\t') continue;
+		magic1 ^= (((magic1 & 0x3f) + sum) * z) + (magic1 << 8);
+		magic2 += (magic2 << 8) ^ magic1;
+		sum += z;
+	}
+	magic1 &= 0x7fffffff;
+	magic2 &= 0x7fffffff;
+
+	epasswd = saprintf("%08x%08x", magic1, magic2);
+
+	ctx = g_checksum_new(G_CHECKSUM_SHA1);
+
+	g_checksum_update(ctx, (const guchar *)sid, xstrlen(sid));
+	g_checksum_update(ctx, (const guchar *)epasswd, xstrlen(epasswd));
+
+	g_checksum_get_digest(ctx, digest, &len);
+
+	g_free(epasswd);
+
+	for (i = 0; i < 20; i++)
+		sprintf(result + i * 2, "%.2x", digest[i]);
+
+	return result;
 }
 
 

@@ -46,7 +46,7 @@ enum jabber_opengpg_type_t {
 
 enum jabber_sasl_auth_type_t {
 	JABBER_SASL_AUTH_UNKNOWN = 0,			/* UNKNOWN */
-	JABBER_SASL_AUTH_LOGIN,				/* LOGIN */
+//	JABBER_SASL_AUTH_LOGIN,				/* LOGIN */
 	JABBER_SASL_AUTH_PLAIN,				/* PLAIN */
 	JABBER_SASL_AUTH_DIGEST_MD5,			/* DIGEST-MD5 */
 	JABBER_SASL_AUTH_CRAM_MD5,			/* CRAM-MD5 */
@@ -204,10 +204,9 @@ const char *jabber_iq_reg(session_t *s, const char *prefix, const char *to, cons
 const char *jabber_iq_send(session_t *s, const char *prefix, jabber_iq_type_t iqtype, const char *to, const char *type, const char *xmlns);
 
 /* digest.c hashowanie.. */
-char *jabber_digest(const char *sid, const char *password, int istlen);
+char *tlen_auth_digest(const char *sid, const char *password);
 char *jabber_sha1_generic(char *buf, int len);
 char *jabber_dcc_digest(char *sid, char *initiator, char *target);
-void jabber_iq_auth_send(session_t *s, const char *username, const char *passwd, const char *stream_id);
 
 char *jabber_attr(char **atts, const char *att);
 char *jabber_escape(const char *text);

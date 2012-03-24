@@ -354,7 +354,7 @@ static void Final(unsigned char digest[20], EKG2_SHA1_CTX* context, int usesha)
 extern char *config_console_charset;							/* ekg/stuff.h */
 
 
-/** [XXX] SOME TIME AGO, I had idea to connect jabber_dcc_digest() and jabber_digest()
+/** [XXX] SOME TIME AGO, I had idea to connect jabber_dcc_digest() and tlen_auth_digest()
  *	with one function, and use va_list for it... i don't know.
  */
 
@@ -381,42 +381,6 @@ char *jabber_dcc_digest(char *sid, char *initiator, char *target) {
 	SHA1Update(&ctx, sid, xstrlen(sid));
 	SHA1Update(&ctx, initiator, xstrlen(initiator));
 	SHA1Update(&ctx, target, xstrlen(target));
-	SHA1Final(digest, &ctx);
-
-	for (i = 0; i < 20; i++)
-		sprintf(result + i * 2, "%.2x", digest[i]);
-
-	return result;
-}
-
-/**
- * jabber_digest()
- *
- * Return SHA1 hash for jabber:iq:auth<br>
- * Make SHA1Update()'s on recoded to utf-8 (@a sid and @a password)
- *
- * @todo SHA1Update() on NULL params will fail. XXX, no idea what to do.
- *
- * @return <b>static</b> buffer, with 40 digit SHA1 hash + NUL char
- */
-
-char *jabber_digest(const char *sid, const char *password, int istlen) {
-	EKG2_SHA1_CTX ctx;
-	unsigned char digest[20];
-	static char result[41];
-	const char *tmp;
-	int i;
-
-	SHA1Init(&ctx);
-
-	tmp = (istlen) ? ekg_locale_to_iso2_use(sid) : ekg_locale_to_utf8_use(sid);
-	SHA1Update(&ctx, tmp, xstrlen(tmp));
-	recode_xfree(sid, tmp);
-
-	tmp = (istlen) ? ekg_locale_to_iso2_use(password) : ekg_locale_to_utf8_use(password);
-	SHA1Update(&ctx, tmp, xstrlen(tmp));
-	recode_xfree(password, tmp);
-
 	SHA1Final(digest, &ctx);
 
 	for (i = 0; i < 20; i++)

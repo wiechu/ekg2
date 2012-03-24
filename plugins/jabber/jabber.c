@@ -458,7 +458,17 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 			 *	So, to avoid regression, we use here j->connecting != 2
 			 */
 
-		if (!j->istlen && !j->sasl_connecting && session_get(s, "__new_account")) {
+		if (j->istlen) {
+			/* Tlen Authentication */
+			char *resource = tlenjabber_escape(j->resource);/* escaped resource name */
+			jabber_write(s, "<iq type='set' id='auth' to='%s'><query xmlns='jabber:iq:auth'>"
+					"<host>tlen.pl</host>"
+					"<username>%s</username>"
+					"<digest>%s</digest>"
+					"<resource>%s</resource></query></iq>",
+					j->server, username, tlen_auth_digest(jabber_attr((char **) atts, "i"), passwd), resource);
+			g_free(resource);
+		} else if (!j->sasl_connecting && session_get(s, "__new_account")) {
 			char *epasswd	= jabber_escape(passwd);
 			jabber_write(s,
 				"<iq type='set' to='%s' id='register%d'>"
@@ -468,19 +478,7 @@ static void xmlnode_handle_start(void *data, const char *name, const char **atts
 			xfree(epasswd);
 		}
 
-		if (!j->istlen && session_int_get(s, "disable_sasl") != 2) {
-			if (session_int_get(s, "disable_sasl") == 1)
-				jabber_write(s,	/* let's rock with XEP-0078: Non-SASL Authentication */
-					"<iq type='get' id='auth1'>"
-					"<query xmlns='jabber:iq:auth'/>"
-					"</iq>");
 
-			xfree(username);	/* waste */
-			return;
-		}
-		/* here forced old jabber only, no XMPP 1.0, NON-SASL AUTH */
-
-		jabber_iq_auth_send(s, username, passwd, jabber_attr((char **) atts, j->istlen ? "i" : "id"));
 		xfree(username);
 	} else {
 		xmlnode_t *n, *newnode;
@@ -652,9 +650,8 @@ static void jabber_handle_connect(connection_data_t *cd) {
 	j->using_compress = JABBER_COMPRESSION_NONE;
 
 	if (!(j->istlen)) {
-		jabber_write(s,
-				"<?xml version='1.0' encoding='utf-8'?><stream:stream to='%s' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'%s>",
-				j->server, (session_int_get(s, "disable_sasl") != 2) ? " version='1.0'" : "");
+		jabber_write(s, "<?xml version='1.0' encoding='utf-8'?><stream:stream to='%s' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>",
+				j->server);
 	} else {
 		jabber_write(s, "<s v='2'>");
 	}
@@ -1319,7 +1316,6 @@ static plugins_params_t jabber_plugin_vars[] = {
 	PLUGIN_VAR_ADD("auto_xa",		VAR_INT, "0", 0, NULL),
 	PLUGIN_VAR_ADD("auto_xa_descr",		VAR_STR, 0, 0, NULL),
 	PLUGIN_VAR_ADD("connect_timeout",	VAR_INT, "30", 0, NULL),
-	PLUGIN_VAR_ADD("disable_sasl",		VAR_INT, "0", 0, NULL),
 	PLUGIN_VAR_ADD("display_ctcp",		VAR_BOOL, "0", 0, NULL),
 	PLUGIN_VAR_ADD("display_notify",	VAR_INT, "-1", 0, NULL),
 	PLUGIN_VAR_ADD("display_server_features", VAR_INT, "1", 0, NULL),

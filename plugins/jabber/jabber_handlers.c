@@ -110,71 +110,6 @@ static xmlnode_t *xmlnode_find_child_xmlns(xmlnode_t *n, const char *name, const
 	return NULL;
 }
 
-/**
- * jabber_iq_auth_send()
- *
- * Send jabber:iq:auth with <i><digest>DIGEST</digest></i> or <i><password>PLAINTEXT_PASSWORD</password></i><br>
- * It support both tlen auth, and jabber NON-SASL Authentication [XEP-0078]<br>
- *
- * @note	<b>XEP-0078:</b> Non-SASL Authentication: http://www.xmpp.org/extensions/xep-0078.html
- *
- * @todo	It's not really XEP-0078 cause ekg2 don't support it. But it this done that way.. I don't know any server with XEP-0078 functonality..<br>
- *		I still rcv 'service-unavailable' or 'bad-request' ;(<br>
- *		But it <b>MUST</b> be implemented for <i>/session disable_sasl 1</i><br>
- *		So it's just <i>jabber:iq:auth</i> for <i>disable_sasl</i> 2.
- *
- * @note	Tlen Authentication was stolen from libtlen calc_passcode() with magic stuff (C) libtlen's developer and Piotr Pawłow<br>
- *		see: http://libtlen.sourceforge.net/
- *
- * @param	s		- session to authenticate <b>CANNOT BE NULL</b>
- * @param	username	- username
- * @param	passwd		- password to hash or to escape
- * @param	stream_id	- id of stream.
- */
-
-void jabber_iq_auth_send(session_t *s, const char *username, const char *passwd, const char *stream_id) {
-	jabber_private_t *j = s->priv;
-
-	const char *passwd2 = NULL;			/* if set than jabber_digest() should be done on it. else plaintext_passwd
-							   Variable to keep password from @a password, or generated hash of password with magic constant [tlen] */
-
-	char *resource = tlenjabber_escape(j->resource);/* escaped resource name */
-	char *epasswd = NULL;				/* temporary password [escaped, or hash], if needed for xfree() */
-	char *authpass;					/* <digest>digest</digest> or <password>plaintext_password</password> */
-	const char *host = "";
-
-	/* stolen from libtlen function calc_passcode() Copyrighted by libtlen's developer and Piotr Pawłow */
-	if (j->istlen) {
-		int	magic1 = 0x50305735, magic2 = 0x12345671, sum = 7;
-		char	z;
-		while ((z = *passwd++) != 0) {
-			if (z == ' ' || z == '\t') continue;
-			magic1 ^= (((magic1 & 0x3f) + sum) * z) + (magic1 << 8);
-			magic2 += (magic2 << 8) ^ magic1;
-			sum += z;
-		}
-		magic1 &= 0x7fffffff;
-		magic2 &= 0x7fffffff;
-
-		passwd2 = epasswd = saprintf("%08x%08x", magic1, magic2);
-
-		host = "<host>tlen.pl</host>";
-	} else if (session_int_get(s, "plaintext_passwd")) {
-		epasswd = jabber_escape(passwd);
-	} else	passwd2 = passwd;
-
-
-	authpass = (passwd2) ?
-		saprintf("<digest>%s</digest>", jabber_digest(stream_id, passwd2, j->istlen)) :	/* hash */
-		saprintf("<password>%s</password>", epasswd);				/* plaintext */
-
-	jabber_write(s, "<iq type='set' id='auth' to='%s'><query xmlns='jabber:iq:auth'>%s<username>%s</username>%s<resource>%s</resource></query></iq>",
-			j->server, host, username, authpass, resource);
-	xfree(authpass);
-
-	xfree(epasswd);
-	xfree(resource);
-}
 
 	/* XXX: temporary solution */
 #define CHECK_CONNECT(connecting_, connected_, func) if ((j->sasl_connecting && s->connecting ? 2 : s->connecting) != connecting_ || s->connected != connected_) { \
@@ -188,7 +123,6 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 	jabber_private_t *j = s->priv;
 	char *sasl_auth_name = NULL;
 
-	int use_sasl = !j->sasl_connecting && (session_int_get(s, "disable_sasl") != 2);
 	int use_fjuczers = 0;	/* bitmaska (& 1 -> session) (& 2 -> bind) */
 
 	int display_fjuczers = session_int_get(s, "display_server_features");
@@ -217,7 +151,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 			else SET_SASL_AUTH("CRAM-MD5", JABBER_SASL_AUTH_CRAM_MD5)
 // XXX			else SET_SASL_AUTH("SCRAM-SHA-1", JABBER_SASL_AUTH_SCRAM_SHA_1)
 			else SET_SASL_AUTH("PLAIN", JABBER_SASL_AUTH_PLAIN)
-			else SET_SASL_AUTH("LOGIN", JABBER_SASL_AUTH_LOGIN)
+// XXX			else SET_SASL_AUTH("LOGIN", JABBER_SASL_AUTH_LOGIN)
 			else debug_error("[%s] SASL, unk mechanism: %s\n", session_uid_get(s), __(m->data));
 		}
 		#undef SET_SASL_AUTH
@@ -236,19 +170,20 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 			}
 
 			if (!xstrcmp(ch->name, "mechanisms")) {
-				print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "/session disable_sasl");
+				print("xmpp_feature_unknown", session_name(s), j->server, ch->name, ch->xmlns);	// XXX ?
 				for (another = ch->children; another; another = another->next) {
 					if (!xstrcmp(another->name, "mechanism")) {
 						if (!xstrcmp(another->data, sasl_auth_name))
 							print("xmpp_feature_sub", session_name(s), j->server, "SASL", another->data, "Default");
 						else if (!xstrcmp(another->data, "DIGEST-MD5") ||
-							 !xstrcmp(another->data, "SCRAM-SHA-1") ||
+// XXX							 !xstrcmp(another->data, "SCRAM-SHA-1") ||
 							 !xstrcmp(another->data, "CRAM-MD5")
 							)
 							print("xmpp_feature_sub", session_name(s), j->server, "SASL", another->data, "ok");
 						else if (!xstrcmp(another->data, "LOGIN") ||
 							 !xstrcmp(another->data, "PLAIN")
 							)
+							// XXX ?
 							print("xmpp_feature_sub", session_name(s), j->server, "SASL", another->data, "/session plaintext_passwd");
 						else	print("xmpp_feature_sub_unknown", session_name(s), j->server, "SASL", __(another->data), "");
 					}
@@ -256,27 +191,27 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 				continue;
 			}
 #if 0
-				if (!xstrcmp(ch->name, "compression")) {
-					print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "/session use_compression method1,method2,..");
-					for (another = ch->children; another; another = another->next) {
-						if (!xstrcmp(another->name, "method")) {
-							if (!xstrcmp(another->data, "zlib"))
-								print("xmpp_feature_sub", session_name(s), j->server, "COMPRESSION", another->data, "/session use_compression zlib");
-							else if (!xstrcmp(another->data, "lzw"))
-								print("xmpp_feature_sub", session_name(s), j->server, "COMPRESSION", another->data, "/session use_compression lzw");
-							else	print("xmpp_feature_sub_unknown", session_name(s), j->server, "COMPRESSION", __(another->data), "");
-						}
+			if (!xstrcmp(ch->name, "compression")) {
+				print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "/session use_compression method1,method2,..");
+				for (another = ch->children; another; another = another->next) {
+					if (!xstrcmp(another->name, "method")) {
+						if (!xstrcmp(another->data, "zlib"))
+							print("xmpp_feature_sub", session_name(s), j->server, "COMPRESSION", another->data, "/session use_compression zlib");
+						else if (!xstrcmp(another->data, "lzw"))
+							print("xmpp_feature_sub", session_name(s), j->server, "COMPRESSION", another->data, "/session use_compression lzw");
+						else	print("xmpp_feature_sub_unknown", session_name(s), j->server, "COMPRESSION", __(another->data), "");
 					}
-					continue;
 				}
+				continue;
+			}
 #endif
-				if (!xstrcmp(ch->name, "session"))
-					print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "Manage session");
-				else if (!xstrcmp(ch->name, "bind"))
-					print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "Bind resource");
-				else if (!xstrcmp(ch->name, "register"))
-					print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "Register account using /register");
-				else	print("xmpp_feature_unknown", session_name(s), j->server, ch->name, ch->xmlns);
+			if (!xstrcmp(ch->name, "session"))
+				print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "Manage session");
+			else if (!xstrcmp(ch->name, "bind"))
+				print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "Bind resource");
+			else if (!xstrcmp(ch->name, "register"))
+				print("xmpp_feature", session_name(s), j->server, ch->name, ch->xmlns, "Register account using /register");
+			else	print("xmpp_feature_unknown", session_name(s), j->server, ch->name, ch->xmlns);
 
 		}
 		print("xmpp_feature_footer", session_name(s), j->server);
@@ -393,14 +328,8 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 
 	ekg2_connection_buffer_flush(j->connection);
 
-	if (use_sasl && mech_node) {
+	if (!j->sasl_connecting && mech_node) {
 
-		if ((JABBER_SASL_AUTH_PLAIN == j->sasl_auth_type) || (JABBER_SASL_AUTH_PLAIN == j->sasl_auth_type)) {
-			if (!(session_int_get(s, "plaintext_passwd"))) {
-				j->sasl_auth_type = JABBER_SASL_AUTH_UNKNOWN;
-				jabber_handle_disconnect(s, "SASL error. /session disable_sasl 1|2 || /set plaintext_passwd 1", EKG_DISCONNECT_FAILURE);
-			}
-		}
 
 		if (j->sasl_auth_type != JABBER_SASL_AUTH_UNKNOWN)
 			j->sasl_connecting = 1;
@@ -435,8 +364,17 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 				break;
 			}
 #endif
-			case JABBER_SASL_AUTH_LOGIN:
+//			case JABBER_SASL_AUTH_LOGIN:
 			case JABBER_SASL_AUTH_PLAIN:
+				if (!ekg2_connection_is_secure(j->connection) && !(session_int_get(s, "plaintext_passwd"))) {
+					j->sasl_auth_type = JABBER_SASL_AUTH_UNKNOWN;
+					j->parser = NULL;
+					jabber_handle_disconnect(s,
+						"Your connection is not secure. Check /session use_tls || /session use_ssl"
+						"or set /session plaintext_passwd 1 (not recommended)", EKG_DISCONNECT_FAILURE);
+					break;
+				}
+
 				str = string_init(NULL);
 
 				string_append_raw(str, "\0", 1);
@@ -455,11 +393,10 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 				break;
 			default:
 				debug_error("[%s] SASL auth_type: UNKNOWN!!!, disconnecting from host.\n", session_uid_get(s));
-				jabber_handle_disconnect(s,
+				j->parser = NULL; jabber_handle_disconnect(s,
 					"We tried to auth using SASL but none of method supported by server we know. "
-					"Check __debug window and supported SASL server auth methods and sent them to ekg2 devs. "
-					"Temporary you can turn off SASL auth using by setting disable_sasl to 1 or 2. "
-					"/session disable_sasl 2", EKG_DISCONNECT_FAILURE);
+					"Check __debug window and supported SASL server auth methods and sent them to ekg2 devs. ",
+					EKG_DISCONNECT_FAILURE);
 				break;
 		}
 	}
@@ -554,7 +491,7 @@ JABBER_HANDLER(jabber_handle_challenge) {
 			jabber_write(s, "<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>");
 		} else {
 			debug_error("[%s] RSPAUTH BUT KEYS DON'T MATCH!!! IS: %s EXCEPT: %s, DISCONNECTING\n", session_uid_get(s), __(rspauth), __(tmp));
-			jabber_handle_disconnect(s, "IE, SASL RSPAUTH DOESN'T MATCH!!", EKG_DISCONNECT_FAILURE);
+			j->parser = NULL; jabber_handle_disconnect(s, "IE, SASL RSPAUTH DOESN'T MATCH!!", EKG_DISCONNECT_FAILURE);
 		}
 		session_set(s, "__sasl_excepted", NULL);
 	}
@@ -569,7 +506,8 @@ JABBER_HANDLER(jabber_handle_proceed) {
 	if (!xstrcmp(n->xmlns, "urn:ietf:params:xml:ns:xmpp-tls")) {
 		debug_function("[%s] proceed urn:ietf:params:xml:ns:xmpp-tls TLS let's rock\n", session_uid_get(s));
 
-		ekg2_connection_start_tls(j->connection);
+		if (ekg2_connection_start_tls(j->connection))
+			debug_ok("[%s] connection is secure\n", session_uid_get(s));
 
 		/* reset parser */
 		j->parser = jabber_parser_recreate(NULL, XML_GetUserData(j->parser));
