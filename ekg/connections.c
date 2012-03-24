@@ -197,6 +197,11 @@ void ekg2_connection_set_tls(connection_data_t *cd, gboolean use_tls) {
 	cd->tls = use_tls;
 }
 
+gboolean ekg2_connection_is_secure(connection_data_t *cd) {
+	// XXX
+	return cd->tls;
+}
+
 GError *ekg2_connection_get_error(connection_data_t *cd) {
 	// XXX
 	return cd->error;
@@ -279,7 +284,6 @@ int ekg2_connection_buffer_write(connection_data_t *cd, gconstpointer buffer, gs
 	g_return_val_if_fail(cd != NULL, -1);
 	g_return_val_if_fail(length > 0, -1);
 	g_string_append_len(cd->out_buf, buffer, length);
-debug_white("XXX(add):%s\n", cd->out_buf->str);
 	debug_function("[%s] ekg2_connection_buffer_write() add %d bytes to buffer. Buffer length=%d\n", session_uid_get(s), length, cd->out_buf->len);
 	return length;
 }
@@ -389,6 +393,8 @@ gboolean ekg2_connection_start_tls(connection_data_t *cd) {
 	cd->out_stream = g_io_stream_get_output_stream(cd->conn);
 
 	cd->watch_id = g_io_add_watch(cd->channel, G_IO_IN, async_read_callback, cd);
+
+	cd->tls = TRUE;
 
 	return TRUE;
 }

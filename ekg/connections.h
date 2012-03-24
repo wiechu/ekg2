@@ -44,6 +44,7 @@ void ekg2_connection_set_tls(connection_data_t *cd, gboolean use_tls);
 
 GError *ekg2_connection_get_error(connection_data_t *cd);
 session_t *ekg2_connection_get_session(connection_data_t *cd);
+gboolean ekg2_connection_is_secure(connection_data_t *cd);
 
 void
 ekg2_connection_connect_full(
