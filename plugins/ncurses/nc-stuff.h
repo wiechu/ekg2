@@ -94,7 +94,6 @@ extern int config_backlog_scroll_half_page;
 extern int config_display_indent;
 extern int config_display_transparent;
 extern int config_enter_scrolls;
-extern int config_margin_size;
 extern int config_mouse_scroll_lines;
 extern int config_kill_irc_window;
 

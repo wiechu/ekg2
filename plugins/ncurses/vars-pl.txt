@@ -206,12 +206,6 @@ lastlog_noitems
 	Określa, czy okno z wynikami '/lastlog' ma się pojawić
 	również w przypadku braku wyników.
 
-margin_size
-	typ: liczba
-	domyślna wartość: 15
-	
-	określa rozmiar marginesu wykorzystywanego przy /| w theme'ach
-
 mark_on_window_change
 	typ: bool
 	domyślna wartość: 0

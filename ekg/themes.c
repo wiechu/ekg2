@@ -582,12 +582,6 @@ static char *va_format_string(const char *format, va_list ap) {
 				if (need_free)
 					xfree(str);
 			}
-		} else if ((*p=='/') && (p[1] == '|')) {	/* /| 'set margin' */
-			if ((p == format) || (p[-1]!='/'))
-				string_append(buf, "\033[0000m");	/* najg³upsze, ale to nie jest moje ostatnie s³owo */
-			else
-				string_append_c(buf, '|');
-			p++;
 		} else
 			string_append_c(buf, *p);
 		p++;

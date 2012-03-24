@@ -103,16 +103,5 @@ This rule is also for config_changed.
 
 * * *
 
-(ncurses) There is posibility of setiing margins and definind its size by ncurses:margin_size variable.
-For use margins there is "/|" formating string. 
-
-example:
-	text left/|text right
-causes:
-	text left		text right
-size of gap is defining in ncurses:margin_size value.
-
-* * *
-
 $Id: themes.txt 4009 2008-06-02 09:56:12Z wiechu $
 $Id: themes.txt 4009 2009-03-14 13:35:43Z Pinochet $

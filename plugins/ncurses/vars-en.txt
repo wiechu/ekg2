@@ -150,12 +150,6 @@ lastlog_noitems
 	
 	*not translated yet*
 
-margin_size
-	type: integer
-	default value: 15 
-	
-	defines margin size used by /| with themes
-
 mark_on_window_change
 	type: bool
 	default value: 1
