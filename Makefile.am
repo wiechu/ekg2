@@ -374,7 +374,7 @@ plugins_jabber_jabber_la_SOURCES = \
 	plugins/jabber/jabber_dcc.h \
 	plugins/jabber/jabber.h \
 	plugins/jabber/jabber_handlers.c \
-	plugins/jabber/jabber-ssl.h \
+	plugins/jabber/jabber-digest.c \
 	plugins/jabber/misc.c \
 	plugins/jabber/xmlnode.c \
 	plugins/jabber/jabber_handlers_iq_error.inc \

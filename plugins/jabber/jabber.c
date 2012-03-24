@@ -387,7 +387,9 @@ void jabber_handle_disconnect(session_t *s, const char *reason, int type) {
 	watch_remove(&jabber_plugin, j->fd, WATCH_WRITE);
 	watch_remove(&jabber_plugin, j->fd, WATCH_READ);
 
+#endif
 	j->using_compress = JABBER_COMPRESSION_NONE;
+#if FIXME_NEW_CONNECTION
 	if (j->fd != -1) {
 		close(j->fd);
 		j->fd = -1;

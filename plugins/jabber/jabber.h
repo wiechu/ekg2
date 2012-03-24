@@ -44,6 +44,15 @@ enum jabber_opengpg_type_t {
 	JABBER_OPENGPG_VERIFY
 };
 
+enum jabber_sasl_auth_type_t {
+	JABBER_SASL_AUTH_UNKNOWN = 0,			/* UNKNOWN */
+	JABBER_SASL_AUTH_LOGIN,				/* LOGIN */
+	JABBER_SASL_AUTH_PLAIN,				/* PLAIN */
+	JABBER_SASL_AUTH_DIGEST_MD5,			/* DIGEST-MD5 */
+	JABBER_SASL_AUTH_CRAM_MD5,			/* CRAM-MD5 */
+// XXX	JABBER_SASL_AUTH_SCRAM_SHA_1,			/* SCRAM-SHA-1 */
+};
+
 enum jabber_bookmark_type_t {			/* see JEP-0048 for details */
 	JABBER_BOOKMARK_UNKNOWN = 0,
 	JABBER_BOOKMARK_URL,
@@ -126,23 +135,34 @@ typedef struct {
  * jabber_private_t contains priv_data data of jabber/tlen session.
  */
 typedef struct {
-	connection_data_t *connection;
-	unsigned int istlen	: 2;	/**< whether this is a tlen session, 2 if connecting to tlen hub (XXX: ugly hack) */
+	connection_data_t
+		*connection;
+	unsigned int
+		istlen	: 2;	/**< whether this is a tlen session, 2 if connecting to tlen hub (XXX: ugly hack) */
+	enum jabber_compression_method
+		using_compress;	/**< whether we're using compressed connection, and what method */
 
-	enum jabber_compression_method using_compress;	/**< whether we're using compressed connection, and what method */
-	int id;				/**< queries ID */
-	XML_Parser parser;		/**< expat instance */
-	char *server;			/**< server name */
-	guint16 port;			/**< server's port number */
-	unsigned int sasl_connecting :1;/**< whether we're connecting over SASL */
-	char *resource;			/**< resource used when connecting to daemon */
-	char *last_gmail_result_time;	/**< last time we're checking mail (this seems not to work correctly ;/) */
-	char *last_gmail_tid;		/**< lastseen mail thread-id */
-	list_t privacy;			/**< for jabber:iq:privacy */
-	list_t bookmarks;		/**< for jabber:iq:private <storage xmlns='storage:bookmarks'> */
-	list_t iq_stanzas;
+	int	id;		/**< queries ID */
+	XML_Parser
+		parser;		/**< expat instance */
+	char
+		*server;	/**< server name */
+	guint16	port;		/**< server's port number */
 
-	xmlnode_t *node;		/**< current XML branch */
+	unsigned int
+		sasl_connecting :1;/**< whether we're connecting over SASL */
+	enum jabber_sasl_auth_type_t
+		sasl_auth_type;
+
+	char	*resource;			/**< resource used when connecting to daemon */
+	char	*last_gmail_result_time;	/**< last time we're checking mail (this seems not to work correctly ;/) */
+	char	*last_gmail_tid;		/**< lastseen mail thread-id */
+	list_t	privacy;			/**< for jabber:iq:privacy */
+	list_t	bookmarks;		/**< for jabber:iq:private <storage xmlns='storage:bookmarks'> */
+	list_t	iq_stanzas;
+
+	xmlnode_t
+		*node;		/**< current XML branch */
 	jabber_conversation_t *conversations;	/**< known conversations */
 } jabber_private_t;
 
@@ -187,7 +207,6 @@ const char *jabber_iq_send(session_t *s, const char *prefix, jabber_iq_type_t iq
 char *jabber_digest(const char *sid, const char *password, int istlen);
 char *jabber_sha1_generic(char *buf, int len);
 char *jabber_dcc_digest(char *sid, char *initiator, char *target);
-char *jabber_challenge_digest(const char *sid, const char *password, const char *nonce, const char *cnonce, const char *xmpp_temp, const char *realm);
 void jabber_iq_auth_send(session_t *s, const char *username, const char *passwd, const char *stream_id);
 
 char *jabber_attr(char **atts, const char *att);
