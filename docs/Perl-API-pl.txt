@@ -1,19 +1,19 @@
-Opis funkcji dostêpnych z poziomu skryptu perlowego.
-Aktualizacja: grudzieñ 2010
+Opis funkcji dostÄ™pnych z poziomu skryptu perlowego.
+Aktualizacja: grudzieÅ„ 2010
 (C) Copyright 2005 Jakub Zawadzki <darkjames[at]darkjames.ath.cx>
-	      2010 S³awomir Nizio <poczta-sn[at]gazeta.pl>
-	      2010 Wies³aw Ochmiñski <wiechu[at]wiechu.com>
+	      2010 SÅ‚awomir Nizio <poczta-sn[at]gazeta.pl>
+	      2010 WiesÅ‚aw OchmiÅ„ski <wiechu[at]wiechu.com>
 
 Ekg2
    exit()                                                                  (void)
-      - koñczy program
+      - koÅ„czy program
 
    get_ekg2_dir()                                                          (char*)
       - zwraca katalog config_dir
 
 
    debug(char* str)                                                        (void)
-      - pisze tekst w oknie debugowania; nie wstawia znaku nowej linii na koñcu
+      - pisze tekst w oknie debugowania; nie wstawia znaku nowej linii na koÅ„cu
 
    echo(char* str)                                                         (void)
       - pisze tekst w oknie
@@ -26,11 +26,11 @@ Ekg2
       - dodaje format
 
    format_string(char* str)                                                (char*)
-      - zwraca sformatowany ci±g znaków
+      - zwraca sformatowany ciÄ…g znakÃ³w
 
 
    fstring2ascii(char* str, void* attr_)                                   (char*)
-      - zamienia sformatowany tekst na "formatkê"
+      - zamienia sformatowany tekst na "formatkÄ™"
 
 
    handler_bind(char* query_name, char* handler)                           (void)
@@ -41,18 +41,18 @@ Ekg2
 
    command_bind_ext(char* cmd, char* params, char* poss, char* handler)    (void)
       - ustawia handlera dla polecenia cmd, wersja rozszerzona
-        pozwala podaæ typ parametrów i opcje, które bêd± wykorzystane
-        miêdzy innymi przy dope³nianiu tabulatorem
+        pozwala podaÄ‡ typ parametrÃ³w i opcje, ktÃ³re bÄ™dÄ… wykorzystane
+        miÄ™dzy innymi przy dopeÅ‚nianiu tabulatorem
 
    timer_bind(int freq, char* handler)                                     (Ekg2::Timer)
-      - ustawia zegarek (okresowe zdarzenie) o podanej czêstotliwo¶ci
+      - ustawia zegarek (okresowe zdarzenie) o podanej czÄ™stotliwoÅ›ci
 
 
    session_add(char* uid)                                                  (Ekg2::Session)
-      - dodaje now± sesjê do listy
+      - dodaje nowÄ… sesjÄ™ do listy
 
    session_find(char* uid)                                                 (Ekg2::Session)
-      - zwraca sesjê dla zadanego UID
+      - zwraca sesjÄ™ dla zadanego UID
 
 
    script_find(char* name)                                                 (Ekg2::Script)
@@ -65,7 +65,7 @@ Ekg2
       - rejestruje plugin
 
    plugin_load(char* name)                                                 (int)
-      - ³aduje plugin
+      - Å‚aduje plugin
 
 
    window_findid(int id)                                                   (Ekg2::Window)
@@ -78,29 +78,29 @@ Ekg2
       - otwiera nowe okno
 
    window_current()                                                        (Ekg2::Window)
-      - zwraca bie¿±ce okno
+      - zwraca bieÅ¼Ä…ce okno
 
 
    variables()                                                             (lista Ekg2::Variable)
-      - zwraca listê zmiennych
+      - zwraca listÄ™ zmiennych
 
    plugins()                                                               (lista Ekg2::Plugin)
-      - zwrace listê pluginów
+      - zwrace listÄ™ pluginÃ³w
 
    timers()                                                                (lista Ekg2::Timer)
-      - zwraca listê zegarków
+      - zwraca listÄ™ zegarkÃ³w
 
    commands()                                                              (lista Ekg2::Command)
-      - zwraca listê komend
+      - zwraca listÄ™ komend
 
    watches()                                                               (lista Ekg2::Watch)
-      - zwraca listê watchy
+      - zwraca listÄ™ watchy
 
    sessions()                                                              (lista Ekg2::Session)
-      - zwraca listê sesji
+      - zwraca listÄ™ sesji
 
    windows()                                                               (lista Ekg2::Window)
-      - zwraca listê okien
+      - zwraca listÄ™ okien
 
 
    command(char* what)                                                     (int)
@@ -111,16 +111,16 @@ Ekg2
 
 
    variable_find(char* name)                                               (Ekg2::Variable)
-      - zwraca zmienn± o podanej nazwie
+      - zwraca zmiennÄ… o podanej nazwie
 
    variable_add(char* name, char* value)                                   (Ekg2::Variable)
-      - dodaje zmienn±
+      - dodaje zmiennÄ…
 
    variable_add_ext(char* name, char* value, char* handler)                (Ekg2::Variable)
-      - dodaje zmienn± i handler do obs³ugi zmian jej warto¶ci
+      - dodaje zmiennÄ… i handler do obsÅ‚ugi zmian jej wartoÅ›ci
 
    variables_free()                                                        (void)
-      - usuwa listê zmiennych
+      - usuwa listÄ™ zmiennych
 
 
    watch_add(int fd, int type, char* handler, void* data)                  (void)
@@ -131,28 +131,28 @@ Ekg2
 
 
    EKG_MSGCLASS_SENT()                                                     (int)
-      - zwraca warto¶æ EKG_MSGCLASS_SENT
+      - zwraca wartoÅ›Ä‡ EKG_MSGCLASS_SENT
 
    EKG_MSGCLASS_SENT_CHAT()                                                (int)
-      - zwraca warto¶æ EKG_MSGCLASS_SENT_CHAT
+      - zwraca wartoÅ›Ä‡ EKG_MSGCLASS_SENT_CHAT
 
    EKG_NO_THEMEBIT()                                                       (int)
-      - zwraca warto¶æ EKG_NO_THEMEBIT
+      - zwraca wartoÅ›Ä‡ EKG_NO_THEMEBIT
 
    WATCH_READ_LINE()                                                       (int)
-      - zwraca warto¶æ WATCH_READ_LINE
+      - zwraca wartoÅ›Ä‡ WATCH_READ_LINE
 
    WATCH_READ()                                                            (int)
-      - zwraca warto¶æ WATCH_READ
+      - zwraca wartoÅ›Ä‡ WATCH_READ
 
    WATCH_WRITE()                                                           (int)
-      - zwraca warto¶æ WATCH_WRITE
+      - zwraca wartoÅ›Ä‡ WATCH_WRITE
 
    PLUGIN_UI()                                                             (int)
-      - zwraca warto¶æ PLUGIN_UI
+      - zwraca wartoÅ›Ä‡ PLUGIN_UI
 
    PLUGIN_PROTOCOL()                                                       (int)
-      - zwraca warto¶æ PLUGIN_PROTOCOL
+      - zwraca wartoÅ›Ä‡ PLUGIN_PROTOCOL
 
 
 Ekg2::Command
@@ -163,7 +163,7 @@ Ekg2::Command
       - np. "!U ? p", gdy {name} = "add"
 
    {poss}                                                                  (char*)
-      - mo¿liwo¶ci (np. "-f --find", gdy {name} = "add")
+      - moÅ¼liwoÅ›ci (np. "-f --find", gdy {name} = "add")
 
 
    execute(Ekg2::Command comm, char* param)                                (int)
@@ -182,7 +182,7 @@ Ekg2::Plugin
 
 
    unload(Ekg2::Plugin plugin)                                             (int)
-      - wy³adowuje plugin
+      - wyÅ‚adowuje plugin
 
 
 Ekg2::Script
@@ -190,12 +190,12 @@ Ekg2::Script
       - nazwa
 
    {path}                                                                  (char*)
-      - ¶cie¿ka
+      - Å›cieÅ¼ka
 
 
 Ekg2::Session
    {connected}                                                             (int)
-      - czy po³±czona
+      - czy poÅ‚Ä…czona
 
    {uid}                                                                   (char*)
       - nazwa
@@ -208,16 +208,16 @@ Ekg2::Session
 
 
    userlist(Ekg2::Session session)                                         (Ekg2::Userlist)
-      - lista u¿ytkowników dla sesji
+      - lista uÅ¼ytkownikÃ³w dla sesji
 
    set(Ekg2::Session session)                                              (void)
-      - zmienia bie¿±c± sesjê
+      - zmienia bieÅ¼Ä…cÄ… sesjÄ™
 
    connected_set(Ekg2::Session session, int val)                           (void)
-      - ustawia informacjê: sesja jest po³±czona czy nie
+      - ustawia informacjÄ™: sesja jest poÅ‚Ä…czona czy nie
 
    param_add(Ekg2::Session session, char *name)                            (int)
-      - dodaje zmienn± sesyjn±
+      - dodaje zmiennÄ… sesyjnÄ…
 
    param_set(Ekg2::Session session, char* name, char* value)               (void)
       - ustawia parametr sesji
@@ -250,10 +250,10 @@ Ekg2::Timer
       - nazwa
 
    {freq}                                                                  (int)
-      - czêstotliwo¶æ (sekundy)
+      - czÄ™stotliwoÅ›Ä‡ (sekundy)
 
    {freq_ms}                                                               (int)
-      - czêstotliwo¶æ
+      - czÄ™stotliwoÅ›Ä‡
 
 
    destroy(Ekg2::Timer timer)                                              (void)
@@ -262,17 +262,17 @@ Ekg2::Timer
 
 Ekg2::User
    {nickname}                                                              (char*)
-      - nazwa u¿ytkownika
+      - nazwa uÅ¼ytkownika
 
    {uid}                                                                   (char*)
       - uid
 
    {status}                                                                (char*)
-      - status u¿ytkownika
+      - status uÅ¼ytkownika
 
 
    set_status(Ekg2::User u, char* status)                                  (int: 0 lub 1)
-      - zmienia status u¿ytkownikowi
+      - zmienia status uÅ¼ytkownikowi
 
 
 Ekg2::Userlist
@@ -281,16 +281,16 @@ Ekg2::Userlist
 
 
    find(Ekg2::Userlist userlist, char* uid)                                (Ekg2::User)
-      - zwraca u¿ytkownika o zadanym ID
+      - zwraca uÅ¼ytkownika o zadanym ID
 
    users(Ekg2::Userlist userlist)                                          (lista Ekg2::User)
-      - zwraca listê u¿ytkowników
+      - zwraca listÄ™ uÅ¼ytkownikÃ³w
 
    add(Ekg2::Userlist userlist, char* uid, char* nickname)                (Ekg2::User)
-      - dodaje u¿ytkownika do listy
+      - dodaje uÅ¼ytkownika do listy
 
    remove(Ekg2::Userlist userlist, Ekg2::User u)                           (int)
-      - usuwa u¿ytkownika z listy
+      - usuwa uÅ¼ytkownika z listy
 
 
 Ekg2::Variable
@@ -302,13 +302,13 @@ Ekg2::Variable
 
 
    help(Ekg2::Variable var)                                                (void)
-      - wy¶wietla pomoc dla zmiennej
+      - wyÅ›wietla pomoc dla zmiennej
 
    remove(Ekg2::Variable var)                                              (void)
       - usuwa
 
    set(Ekg2::Variable var, char* value)                                    (int)
-      - ustawia warto¶æ
+      - ustawia wartoÅ›Ä‡
 
 
 Ekg2::Watch
@@ -337,16 +337,16 @@ Ekg2::Window
 
 
    next(Ekg2::Window window)                                               (Ekg2::Window)
-      - zwraca nastêpne okno
+      - zwraca nastÄ™pne okno
 
    prev(Ekg2::Window window)                                               (Ekg2::Window)
       - zwraca poprzednie okno
 
    userlist(Ekg2::Window window)                                           (Ekg2::Userlist)
-      - lista u¿ytkowników dla okna
+      - lista uÅ¼ytkownikÃ³w dla okna
 
    switch(Ekg2::Window window)                                             (void)
-      - prze³±cza na zadane okno
+      - przeÅ‚Ä…cza na zadane okno
 
    kill(Ekg2::Window window)                                               (void)
       - zabija okno
@@ -362,7 +362,7 @@ Ekg2::Window
 
 Ekg2::Irc
    servers()                                                               (lista Ekg2::Irc::Server)
-      - zwraca liste serwerów
+      - zwraca liste serwerÃ³w
 
    session2server(Ekg2::Session s)                                         (Ekg2::Irc::Server)
       - zwraca zblessowana sesje ircowa ze ,,zwyklej''
@@ -370,10 +370,10 @@ Ekg2::Irc
 
 Ekg2::Irc::Channel
    {name}                                                                  (char*)
-      - nazwa kana³u, bez irc:
+      - nazwa kanaÅ‚u, bez irc:
 
    {mode}                                                                  (char*)
-      - tryb kana³u
+      - tryb kanaÅ‚u
 
    {topic}                                                                 (char*)
       - topic
@@ -385,11 +385,11 @@ Ekg2::Irc::Channel
       - okno
 
    {name_}                                                                 (char*)
-      - (mo¿e byæ usuniête w przysz³o¶ci) nazwa kana³u, z irc:
+      - (moÅ¼e byÄ‡ usuniÄ™te w przyszÅ‚oÅ›ci) nazwa kanaÅ‚u, z irc:
 
 
    part(Ekg2::Irc::Channel chan, char* reason)                             (void)
-      - wysy³a wiadomo¶æ wyj¶cia z kana³u
+      - wysyÅ‚a wiadomoÅ›Ä‡ wyjÅ›cia z kanaÅ‚u
 
 
 Ekg2::Irc::Channel::User
@@ -399,7 +399,7 @@ Ekg2::Irc::Channel::User
       - np. @
 
    {channel}                                                               (Ekg2::Irc::Channel)
-      - kana³
+      - kanaÅ‚
 
 
 Ekg2::Irc::Server
@@ -417,28 +417,28 @@ Ekg2::Irc::Server
       - sesja
 
    raw(Ekg2::Session s, char* str)                                         (void)
-      - wysy³a wiadomo¶æ do serwera
+      - wysyÅ‚a wiadomoÅ›Ä‡ do serwera
 
    quit(Ekg2::Session s, char* quitreason)                                 (void)
-      - wysy³a wiadomo¶æ QUIT
+      - wysyÅ‚a wiadomoÅ›Ä‡ QUIT
 
    newnick(Ekg2::Session s, char* newnick)                                 (void)
-      - wysy³a wiadomo¶æ zmiany nicka na newnick
+      - wysyÅ‚a wiadomoÅ›Ä‡ zmiany nicka na newnick
 
    setmode(Ekg2::Session s, char* mode)                                    (void)
-      - wysy³a wiadomo¶æ MODE
+      - wysyÅ‚a wiadomoÅ›Ä‡ MODE
 
    oper(Ekg2::Session s, char* nick, char* password)                       (void)
-      - identifikuje siê jako operator
+      - identifikuje siÄ™ jako operator
 
    die(Ekg2::Session s, char *reason)                                      (void)
-      - wysy³a wiadomo¶æ DIE
+      - wysyÅ‚a wiadomoÅ›Ä‡ DIE
 
    channels(Ekg2::Session s)                                               (lista Ekg2::Irc::Channel)
-      - zwraca listê kana³ów, na których jeste¶my
+      - zwraca listÄ™ kanaÅ‚Ã³w, na ktÃ³rych jesteÅ›my
 
    people(Ekg2::Session s)                                                 (lista Ekg2::Irc::User)
-      - zwraca listê u¿ytkowników na kana³ach, na których jeste¶my
+      - zwraca listÄ™ uÅ¼ytkownikÃ³w na kanaÅ‚ach, na ktÃ³rych jesteÅ›my
 
 
 Ekg2::Irc::User
@@ -454,25 +454,25 @@ Ekg2::Irc::User
 
 
    channels (Ekg2::Irc::User user)                                         (lista Ekg2::Irc::Channel::User)
-      - lista kanalow, na których jest u¿ytkownik
+      - lista kanalow, na ktÃ³rych jest uÅ¼ytkownik
 
 
-------- przyk³ad ------
+------- przykÅ‚ad ------
 
-   # $sess_name - nazwa sesji, np. xmpp:nick@serwer.ktory.ma.uptime.piec.lat.org albo np. irc:fajna_sieæ
-   # $uid - ID u¿ytkownika, np. xmpp:nick2@reszta.com/Abc
+   # $sess_name - nazwa sesji, np. xmpp:nick@serwer.ktory.ma.uptime.piec.lat.org albo np. irc:fajna_sieÄ‡
+   # $uid - ID uÅ¼ytkownika, np. xmpp:nick2@reszta.com/Abc
 
-   # znajd¼ sesjê, której na przyk³ad dotyczy zdarzenie obs³ugiwane przez handler
-   # (albo Ekg2::session_current je¶li interesuje nas bie¿±ca sesja):
+   # znajdÅº sesjÄ™, ktÃ³rej na przykÅ‚ad dotyczy zdarzenie obsÅ‚ugiwane przez handler
+   # (albo Ekg2::session_current jeÅ›li interesuje nas bieÅ¼Ä…ca sesja):
    my $ses = Ekg2::session_find($sess_name);
 
-   # we¼ listê nicków:
+   # weÅº listÄ™ nickÃ³w:
    my $ul = Ekg2::Session::userlist($ses);
 
-   # znajd¼ u¿ytkownika na li¶cie:
+   # znajdÅº uÅ¼ytkownika na liÅ›cie:
    my $user = Ekg2::Userlist::find($ul, $uid);
 
-   # je¶li nie znalaz³o (undef), przypisz $uid
+   # jeÅ›li nie znalazÅ‚o (undef), przypisz $uid
    my $who = defined $user ? $user->{nickname} : $uid;
 
    # i wypisz na ekran

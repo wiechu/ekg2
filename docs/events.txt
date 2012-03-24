@@ -1,25 +1,25 @@
-// opis wydarzeñ, których mo¿na u¿ywaæ poleceniem /on
+// opis wydarzeÅ„, ktÃ³rych moÅ¼na uÅ¼ywaÄ‡ poleceniem /on
 // (c) copyright 2004-2005 Piotr Kupisiewicz <deli@rzepaknet.us>
 
 protocol-message:
-	odpowiada za odebrane wiadomo¶ci. jako parametr przekazywany jest UID lub nickname.
+	odpowiada za odebrane wiadomoÅ›ci. jako parametr przekazywany jest UID lub nickname.
 
 event-avail:
-	zmiana statusu na dostêpny. nie przekazywany jest ¿aden parametr
+	zmiana statusu na dostÄ™pny. nie przekazywany jest Å¼aden parametr
 
 event-away:
-	zmiana statusu na away. nie przekazywany jest ¿aden parametr
+	zmiana statusu na away. nie przekazywany jest Å¼aden parametr
 
 event-na:
-	zmiana statusu na niedostêpny. nie przekazywany jest ¿aden parametr.
+	zmiana statusu na niedostÄ™pny. nie przekazywany jest Å¼aden parametr.
 
 event-online:
-	zmiana statusu z niedostêpnego na dostêpny/zaraz wracam. nie 
-	przekazywany jest ¿aden parametr.
+	zmiana statusu z niedostÄ™pnego na dostÄ™pny/zaraz wracam. nie 
+	przekazywany jest Å¼aden parametr.
 
 event-offline:
-	zmiana statusu z dostêpnego/zaraz wracam na niedostêpny. nie
-	przekazywany jest ¿aden parametr.
+	zmiana statusu z dostÄ™pnego/zaraz wracam na niedostÄ™pny. nie
+	przekazywany jest Å¼aden parametr.
 
 event-descr:
 	zmiana opisu. przekazywany jest opis jako parametr.

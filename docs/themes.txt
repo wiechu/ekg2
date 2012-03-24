@@ -1,17 +1,17 @@
 
 .---------------,--------,-------,-----.
-| kolor         | zwyk³y | jasny | t³o |
+| kolor         | zwykÅ‚y | jasny | tÅ‚o |
 ,---------------+--------+-------+-----'
 | czarny/szary  | %k     | %K    | %l  |
 | niebieski     | %b     | %B    | %e  |
 | czerwony      | %r     | %R    | %s  |
 | fioletowy     | %m/%p  | %M/%P | %q  |
 | turkusowy     | %c     | %C    | %d  |
-| br±zowy/¿ó³ty | %y     | %Y    | %z  |
+| brÄ…zowy/Å¼Ã³Å‚ty | %y     | %Y    | %z  |
 | zielony       | %g     | %G    | %h  |
-| bia³y         | %w     | %W    | %x  |
-| mrugaj±cy     | %i     | -     | -   |
-| t³usty	| %T	 | -	 | -   |
+| biaÅ‚y         | %w     | %W    | %x  |
+| mrugajÄ…cy     | %i     | -     | -   |
+| tÅ‚usty	| %T	 | -	 | -   |
 ,---------------'--------'-------'-----|
 | bez koloru    | %n                   |
 `---------------'----------------------'
@@ -19,82 +19,82 @@
 * * *
 
   %A	wybranie mapowania grafiki vt100
-  %a	powrót do mapowania domy¶lnego
+  %a	powrÃ³t do mapowania domyÅ›lnego
 
 * * *
 
-przy %1-%9 mo¿na kazaæ dope³niaæ do konkretnej szeroko¶ci. przydaje siê
+przy %1-%9 moÅ¼na kazaÄ‡ dopeÅ‚niaÄ‡ do konkretnej szerokoÅ›ci. przydaje siÄ™
 do wszelkiego rodzaju tabelek.
 
-  %[10]1   dope³nia spacjami z prawej pierwszy parametr do 10 pól 
-  %[-10]1  j.w. tylko ¿e do lewej
-  %[.5]1   dope³nia zerami
-  %[,9]2   dope³nia kropkami
-  %[_4]1   dope³nia znakami podkre¶lenia
-  %(10)1   je¶li rozmiar parametru przekroczy 10 znaków nie obcina
-  %[^12]1  wstawia pierwszy parametr na ¶rodku pola o szeroko¶ci 12 znaków uzupe³niaj±c spacjami
-  %[^,8]1  wstawia pierwszy parametr na ¶rodku pola o szeroko¶ci 12 znaków uzupe³niaj±c kropkami
+  %[10]1   dopeÅ‚nia spacjami z prawej pierwszy parametr do 10 pÃ³l 
+  %[-10]1  j.w. tylko Å¼e do lewej
+  %[.5]1   dopeÅ‚nia zerami
+  %[,9]2   dopeÅ‚nia kropkami
+  %[_4]1   dopeÅ‚nia znakami podkreÅ›lenia
+  %(10)1   jeÅ›li rozmiar parametru przekroczy 10 znakÃ³w nie obcina
+  %[^12]1  wstawia pierwszy parametr na Å›rodku pola o szerokoÅ›ci 12 znakÃ³w uzupeÅ‚niajÄ…c spacjami
+  %[^,8]1  wstawia pierwszy parametr na Å›rodku pola o szerokoÅ›ci 12 znakÃ³w uzupeÅ‚niajÄ…c kropkami
 
-UWAGA! kolorkowe sekwencje ansi traktuje jak znaki, wiêc nie powinno
-siê ich u¿ywaæ przy dope³nianiu parametrów.
+UWAGA! kolorkowe sekwencje ansi traktuje jak znaki, wiÄ™c nie powinno
+siÄ™ ich uÅ¼ywaÄ‡ przy dopeÅ‚nianiu parametrÃ³w.
 
 * * *
 
-je¶li chce siê rozró¿niaæ przymiotniki dla ró¿nych p³ci, mo¿na u¿yæ
-%@n, gdzie ,,n'' to numer formatu, który bierzemy pod uwagê. je¶li
-ostatni± liter± bêdzie ,,a'', %@n zostanie zast±pione przez ,,a'',
-w innym przypadku przez ,,y''. przyk³ad:
+jeÅ›li chce siÄ™ rozrÃ³Å¼niaÄ‡ przymiotniki dla rÃ³Å¼nych pÅ‚ci, moÅ¼na uÅ¼yÄ‡
+%@n, gdzie ,,n'' to numer formatu, ktÃ³ry bierzemy pod uwagÄ™. jeÅ›li
+ostatniÄ… literÄ… bÄ™dzie ,,a'', %@n zostanie zastÄ…pione przez ,,a'',
+w innym przypadku przez ,,y''. przykÅ‚ad:
 
-  %> %1 jest dostêpn%@1.
+  %> %1 jest dostÄ™pn%@1.
 
-nale¿y wzi±æ uwagê, ¿e w wielu wypadkach pseudonimy s± najpierw
-formatowane przez known_user i unknown_user, wiêc trzeba podaæ osobny
+naleÅ¼y wziÄ…Ä‡ uwagÄ™, Å¼e w wielu wypadkach pseudonimy sÄ… najpierw
+formatowane przez known_user i unknown_user, wiÄ™c trzeba podaÄ‡ osobny
 parametr z samym pseudonimem.
 
 * * *
 
-%>  prompt (domy¶lnie zielony)
-%!  error (domy¶lnie czerwony)
-%)  prompt2 (domy¶lnie turkusowy)
-%#  timestamp (domy¶lnie GG:MM)
+%>  prompt (domyÅ›lnie zielony)
+%!  error (domyÅ›lnie czerwony)
+%)  prompt2 (domyÅ›lnie turkusowy)
+%#  timestamp (domyÅ›lnie GG:MM)
 
-%|  koniec promptu. je¶li ten format wystêpuje, to przy przenoszeniu do
-    nastêpnej linii, tekst przed tym formatem zostanie wy¶wietlony ponownie.
+%|  koniec promptu. jeÅ›li ten format wystÄ™puje, to przy przenoszeniu do
+    nastÄ™pnej linii, tekst przed tym formatem zostanie wyÅ›wietlony ponownie.
 
-    na przyk³ad dla:
+    na przykÅ‚ad dla:
 
-        %> D³uga linia, która zostanie podzielona na kilka linii
+        %> DÅ‚uga linia, ktÃ³ra zostanie podzielona na kilka linii
 
-    na ma³ym terminalu zostanie podzielone na:
+    na maÅ‚ym terminalu zostanie podzielone na:
 
 	.-------------------------.
-        | ::: D³uga linia, która  |
+        | ::: DÅ‚uga linia, ktÃ³ra  |
         | zostanie podzielona na  |
         | kilka linii             |
 	`-------------------------'
 
     a po dodaniu %|, tzn:
 
-        %> %|D³uga linia, która zostanie podzielona na kilka linii
+        %> %|DÅ‚uga linia, ktÃ³ra zostanie podzielona na kilka linii
 
-    zostanie wy¶wietlone jako:
+    zostanie wyÅ›wietlone jako:
 
         .-------------------------.
-        | ::: D³uga linia, która  |
+        | ::: DÅ‚uga linia, ktÃ³ra  |
 	| ::: zostanie podzielona |
 	| ::: na kilka linii      |
 	`-------------------------'
 
 * * *
 
-dwa specjalne formaty ,,known_user'' i ,,unknown_user'' okre¶laj±, jak
-bêd± pokazywani userzy z listy i spoza listy kontaktów. pierwszy za
+dwa specjalne formaty ,,known_user'' i ,,unknown_user'' okreÅ›lajÄ…, jak
+bÄ™dÄ… pokazywani userzy z listy i spoza listy kontaktÃ³w. pierwszy za
 parametry przyjmuje %1 opis, %2 numerek, a drugi %1 numerek.
 
 * * *
 
-wpisy readline_*, oprócz readline_prompt_query nie mog± zawieraæ ¿adnych
-,,procentowych'' kodów steruj±cych. podobnie jest z promptem config_changed.
+wpisy readline_*, oprÃ³cz readline_prompt_query nie mogÄ… zawieraÄ‡ Å¼adnych
+,,procentowych'' kodÃ³w sterujÄ…cych. podobnie jest z promptem config_changed.
 
 * * *
 

@@ -1,145 +1,145 @@
-// krótki opis mojej wizji ekg-2.0
+// krÃ³tki opis mojej wizji ekg-2.0
 // 20030416 wojtekka
 
-je¶li dobrniesz do koñca tekstu, by³bym bardzo wdziêczny za komentarze
-i sugestie. nie chcê robiæ niczego wbrew reszcie ¶wiata.
+jeÅ›li dobrniesz do koÅ„ca tekstu, byÅ‚bym bardzo wdziÄ™czny za komentarze
+i sugestie. nie chcÄ™ robiÄ‡ niczego wbrew reszcie Å›wiata.
 
-wszystko wyrzuciæ do pluginów. ekg samo w sobie nie powinno umieæ siê
-z niczym ³±czyæ, ani nic wy¶wietlaæ. ma zawieraæ funkcje obs³ugi pluginów,
-obs³ugi komend, obs³ugi zmiennych i kilku kawa³ków kodu, które mog± byæ
-dzielone miêdzy pluginami (np. formatowanie tekstu, konferencje, przypisane
-klawisze). nie wszystkie pluginy musz± byæ ³adowane dynamicznie. kilka na
-pewno bêdzie domy¶lnie linkowanych statycznie -- chodzi o mo¿liwo¶æ ³atwego
-pozbycia siê zale¿no¶ci g³ównej binarki od wielu bibliotek i zachowanie
+wszystko wyrzuciÄ‡ do pluginÃ³w. ekg samo w sobie nie powinno umieÄ‡ siÄ™
+z niczym Å‚Ä…czyÄ‡, ani nic wyÅ›wietlaÄ‡. ma zawieraÄ‡ funkcje obsÅ‚ugi pluginÃ³w,
+obsÅ‚ugi komend, obsÅ‚ugi zmiennych i kilku kawaÅ‚kÃ³w kodu, ktÃ³re mogÄ… byÄ‡
+dzielone miÄ™dzy pluginami (np. formatowanie tekstu, konferencje, przypisane
+klawisze). nie wszystkie pluginy muszÄ… byÄ‡ Å‚adowane dynamicznie. kilka na
+pewno bÄ™dzie domyÅ›lnie linkowanych statycznie -- chodzi o moÅ¼liwoÅ›Ä‡ Å‚atwego
+pozbycia siÄ™ zaleÅ¼noÅ›ci gÅ‚Ã³wnej binarki od wielu bibliotek i zachowanie
 jednolitego API.
 
-do g³owy przychodzi mi kilka klas pluginów:
+do gÅ‚owy przychodzi mi kilka klas pluginÃ³w:
 
-1) pluginy interfejsu u¿ytkownika -- czyli to, co do tej pory robi±
-   ui-readline i ui-ncurses. dojdzie do tego plugin obs³uguj±cy rurki,
+1) pluginy interfejsu uÅ¼ytkownika -- czyli to, co do tej pory robiÄ…
+   ui-readline i ui-ncurses. dojdzie do tego plugin obsÅ‚ugujÄ…cy rurki,
    sockety lokalne i inne sposoby sterowania klientem.
 
-2) pluginy protoko³ów -- priorytetem ekg bêdzie zawsze ,,wzorcowa'' obs³uga
-   Gadu-Gadu, ale nie mo¿na staæ w miejscu. wielu ludziom brakuje porz±dnego
-   klienta Jabbera pod konsolê. co wiêcej, istniej±cy kod konferencji, po
-   lekkim rozszerzeniu mo¿e stanowiæ podstawy pod obs³ugê irca. niestety
-   ciê¿ko bêdzie od razu zaplanowaæ API pozwalaj±ce na napisanie obs³ugi
-   dowolnego protoko³u na ziemi, wiêc ka¿dy nowy plugin tak czy inaczej bêdzie
-   wymaga³ drobnych zmian w ekg. ale bêd± mog³y siê rozwijaæ niezale¿nie.
+2) pluginy protokoÅ‚Ã³w -- priorytetem ekg bÄ™dzie zawsze ,,wzorcowa'' obsÅ‚uga
+   Gadu-Gadu, ale nie moÅ¼na staÄ‡ w miejscu. wielu ludziom brakuje porzÄ…dnego
+   klienta Jabbera pod konsolÄ™. co wiÄ™cej, istniejÄ…cy kod konferencji, po
+   lekkim rozszerzeniu moÅ¼e stanowiÄ‡ podstawy pod obsÅ‚ugÄ™ irca. niestety
+   ciÄ™Å¼ko bÄ™dzie od razu zaplanowaÄ‡ API pozwalajÄ…ce na napisanie obsÅ‚ugi
+   dowolnego protokoÅ‚u na ziemi, wiÄ™c kaÅ¼dy nowy plugin tak czy inaczej bÄ™dzie
+   wymagaÅ‚ drobnych zmian w ekg. ale bÄ™dÄ… mogÅ‚y siÄ™ rozwijaÄ‡ niezaleÅ¼nie.
 
-3) pluginy szyfruj±ce -- póki co, jest tylko SIM, ale nic nie stoi na
-   przeszkodzie, ¿eby ekg obs³ugiwa³o prostsze sposoby szyfrowania, np.
-   symetryczne z has³em.
+3) pluginy szyfrujÄ…ce -- pÃ³ki co, jest tylko SIM, ale nic nie stoi na
+   przeszkodzie, Å¼eby ekg obsÅ‚ugiwaÅ‚o prostsze sposoby szyfrowania, np.
+   symetryczne z hasÅ‚em.
 
-4) pluginy skryptów -- mamy pythona. znajomy poradzi³, ¿eby umo¿liwiæ pisanie
-   skryptów równie¿ w innych jêzykach. nie powinno byæ trudne, zw³aszcza, ¿e
-   obs³uga skryptów ogranicza siê do ³adowania, usuwania, wykonywania poleceñ
-   i wywo³ywania funkcji. API takiego pluginu mo¿na ograniczyæ do kilku
-   funkcji. poza tym, za pomoc± skryptów powinno byæ mo¿liwe tworzenie ka¿dej
-   klasy pluginów.
+4) pluginy skryptÃ³w -- mamy pythona. znajomy poradziÅ‚, Å¼eby umoÅ¼liwiÄ‡ pisanie
+   skryptÃ³w rÃ³wnieÅ¼ w innych jÄ™zykach. nie powinno byÄ‡ trudne, zwÅ‚aszcza, Å¼e
+   obsÅ‚uga skryptÃ³w ogranicza siÄ™ do Å‚adowania, usuwania, wykonywania poleceÅ„
+   i wywoÅ‚ywania funkcji. API takiego pluginu moÅ¼na ograniczyÄ‡ do kilku
+   funkcji. poza tym, za pomocÄ… skryptÃ³w powinno byÄ‡ moÅ¼liwe tworzenie kaÅ¼dej
+   klasy pluginÃ³w.
 
-5) pluginy d¼wiêku -- jest tylko oss, a to nie wszystkim pasuje. dodawanie
-   dziesi±tek #ifdefów do obs³ugi ró¿nych systemów jest bez sensu. poza tym,
-   je¶li zrobiæ plugin, który zamiast z mikrofonu, czyta z socketa, mamy
-   proste radio, które chocia¿ jako¶ci± nie grzeszy, zajmuje bardzo ma³e
-   pasmo. do tego mo¿naby te¿ doliczyæ pluginy koduj±ce d¼wiêk, ¿eby inne
-   pluginy mog³y poprosiæ od razu o strumieñ GSM czy MP3.
+5) pluginy dÅºwiÄ™ku -- jest tylko oss, a to nie wszystkim pasuje. dodawanie
+   dziesiÄ…tek #ifdefÃ³w do obsÅ‚ugi rÃ³Å¼nych systemÃ³w jest bez sensu. poza tym,
+   jeÅ›li zrobiÄ‡ plugin, ktÃ³ry zamiast z mikrofonu, czyta z socketa, mamy
+   proste radio, ktÃ³re chociaÅ¼ jakoÅ›ciÄ… nie grzeszy, zajmuje bardzo maÅ‚e
+   pasmo. do tego moÅ¼naby teÅ¼ doliczyÄ‡ pluginy kodujÄ…ce dÅºwiÄ™k, Å¼eby inne
+   pluginy mogÅ‚y poprosiÄ‡ od razu o strumieÅ„ GSM czy MP3.
 
-6) pluginy historii -- widaæ, ¿e nie wszystkim odpowiada sposób logowania
-   w ekg. tutaj wystarczy w zasadzie jedna funkcja dopisuj±ca do historii
-   okre¶lone zdarzenie, ale mo¿liwo¶æ odczytu te¿ by siê przyda³a, ¿eby móc
-   w ekg przegl±daæ historiê (ach, pobo¿ne ¿yczenia!). póki co, s± ju¿
-   pomys³y na 4 pluginy: legacy-ekg, all-new-kadu, sql i xml. g³upio by³oby
-   linkowaæ ekg z sqlem i expatem. 
+6) pluginy historii -- widaÄ‡, Å¼e nie wszystkim odpowiada sposÃ³b logowania
+   w ekg. tutaj wystarczy w zasadzie jedna funkcja dopisujÄ…ca do historii
+   okreÅ›lone zdarzenie, ale moÅ¼liwoÅ›Ä‡ odczytu teÅ¼ by siÄ™ przydaÅ‚a, Å¼eby mÃ³c
+   w ekg przeglÄ…daÄ‡ historiÄ™ (ach, poboÅ¼ne Å¼yczenia!). pÃ³ki co, sÄ… juÅ¼
+   pomysÅ‚y na 4 pluginy: legacy-ekg, all-new-kadu, sql i xml. gÅ‚upio byÅ‚oby
+   linkowaÄ‡ ekg z sqlem i expatem. 
 
-6) pluginy ogólnego przeznaczenia -- tutaj pasowa³by chocia¿by ioctld, który
-   dodaje dwie nowe komendy, wiêc ciê¿ko podpi±æ go pod interfejs u¿ytkownika.
-   pasowa³by te¿ ka¿dy skrypt, który nie pe³ni roli jakiego¶ plugina.
+6) pluginy ogÃ³lnego przeznaczenia -- tutaj pasowaÅ‚by chociaÅ¼by ioctld, ktÃ³ry
+   dodaje dwie nowe komendy, wiÄ™c ciÄ™Å¼ko podpiÄ…Ä‡ go pod interfejs uÅ¼ytkownika.
+   pasowaÅ‚by teÅ¼ kaÅ¼dy skrypt, ktÃ³ry nie peÅ‚ni roli jakiegoÅ› plugina.
 
-ka¿dy plugin dodawa³by swoje komendy, zmienne i zdarzenia. móg³by wywo³ywaæ
-zdarzenia dla innych pluginów. ekg podczas ³adowania wywo³a funkcjê typu
-register_plugin(), która bêdzie mia³a za zadanie zarejestrowaæ wszystkie
-udostêpniane komendy i zmienne. w przypadku konfliktu zmiennych i komend,
-mo¿na je poprzedziæ prefiksem okre¶laj±cym plugin. je¶li na przyk³ad mamy
-za³adowan± obs³ugê GG i Jabbera, zmienna ,,gg:password'' okre¶la³aby has³o
-GG, ,,jabber:password'' okre¶la³aby has³o Jabbera. je¶li u¿ytkownik nie poda
-o jaki plugin chodzi, a np. aktualne okno to sesja GG, brany pod uwagê
-by³by plugin ,,gg''. je¶li okno Jabbera, plugin ,,jabber''. podobnie
-z komendami. je¶li kto¶ w oknie Jabbera chcia³by zarejestrowaæ konto GG,
-wystarczy³oby ,,/gg:register''.
+kaÅ¼dy plugin dodawaÅ‚by swoje komendy, zmienne i zdarzenia. mÃ³gÅ‚by wywoÅ‚ywaÄ‡
+zdarzenia dla innych pluginÃ³w. ekg podczas Å‚adowania wywoÅ‚a funkcjÄ™ typu
+register_plugin(), ktÃ³ra bÄ™dzie miaÅ‚a za zadanie zarejestrowaÄ‡ wszystkie
+udostÄ™pniane komendy i zmienne. w przypadku konfliktu zmiennych i komend,
+moÅ¼na je poprzedziÄ‡ prefiksem okreÅ›lajÄ…cym plugin. jeÅ›li na przykÅ‚ad mamy
+zaÅ‚adowanÄ… obsÅ‚ugÄ™ GG i Jabbera, zmienna ,,gg:password'' okreÅ›laÅ‚aby hasÅ‚o
+GG, ,,jabber:password'' okreÅ›laÅ‚aby hasÅ‚o Jabbera. jeÅ›li uÅ¼ytkownik nie poda
+o jaki plugin chodzi, a np. aktualne okno to sesja GG, brany pod uwagÄ™
+byÅ‚by plugin ,,gg''. jeÅ›li okno Jabbera, plugin ,,jabber''. podobnie
+z komendami. jeÅ›li ktoÅ› w oknie Jabbera chciaÅ‚by zarejestrowaÄ‡ konto GG,
+wystarczyÅ‚oby ,,/gg:register''.
 
-pluginy musz± posiadaæ równie¿ informacje o kolizjach z innymi, ¿eby przy
-³adowaniu ,,ncurses'' usun±æ ,,readline'' i na odwrót, bo oba korzystaj±
-z terminala. obs³uga okien powinna trafiæ do ekg. ui ma wy¶wietlaæ to,
-co ka¿e mu pokazaæ ekg i informowaæ o wci¶niêtych klawiszach funkcyjnych
-(nie chodzi tylko o Fx tylko o Alt-x, Ctrl-x itp.) dziêki temu przy zmianie
-ui, okna zostan± zachowanie (to ma byæ efekt uboczny, a nie cel sam
+pluginy muszÄ… posiadaÄ‡ rÃ³wnieÅ¼ informacje o kolizjach z innymi, Å¼eby przy
+Å‚adowaniu ,,ncurses'' usunÄ…Ä‡ ,,readline'' i na odwrÃ³t, bo oba korzystajÄ…
+z terminala. obsÅ‚uga okien powinna trafiÄ‡ do ekg. ui ma wyÅ›wietlaÄ‡ to,
+co kaÅ¼e mu pokazaÄ‡ ekg i informowaÄ‡ o wciÅ›niÄ™tych klawiszach funkcyjnych
+(nie chodzi tylko o Fx tylko o Alt-x, Ctrl-x itp.) dziÄ™ki temu przy zmianie
+ui, okna zostanÄ… zachowanie (to ma byÄ‡ efekt uboczny, a nie cel sam
 w sobie.)
 
-pozostaje kwestia interakcji pluginów z ekg i miêdzy sob±, oznaczania
-zdarzeñ, kompatybilno¶ci API i takichtam bzdur. najprawdopodobniej bêdzie
-co¶ w rodzaju gtk-owych sygna³ów. plugin sobie zarejestruje obs³ugê danych
-sygna³ów, przez co odpadn± dziesi±tki strcmp(), jak to ma miejsce teraz,
-przy jednej funkcji callbackowej na ca³y plugin. niestety bêdzie to wymaga³o
-porz±dnego zastanowienia siê nad tym, jak zrobiæ to efektywnie. setki
-strcmp() przy ka¿dym pakiecie przychodz±cym z sieci i przy wywo³aniu
-sekundowego timera to przesada. niestety nie studiujê informatyki, wiêc
-pewnie na pocz±tku bêdzie to sporym problemem. w ka¿dym razie optymalizacjê
-przekierowywania sygna³ów mo¿na zostawiæ na pó¼niej, kiedy bêdzie ju¿ co
-optymalizowaæ.
+pozostaje kwestia interakcji pluginÃ³w z ekg i miÄ™dzy sobÄ…, oznaczania
+zdarzeÅ„, kompatybilnoÅ›ci API i takichtam bzdur. najprawdopodobniej bÄ™dzie
+coÅ› w rodzaju gtk-owych sygnaÅ‚Ã³w. plugin sobie zarejestruje obsÅ‚ugÄ™ danych
+sygnaÅ‚Ã³w, przez co odpadnÄ… dziesiÄ…tki strcmp(), jak to ma miejsce teraz,
+przy jednej funkcji callbackowej na caÅ‚y plugin. niestety bÄ™dzie to wymagaÅ‚o
+porzÄ…dnego zastanowienia siÄ™ nad tym, jak zrobiÄ‡ to efektywnie. setki
+strcmp() przy kaÅ¼dym pakiecie przychodzÄ…cym z sieci i przy wywoÅ‚aniu
+sekundowego timera to przesada. niestety nie studiujÄ™ informatyki, wiÄ™c
+pewnie na poczÄ…tku bÄ™dzie to sporym problemem. w kaÅ¼dym razie optymalizacjÄ™
+przekierowywania sygnaÅ‚Ã³w moÅ¼na zostawiÄ‡ na pÃ³Åºniej, kiedy bÄ™dzie juÅ¼ co
+optymalizowaÄ‡.
 
-je¶li chodzi o API, ekg od chwili ustandaryzowania pierwszej wersji API
-pluginów bêdzie oznacza³o plugin jakim¶tam identyfikatorem wersji. bêdzie
-trzymaæ wszystkie stare wersje struktur i funkcji, ¿eby stare pluginy mog³y
-ich u¿yæ.
+jeÅ›li chodzi o API, ekg od chwili ustandaryzowania pierwszej wersji API
+pluginÃ³w bÄ™dzie oznaczaÅ‚o plugin jakimÅ›tam identyfikatorem wersji. bÄ™dzie
+trzymaÄ‡ wszystkie stare wersje struktur i funkcji, Å¼eby stare pluginy mogÅ‚y
+ich uÅ¼yÄ‡.
 
-trzeba bêdzie te¿ wprowadziæ zmienne typu lista, ¿eby móc np. podaæ listê
+trzeba bÄ™dzie teÅ¼ wprowadziÄ‡ zmienne typu lista, Å¼eby mÃ³c np. podaÄ‡ listÄ™
 rurek kontrolnych (np. ,,pipe:/tmp/rurka'', ,,tcp:12345'' i
-,,socket:/var/run/ekg''), z których ekg ma przyjmowaæ polecenia, interfejsów
-audio na wypadek zajêto¶ci (np. ,,/dev/dsp'', ,,hw:0,2'' czy ,,tcp:8001'')
-no i wreszcie naszych ukochanych serwerów (przyk³adu nie ma. wybaczycie?)
+,,socket:/var/run/ekg''), z ktÃ³rych ekg ma przyjmowaÄ‡ polecenia, interfejsÃ³w
+audio na wypadek zajÄ™toÅ›ci (np. ,,/dev/dsp'', ,,hw:0,2'' czy ,,tcp:8001'')
+no i wreszcie naszych ukochanych serwerÃ³w (przykÅ‚adu nie ma. wybaczycie?)
 
-co do wielosesyjno¶ci i wieloprotoko³owo¶ci, to podobnie jak w BitchX czy
-irssi, jedno okno mog³oby mieæ przypisanych kilka sesji, które zmienianoby
-klawiszem Ctrl-X na przyk³ad. zmienia³by siê pasek stanu miêdzy:
+co do wielosesyjnoÅ›ci i wieloprotokoÅ‚owoÅ›ci, to podobnie jak w BitchX czy
+irssi, jedno okno mogÅ‚oby mieÄ‡ przypisanych kilka sesji, ktÃ³re zmienianoby
+klawiszem Ctrl-X na przykÅ‚ad. zmieniaÅ‚by siÄ™ pasek stanu miÄ™dzy:
 
  (17:25) (gg:535333) (win/1)
  (17:25) (jabber:wojtekka@jabber.org) (win/1)
  (17:25) (irc:elluin@poznan.irc.pl) (win/1)
 
-oczywi¶cie powinna byæ mo¿liwo¶æ przypisywania danym sesjom jakich¶ aliasów,
-¿eby nie mieæ ca³ego paska stanu zajêtego przez id sesji.
+oczywiÅ›cie powinna byÄ‡ moÅ¼liwoÅ›Ä‡ przypisywania danym sesjom jakichÅ› aliasÃ³w,
+Å¼eby nie mieÄ‡ caÅ‚ego paska stanu zajÄ™tego przez id sesji.
 
-pozostaje kwestia userlisty. robiæ osobn± na ka¿dy protokó³ i sesjê? osobn±
-na ka¿dy protokó³, ale sesje dziel±? bo albo mo¿emy chcieæ wpisaæ sobie
-jednego u¿ytkownika jako gg:123456, irc:kto¶tam, jid:kto¶tam@gdzie¶tam.pl
-i raz podaæ imiê, nazwisko, numer telefonu itd, albo trzymaæ wszystko
-oddzielnie dla ka¿dego protoko³u, bo np. podczas rozmów na GG nie chcemy
-za¶miecaæ sobie listy znajomymi, których numery by³y kiedy¶tam wpisane, ale
+pozostaje kwestia userlisty. robiÄ‡ osobnÄ… na kaÅ¼dy protokÃ³Å‚ i sesjÄ™? osobnÄ…
+na kaÅ¼dy protokÃ³Å‚, ale sesje dzielÄ…? bo albo moÅ¼emy chcieÄ‡ wpisaÄ‡ sobie
+jednego uÅ¼ytkownika jako gg:123456, irc:ktoÅ›tam, jid:ktoÅ›tam@gdzieÅ›tam.pl
+i raz podaÄ‡ imiÄ™, nazwisko, numer telefonu itd, albo trzymaÄ‡ wszystko
+oddzielnie dla kaÅ¼dego protokoÅ‚u, bo np. podczas rozmÃ³w na GG nie chcemy
+zaÅ›miecaÄ‡ sobie listy znajomymi, ktÃ³rych numery byÅ‚y kiedyÅ›tam wpisane, ale
 i tak rozmawiamy tylko na ircu.
 
-wypada³oby te¿ w koñcu oddzieliæ libgadu od ekg, skoro ekg ma obs³ugiwaæ
-inne protoko³y. nie do¶æ, ¿e ul¿y to autorom innych klientów GG, wymusi
-wiêkszy porz±dek w API, wersjach i binarnej kompatybilno¶ci.
+wypadaÅ‚oby teÅ¼ w koÅ„cu oddzieliÄ‡ libgadu od ekg, skoro ekg ma obsÅ‚ugiwaÄ‡
+inne protokoÅ‚y. nie doÅ›Ä‡, Å¼e ulÅ¼y to autorom innych klientÃ³w GG, wymusi
+wiÄ™kszy porzÄ…dek w API, wersjach i binarnej kompatybilnoÅ›ci.
 
-z okazji pluginów, dobrze by³oby te¿ siê przyjrzeæ takim wynalazkom jak
-automake i libtool. rozmiar pakietu wzro¶nie, ale nie bêdzie problemów
-z obs³ug± platform innych ni¿ te, na których pracuj± autorzy (pomy¶leæ,
-¿e jeszcze 2 lata uwa¿a³em autoconfa za z³o wcielone. pod postaci± 
+z okazji pluginÃ³w, dobrze byÅ‚oby teÅ¼ siÄ™ przyjrzeÄ‡ takim wynalazkom jak
+automake i libtool. rozmiar pakietu wzroÅ›nie, ale nie bÄ™dzie problemÃ³w
+z obsÅ‚ugÄ… platform innych niÅ¼ te, na ktÃ³rych pracujÄ… autorzy (pomyÅ›leÄ‡,
+Å¼e jeszcze 2 lata uwaÅ¼aÅ‚em autoconfa za zÅ‚o wcielone. pod postaciÄ… 
 software'u.)
 
 // 2003-04-17 12:53
 
-mo¿e jednak zrobiæ bloga? (; w ka¿dym razie dla testów wydzieli³em libgadu ze
-¼róde³ ekg, przerobi³em do automake i libtoola. faktycznie, pisania mniej, ale
-rozmiar wszystkich narzêdzi, które autogen.sh pakuje do katalogu mnie
+moÅ¼e jednak zrobiÄ‡ bloga? (; w kaÅ¼dym razie dla testÃ³w wydzieliÅ‚em libgadu ze
+ÅºrÃ³deÅ‚ ekg, przerobiÅ‚em do automake i libtoola. faktycznie, pisania mniej, ale
+rozmiar wszystkich narzÄ™dzi, ktÃ³re autogen.sh pakuje do katalogu mnie
 przerasta. tarball z Makefile.am, configure.in i autogen.sh zajmuje 80kB, a po
-wygenerowaniu wszystkiego 320kB. trochê to chore. je¶li ekg mia³oby mieæ dla
-ka¿dego plugina tyle ¶mieci, to ja chyba podziêkujê. innym wyj¶ciem by³oby
+wygenerowaniu wszystkiego 320kB. trochÄ™ to chore. jeÅ›li ekg miaÅ‚oby mieÄ‡ dla
+kaÅ¼dego plugina tyle Å›mieci, to ja chyba podziÄ™kujÄ™. innym wyjÅ›ciem byÅ‚oby
 rozprowadzanie tarballi bez tego wszystkiego i wymaganie od ludzi posiadania
-pe³nego ¶rodowiska: gcc, binutils, make, autoconf, automake, libtool. ludzie,
-którzy maj± wszystko nie musieliby ¶ci±gaæ niepotrzebnie kilka razy wiêkszego
-tarballa. co najwy¿ej mo¿naby tworzyæ osobny ekg-current-foobar.tar.gz, który
-mia³by wszystko, ale go nie archiwizowaæ. w sumie to mo¿liwe, od kiedy na
+peÅ‚nego Å›rodowiska: gcc, binutils, make, autoconf, automake, libtool. ludzie,
+ktÃ³rzy majÄ… wszystko nie musieliby Å›ciÄ…gaÄ‡ niepotrzebnie kilka razy wiÄ™kszego
+tarballa. co najwyÅ¼ej moÅ¼naby tworzyÄ‡ osobny ekg-current-foobar.tar.gz, ktÃ³ry
+miaÅ‚by wszystko, ale go nie archiwizowaÄ‡. w sumie to moÅ¼liwe, od kiedy na
 dev.null.pl stoi PLD.
 

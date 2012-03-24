@@ -1,40 +1,40 @@
-// Obs³uga Secure Internet Messaging w ekg
+// ObsÅ‚uga Secure Internet Messaging w ekg
 // (c) copyright 2001-2003 by Wojtek Kaniewski <wojtekka@irc.pl>
 // 		 2004-2005 by Piotr Kupisiewicz <deletek@ekg2.org>
 
-Szyfrowanie to jest zgodne z http://gg.wha.la/crypt/ i powinno dzia³aæ
+Szyfrowanie to jest zgodne z http://gg.wha.la/crypt/ i powinno dziaÅ‚aÄ‡
 bez problemu z PowerGG i Kadu.
 
-Klucze s± przechowywane w katalogu ~/.ekg2/keys w formacie PEM -- klucz
-prywatny w pliku ,,private.pem'', klucze publiczne w plikach odpowiadaj±cych
-numerowi rozmówcy z rozszerzeniem ,,.pem''.
+Klucze sÄ… przechowywane w katalogu ~/.ekg2/keys w formacie PEM -- klucz
+prywatny w pliku ,,private.pem'', klucze publiczne w plikach odpowiadajÄ…cych
+numerowi rozmÃ³wcy z rozszerzeniem ,,.pem''.
 
-Przed zaczêciem ca³ej ,,zabawy'' nale¿y za³adowaæ plugin sim:
+Przed zaczÄ™ciem caÅ‚ej ,,zabawy'' naleÅ¼y zaÅ‚adowaÄ‡ plugin sim:
 
 	plugin +sim
 
-Aby wygenerowaæ sobie klucz piszemy:
+Aby wygenerowaÄ‡ sobie klucz piszemy:
 
 	sim:key -g
 
-Zostanie on zapisany na dysku. Je¶li chcemy szyfrowaæ wiadomo¶ci wysy³ane
-do znajomych, musimy umie¶ciæ ich klucze publiczne w ~/.gg/keys. Je¶li
-chcemy, ¿eby wiadomo¶ci wysy³ane do nas by³y szyfrowane, musimy wys³aæ
-naszym rozmówcom nasz klucz publiczny, u¿ywaj±c polecenia ,,key -s''.
-NIE NALE¯Y NIKOMU WYSY£AÆ KLUCZA PRYWATNEGO Z PLIKU PRIVATE.PEM.
+Zostanie on zapisany na dysku. JeÅ›li chcemy szyfrowaÄ‡ wiadomoÅ›ci wysyÅ‚ane
+do znajomych, musimy umieÅ›ciÄ‡ ich klucze publiczne w ~/.gg/keys. JeÅ›li
+chcemy, Å¼eby wiadomoÅ›ci wysyÅ‚ane do nas byÅ‚y szyfrowane, musimy wysÅ‚aÄ‡
+naszym rozmÃ³wcom nasz klucz publiczny, uÅ¼ywajÄ…c polecenia ,,key -s''.
+NIE NALEÅ»Y NIKOMU WYSYÅAÄ† KLUCZA PRYWATNEGO Z PLIKU PRIVATE.PEM.
 
-By w³±czyæ szyfrowanie, nale¿y ju¿ tylko wpisaæ:
+By wÅ‚Ä…czyÄ‡ szyfrowanie, naleÅ¼y juÅ¼ tylko wpisaÄ‡:
 
 	set sim:encryption 1
 
-Dalej wszystko bêdzie siê dzia³o automagicznie. szyfrowane wiadomo¶ci s±
-odpowiednio oznaczane -- domy¶lnie jest to ¿ó³ty tekst ,,szyfrowane'' w
-nag³ówku wy¶wietlanej wiadomo¶ci.
+Dalej wszystko bÄ™dzie siÄ™ dziaÅ‚o automagicznie. szyfrowane wiadomoÅ›ci sÄ…
+odpowiednio oznaczane -- domyÅ›lnie jest to Å¼Ã³Å‚ty tekst ,,szyfrowane'' w
+nagÅ‚Ã³wku wyÅ›wietlanej wiadomoÅ›ci.
 
-ekg po otrzymaniu w wiadomo¶ci klucza publicznego (to znaczy wiadomo¶ci
-zaczynaj±cej siê od ,,-----BEGIN RSA PUBLIC KEY-----'') zapisze go jako
+ekg po otrzymaniu w wiadomoÅ›ci klucza publicznego (to znaczy wiadomoÅ›ci
+zaczynajÄ…cej siÄ™ od ,,-----BEGIN RSA PUBLIC KEY-----'') zapisze go jako
 klucz nadawcy w katalogu ~/.ekg2/keys.
 
-Zarz±dzanie kluczami odbywa siê za pomoc± polecenia ,,key''.
+ZarzÄ…dzanie kluczami odbywa siÄ™ za pomocÄ… polecenia ,,key''.
 
 $Id$

@@ -1,47 +1,47 @@
 
 	  
-          "Czytanie dokumentacji mo¿e powodowaæ raka i choroby serca"
+          "Czytanie dokumentacji moÅ¼e powodowaÄ‡ raka i choroby serca"
                  minister do spraw informatyzacji i Windows [1]
 
 
-czyli krótki przewodnik po dokumentacji:
+czyli krÃ³tki przewodnik po dokumentacji:
 
-README		opis programu. g³ówny plik dokumentacji.
+README		opis programu. gÅ‚Ã³wny plik dokumentacji.
 
-FAQ		najczê¶ciej zadawane pytania. je¶li masz jaki¶ problem,
-		zajrzyj najpierw tutaj. wszelkie pytania, na które mo¿na
-		tu znale¼æ odpowied¼ bêd± ignorowane, lub reakcja bêdzie
-		z³o¶liwa i nieprzyjemna.
+FAQ		najczÄ™Å›ciej zadawane pytania. jeÅ›li masz jakiÅ› problem,
+		zajrzyj najpierw tutaj. wszelkie pytania, na ktÃ³re moÅ¼na
+		tu znaleÅºÄ‡ odpowiedÅº bÄ™dÄ… ignorowane, lub reakcja bÄ™dzie
+		zÅ‚oÅ›liwa i nieprzyjemna.
 
-TODO		lista rzeczy, które czekaj± w kolejce na realizacjê. je¶li
-		chcesz napisaæ, ¿e przyda³aby siê jaka¶ rzecz, najpierw
-		zajrzyj tutaj. mo¿liwe, ¿e kto¶ wcze¶niej zg³osi³
+TODO		lista rzeczy, ktÃ³re czekajÄ… w kolejce na realizacjÄ™. jeÅ›li
+		chcesz napisaÄ‡, Å¼e przydaÅ‚aby siÄ™ jakaÅ› rzecz, najpierw
+		zajrzyj tutaj. moÅ¼liwe, Å¼e ktoÅ› wczeÅ›niej zgÅ‚osiÅ‚
 		,,zapotrzebowanie''.
 
-vars.txt	opis zmiennych u¿ywanych przez program.
+vars.txt	opis zmiennych uÅ¼ywanych przez program.
 
-commands.txt	opis funkcji u¿ywanych przez program
+commands.txt	opis funkcji uÅ¼ywanych przez program
 
-files.txt	opis formatów plików: listy kontaktów, konfiguracji,
-		historii, emotikonów.
+files.txt	opis formatÃ³w plikÃ³w: listy kontaktÃ³w, konfiguracji,
+		historii, emotikonÃ³w.
 
-themes.txt	opis dotycz±cy zmiany wygl±du klienta. przydatny dla tych,
-		którzy lubi± bawiæ siê w kolorki.
+themes.txt	opis dotyczÄ…cy zmiany wyglÄ…du klienta. przydatny dla tych,
+		ktÃ³rzy lubiÄ… bawiÄ‡ siÄ™ w kolorki.
 
-devel-hints.txt	wskazówki dla tych, którzy chc± co¶ poprawiæ w ekg/libgadu.
+devel-hints.txt	wskazÃ³wki dla tych, ktÃ³rzy chcÄ… coÅ› poprawiÄ‡ w ekg/libgadu.
 
 przenosny-kod.txt
-		kilka wskazówek na temat pisania kodu przeno¶nego miêdzy
-		ró¿nymi uniksami.
+		kilka wskazÃ³wek na temat pisania kodu przenoÅ›nego miÄ™dzy
+		rÃ³Å¼nymi uniksami.
 
-gdb.txt		szybki kurs obs³ugi gdb.
+gdb.txt		szybki kurs obsÅ‚ugi gdb.
 
-ui-ncurses.txt	opis interfejsu ncurses oraz ustawieñ/mo¿liwo¶ci wystêpuj±cych
-		wy³±cznie w tym interfejsie.
+ui-ncurses.txt	opis interfejsu ncurses oraz ustawieÅ„/moÅ¼liwoÅ›ci wystÄ™pujÄ…cych
+		wyÅ‚Ä…cznie w tym interfejsie.
 
-sim.txt		wskazówki dotycz±ce korzystania z szyfrowania wiadomo¶ci.
+sim.txt		wskazÃ³wki dotyczÄ…ce korzystania z szyfrowania wiadomoÅ›ci.
 
 
-[1] autor Jacek Pop³awski, <slrnaor068.54v.jp@darkwood.somewhere>
+[1] autor Jacek PopÅ‚awski, <slrnaor068.54v.jp@darkwood.somewhere>
 
 $Id$

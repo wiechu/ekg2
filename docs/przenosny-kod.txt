@@ -1,24 +1,24 @@
-kilka uwag co do przeno¶no¶ci kodu:
+kilka uwag co do przenoÅ›noÅ›ci kodu:
 
-1) na systemach BSD wa¿na jest kolejno¶æ sieciowych #include'ów:
+1) na systemach BSD waÅ¼na jest kolejnoÅ›Ä‡ sieciowych #include'Ã³w:
 
    #include <sys/types.h>
    #include <sys/socket.h>
    #include <netinet/in.h>
    #include <arpa/inet.h>
 
-2) typy danych uintXX_t nie s± dostêpne na starszych platformach. na nowszych
-   mog± wyst±piæ w <stdint.h>, <inttypes.h> lub podobnych. najlepiej sprawdziæ
-   w configure, czy istniej±, a je¶li nie, zdefiniowaæ je.
+2) typy danych uintXX_t nie sÄ… dostÄ™pne na starszych platformach. na nowszych
+   mogÄ… wystÄ…piÄ‡ w <stdint.h>, <inttypes.h> lub podobnych. najlepiej sprawdziÄ‡
+   w configure, czy istniejÄ…, a jeÅ›li nie, zdefiniowaÄ‡ je.
 
-3) ,,__attribute__ ((packed))'' jest rozszerzeniem gcc, wiêc nie bêdzie
-   dostêpne na starszych platformach.
+3) ,,__attribute__ ((packed))'' jest rozszerzeniem gcc, wiÄ™c nie bÄ™dzie
+   dostÄ™pne na starszych platformach.
 
-4) zachowanie snprintf() zmieni³o siê w C99. wcze¶niej zwraca³o -1, je¶li
-   ci±g znaków by³ zbyt krótki, a teraz zwraca ilo¶æ bajtów, jaka by³aby
-   zapisana do bufora, gdyby starczy³o miejsca.
+4) zachowanie snprintf() zmieniÅ‚o siÄ™ w C99. wczeÅ›niej zwracaÅ‚o -1, jeÅ›li
+   ciÄ…g znakÃ³w byÅ‚ zbyt krÃ³tki, a teraz zwraca iloÅ›Ä‡ bajtÃ³w, jaka byÅ‚aby
+   zapisana do bufora, gdyby starczyÅ‚o miejsca.
 
-5) trzeba uwa¿aæ na kolejno¶æ bajtów, je¶li pisze siê lub czyta binarne
-   warto¶ci liczbowe z plików lub gniazd.
+5) trzeba uwaÅ¼aÄ‡ na kolejnoÅ›Ä‡ bajtÃ³w, jeÅ›li pisze siÄ™ lub czyta binarne
+   wartoÅ›ci liczbowe z plikÃ³w lub gniazd.
 
 $Id$

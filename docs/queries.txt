@@ -1,20 +1,20 @@
 *** ekg -> plugin ***
 
 protocol-validate-uid(char *uid, int valid)
-	sprawdza, czy podany protokó³ jest obs³ugiwany. ka¿dy obs³uguj±cy
-	plugin powinien zwiêkszyæ `valid' o 1.
+	sprawdza, czy podany protokÃ³Å‚ jest obsÅ‚ugiwany. kaÅ¼dy obsÅ‚ugujÄ…cy
+	plugin powinien zwiÄ™kszyÄ‡ `valid' o 1.
 
 protocol-ignore(char *session, char *uid, int prevlevel, int newlevel)
 	zmieniono poziom ignorowania osoby z `prevlevel' do `newlevel'.
 
 userlist-changed(char *session, *uid)
-	zmieni³ siê wpis w li¶cie kontaktów.
+	zmieniÅ‚ siÄ™ wpis w liÅ›cie kontaktÃ³w.
 
 userlist-removed(char *uid)
-	usuniêto wpis z listy kontaktów.
+	usuniÄ™to wpis z listy kontaktÃ³w.
 
 userlist-added(char *uid)
-	dodano wpis do listy kontaktów.
+	dodano wpis do listy kontaktÃ³w.
 
 userlist-renamed(char *prevnick, char *newnick)
 	zmieniono pseudonim danej osoby.
@@ -23,10 +23,10 @@ qutting(char *reason)
 	wpisano /quit.
 
 ui-window-target-changed(window_t *w)
-	zmieniono nazwê okna.
+	zmieniono nazwÄ™ okna.
 
 plugin-print-version()
-	pro¶ba o wy¶wietlenie wersji pluginów.
+	proÅ›ba o wyÅ›wietlenie wersji pluginÃ³w.
 
 config-write(FILE *f)
 	zapisywanie konfiguracji.
@@ -34,22 +34,22 @@ config-write(FILE *f)
 *** plugin -> ekg ***
 
 protocol-connected(char *session)
-	po³±czenie siê uda³o.
+	poÅ‚Ä…czenie siÄ™ udaÅ‚o.
 
 protocol-failed(char *session, char *reason)
-	po³±czenie siê nie uda³o.
+	poÅ‚Ä…czenie siÄ™ nie udaÅ‚o.
 
 protocol-disconnected(char *session, char *reason)
-	wywo³ywany przy roz³±czeniu sesji przez serwer.
+	wywoÅ‚ywany przy rozÅ‚Ä…czeniu sesji przez serwer.
 
 protocol-status(char *session, char *uid, char *status, char *descr, char *host, int port, time_t when)
-	dana osoba zmieni³a swój stan.
+	dana osoba zmieniÅ‚a swÃ³j stan.
 
 protocol-message(char *session, char *sender, char **recipients, char *text, uint32_t *format, time_t sent, int class, char *seq, int secure)
-	otrzymano wiadomo¶æ od danej osoby.
+	otrzymano wiadomoÅ›Ä‡ od danej osoby.
 
 protocol-message-ack(char *session, char *recipient, char *seq, char *status)
-	potwierdzenie nadania wiadomo¶ci.
+	potwierdzenie nadania wiadomoÅ›ci.
 
 protocol-message-post(char *session, char *sender, char **recipients, char *text, uint32_t *format, time_t sent, int class, char *seq, int secure)
-	prawie jak protocol-message, tyle, ¿e po deszyfracji
+	prawie jak protocol-message, tyle, Å¼e po deszyfracji
