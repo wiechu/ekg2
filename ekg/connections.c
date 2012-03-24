@@ -241,7 +241,7 @@ static void ekg2_conneciton_set_error(connection_data_t *cd, GError **err, const
 int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize length) {
 	session_t *s = session_find(cd->sess_id);
 	GError *error = NULL;
-	gint b_written = 0;
+	gint b_written = 0, count = 0;
 
 	g_return_val_if_fail(cd != NULL, -1);
 	g_return_val_if_fail(length > 0, -1);
@@ -250,7 +250,7 @@ int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize len
 		return ekg2_connection_buffer_write(cd, buffer, length);
 
 	while (length > 0) {
-		b_written = g_output_stream_write(cd->out_stream, buffer, length, NULL, &error);
+		b_written = g_output_stream_write(cd->out_stream, buffer+count, length, NULL, &error);
 
 		if (0 == b_written) {
 			ekg2_conneciton_set_error(cd, &error, _("Nothing was written."));
@@ -274,9 +274,10 @@ int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize len
 		debug_function("[%s] ekg2_connection_write() write %d bytes\n", session_uid_get(s), b_written);
 
 		length -= b_written;
+		count += b_written;
 	}
 
-	return b_written;
+	return count;
 }
 
 int ekg2_connection_buffer_write(connection_data_t *cd, gconstpointer buffer, gsize length) {
@@ -296,7 +297,7 @@ int ekg2_connection_buffer_flush(connection_data_t *cd) {
 
 	cd->use_out_buf = FALSE;
 	result = ekg2_connection_write(cd, cd->out_buf->str, cd->out_buf->len);
-	g_string_set_size(cd->out_buf, 0);
+	if (cd) g_string_set_size(cd->out_buf, 0);
 
 	return result;
 }
