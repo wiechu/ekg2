@@ -46,7 +46,7 @@ enum jabber_opengpg_type_t {
 
 enum jabber_sasl_auth_type_t {
 	JABBER_SASL_AUTH_UNKNOWN = 0,			/* UNKNOWN */
-//	JABBER_SASL_AUTH_LOGIN,				/* LOGIN */
+	JABBER_SASL_AUTH_LOGIN,				/* LOGIN */
 	JABBER_SASL_AUTH_PLAIN,				/* PLAIN */
 	JABBER_SASL_AUTH_CRAM_MD5,			/* CRAM-MD5 */
 	JABBER_SASL_AUTH_DIGEST_MD5,			/* DIGEST-MD5 */

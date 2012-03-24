@@ -151,8 +151,8 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 			else SET_SASL_AUTH("CRAM-MD5", JABBER_SASL_AUTH_CRAM_MD5)
 // XXX			else SET_SASL_AUTH("SCRAM-SHA-1", JABBER_SASL_AUTH_SCRAM_SHA_1)
 			else SET_SASL_AUTH("PLAIN", JABBER_SASL_AUTH_PLAIN)
-// XXX			else SET_SASL_AUTH("LOGIN", JABBER_SASL_AUTH_LOGIN)
-			else debug_error("[%s] SASL, unk mechanism: %s\n", session_uid_get(s), __(m->data));
+			else SET_SASL_AUTH("LOGIN", JABBER_SASL_AUTH_LOGIN)
+			else debug_warn("[%s] SASL, unknown mechanism: %s\n", session_uid_get(s), __(m->data));
 		}
 		#undef SET_SASL_AUTH
 	}
@@ -362,7 +362,7 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 				break;
 			}
 #endif
-//			case JABBER_SASL_AUTH_LOGIN:
+			case JABBER_SASL_AUTH_LOGIN:
 			case JABBER_SASL_AUTH_PLAIN:
 				if (!ekg2_connection_is_secure(j->connection) && !(session_int_get(s, "plaintext_passwd"))) {
 					j->sasl_auth_type = JABBER_SASL_AUTH_UNKNOWN;
@@ -375,16 +375,17 @@ JABBER_HANDLER(jabber_handle_stream_features) {
 
 				str = string_init(NULL);
 
-				string_append_raw(str, "\0", 1);
-				string_append_n(str, s->uid+5, xstrchr(s->uid+5, '@')-s->uid-5);
-				string_append_raw(str, "\0", 1);
-				string_append(str, session_get(s, "password"));		/* XXX, haslo rekodowac na UTF-8 */
+				if (j->sasl_auth_type == JABBER_SASL_AUTH_PLAIN) {
+					string_append_raw(str, "\0", 1);
+					string_append_n(str, s->uid+5, xstrchr(s->uid+5, '@')-s->uid-5);
+					string_append_raw(str, "\0", 1);
+					string_append(str, session_get(s, "password"));		/* XXX, haslo rekodowac na UTF-8 */
+				} else
+					string_append_n(str, s->uid+5, xstrchr(s->uid+5, '@')-s->uid-5);
 
-				logstr = (JABBER_SASL_AUTH_PLAIN == j->sasl_auth_type) ?
-					    base64_encode(str->str, str->len):
-					    g_strdup(str->str);
+				logstr = base64_encode(str->str, str->len);
 
-				jabber_write(s, "<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='PLAIN'>%s</auth>", logstr);
+				jabber_write(s, "<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='%s'>%s</auth>", sasl_auth_name, logstr);
 
 				xfree(logstr);
 				string_free(str, 1);
@@ -435,7 +436,7 @@ JABBER_HANDLER(jabber_handle_compressed) {
 JABBER_HANDLER(jabber_handle_challenge) {
 	jabber_private_t *j =  s->priv;
 	char *challenge, *response = NULL;
-	char *username = g_strndup(s->uid+5, xstrchr(s->uid+5, '@')-s->uid-5);
+	char *username;
 	const char *password = session_get(s, "password");
 
 	CHECK_CONNECT(2, 0, return)
@@ -446,11 +447,15 @@ JABBER_HANDLER(jabber_handle_challenge) {
 		return;
 	}
 
+	username = g_strndup(s->uid+5, xstrchr(s->uid+5, '@')-s->uid-5);
 	/* decode && parse challenge data */
 	challenge = base64_decode(n->data);
-	debug_error("[%s] PARSING challenge (%s): \n", session_uid_get(s), challenge);
+	debug_white("[%s] PARSING challenge (%s)\n", session_uid_get(s), challenge);
 
 	switch (j->sasl_auth_type) {
+		case JABBER_SASL_AUTH_LOGIN:
+			response = base64_encode(password, xstrlen(password));
+			break;
 		case JABBER_SASL_AUTH_DIGEST_MD5:
 			response = jabber_sasl_digest_md5_response(s, challenge, username, password);
 			break;
@@ -467,7 +472,8 @@ JABBER_HANDLER(jabber_handle_challenge) {
 			break;
 	}
 
-	xfree(challenge);
+	g_free(challenge);
+	g_free(username);
 
 	if (response) {
 		jabber_write(s, "<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>", response);
