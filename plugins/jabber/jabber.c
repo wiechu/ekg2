@@ -526,22 +526,11 @@ static void jabber_handle_stream(connection_data_t *cd, GString *buffer) {
 
 	parser = j->parser;
 
-	len = buffer->len;
-	if (!(buf = XML_GetBuffer(parser, len + 1))) {
-		jabber_handle_disconnect(s, "XML_GetBuffer failed", EKG_DISCONNECT_NETWORK);
-		return;
-	}
-
-	strncpy(buf, buffer->str, len);
-	g_string_set_size(buffer, 0);
-
-	buf[len] = 0;
-	rlen = len;
-
+	rlen = len = buffer->len;
 	switch (j->using_compress) {
 		case JABBER_COMPRESSION_ZLIB:
 #ifdef HAVE_LIBZ
-			uncompressed = jabber_zlib_decompress(buf, &rlen);
+			uncompressed = jabber_zlib_decompress(buffer->str, &rlen);
 #else
 			debug_error("[%s] jabber_handle_stream() compression zlib, but no zlib support.. you're joking, right?\n", session_uid_get(s));
 #endif
@@ -560,7 +549,18 @@ static void jabber_handle_stream(connection_data_t *cd, GString *buffer) {
 			debug_error("[%s] jabber_handle_stream() j->using_compress wtf? unknown! %d\n", session_uid_get(s), j->using_compress);
 	}
 
-	debug_iorecv("[%s] (%db/%db) recv: %s\n", session_uid_get(s), rlen, len, uncompressed ? uncompressed : buf);
+	debug_iorecv("[%s] (%d bytes/%d bytes) recv: %s\n", session_uid_get(s), rlen, len, uncompressed ? uncompressed : buffer->str);
+
+	if (!(buf = XML_GetBuffer(parser, rlen + 1))) {
+		jabber_handle_disconnect(s, "XML_GetBuffer failed", EKG_DISCONNECT_NETWORK);
+		return;
+	}
+
+	strncpy(buf, uncompressed ?  uncompressed: buffer->str, rlen);
+	g_string_set_size(buffer, 0);
+
+	buf[rlen] = 0;
+
 /*
 	if (uncompressed) {
 		memcpy(buf, uncompressed, rlen);
@@ -583,7 +583,8 @@ static void jabber_handle_stream(connection_data_t *cd, GString *buffer) {
 		return;
 	}
 	if ((!j->parser && parser) || (parser != j->parser)) XML_ParserFree(parser);
-	xfree(uncompressed);
+
+	g_free(uncompressed);
 
 }
 
