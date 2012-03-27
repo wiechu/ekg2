@@ -574,9 +574,9 @@ void icq_handle_disconnect(session_t *s, const char *reason, int type) {
 	timer_remove_session(s, "ping");
 	timer_remove_session(s, "snac_timeout");
 
-	ekg2_connection_close(&j->connection);
-
 	protocol_disconnected_emit(s, reason, type);
+
+	ekg2_connection_close(&j->connection);
 
 	g_string_set_size(j->stream_buf, 0);
 	j->migrate = 0;

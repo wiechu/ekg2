@@ -369,9 +369,9 @@ void jabber_handle_disconnect(session_t *s, const char *reason, int type) {
 	if (!s->connected && !s->connecting)
 		return;
 
-	ekg2_connection_close(&j->connection);
-
 	protocol_disconnected_emit(s, reason, type);
+
+	ekg2_connection_close(&j->connection);
 
 	j->using_compress = JABBER_COMPRESSION_NONE;
 
