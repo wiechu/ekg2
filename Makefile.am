@@ -368,7 +368,6 @@ plugin_LTLIBRARIES += plugins/jabber/jabber.la
 plugins_jabber_jabber_la_SOURCES = \
 	$(noinst_HEADERS) \
 	plugins/jabber/commands.c \
-	plugins/jabber/digest.c \
 	plugins/jabber/jabber.c \
 	plugins/jabber/jabber_dcc.c \
 	plugins/jabber/jabber_dcc.h \
