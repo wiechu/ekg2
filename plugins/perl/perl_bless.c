@@ -60,7 +60,7 @@ void ekg2_bless_irc_channel(HV *hv, channel_t *chan)
 
 void ekg2_bless_irc_user(HV *hv, people_t *person)
 {
-	(void) hv_store(hv, "nick", 4,	new_pv(person->nick+4), 0);
+	(void) hv_store(hv, "nick", 4,	new_pv(person->nick), 0);
 	(void) hv_store(hv, "realname", 8, new_pv(person->realname), 0);
 	(void) hv_store(hv, "hostname", 8, new_pv(person->host), 0);
 	(void) hv_store(hv, "ident",	5, new_pv(person->ident), 0);
