@@ -211,7 +211,7 @@ static QUERY(nntp_message) {
 			if (dheaders && !xstrstr(dheaders, tmp)) {
 				if (value)
 					debug("DHEADER: %s=%s skipping...\n", tmp, value+1);
-				else	debug("DHEADER: %s skipping.. (tag without value?\n", tmp);
+				else	debug("DHEADER: %s skipping.. (tag without value?)\n", tmp);
 				continue;	/* jesli mamy display_headers a tego nie mamy na liscie to pomijamy */
 			}
 
@@ -345,6 +345,12 @@ static int nntp_theme_init() {
 	format_add("nntp_message_quote_level2", "%y%1", 1);
 	format_add("nntp_message_quote_level",	"%B%1", 1);	/* upper levels.. */
 	format_add("nntp_message_signature",	"%B%1", 1);
+
+	format_add("nntp_message_header",	_("%g,+=%G-----%y  %1 %n(ID: %W%2%n)"), 1);
+	format_add("nntp_message_body",		_("%g||%n %|%1"), 1);
+	format_add("nntp_message_footer",	_("%g|+=%G----- End of message...%n\n"), 1);
+
+	format_add("nntp_message_header_generic",	_("%r %1 %W%2"), 1);
 
 	format_add("nntp_posting_failed",	_("(%1) Posting to group: %2 failed: %3 (post saved in: %4)"), 1);
 	format_add("nntp_posting",		_("(%1) Posting to group: %2 Subject: %3...."), 1);
