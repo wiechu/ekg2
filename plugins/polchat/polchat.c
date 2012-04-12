@@ -18,30 +18,7 @@
 
 #include "ekg2.h"
 
-#include <stdlib.h>
-#include <unistd.h>
-
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/ioctl.h>
-
-#include <sys/types.h>
-
-#include <sys/socket.h>
-
-#include <sys/stat.h>
-#include <netdb.h>
-
-#include <sys/time.h>
-
-#ifdef __sun
-#include <sys/filio.h>
-#endif
-
 #include <string.h>
-#include <errno.h>
-
-#include <ekg/net.h>
 
 #define DEFPARTMSG "EKG2 bejbi! http://ekg2.org/"
 #define DEFQUITMSG "EKG2 - It's better than sex!"

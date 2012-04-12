@@ -28,15 +28,6 @@
 #include <ctype.h>
 #include <unistd.h>
 
-#include <sys/ioctl.h>
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-#include <ekg/net.h>
-
 #include "icq.h"
 #include "misc.h"
 
@@ -647,7 +638,7 @@ static void icq_handle_connect(connection_data_t *cd) {
 void icq_connect(session_t *session, const char *server, int port) {
 	icq_private_t *j = session->priv;
 	connection_data_t *cd;
-	
+
 	j->connection = cd = ekg2_connection_new(session, port);
 
 	ekg2_connection_set_servers(cd, server);
