@@ -1,5 +1,6 @@
 /*
  *  (C) Copyright 2006 Jakub Zawadzki <darkjames@darkjames.ath.cx>
+ *		  2012 Wiesław Ochmiński <wiechu at wiechu dot com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License Version 2 as
@@ -234,7 +235,7 @@ static QUERY(nntp_message) {
 //					if (i > 0 && tmp[i] == ' ')	/* normal clients quote:  >>>> aaaa */
 					if (i > 0)			/* buggy clients quote:   >>>>>aaaa */
 					{
-						quote_name = saprintf("nntp_message_quote_level%d", i+1);
+						quote_name = saprintf("nntp_message_quote_level%d", i);
 
 						f = format_find(quote_name);
 						if (!format_ok(f)) {
@@ -327,8 +328,10 @@ static int nntp_theme_init() {
 	format_add("nntp_command_help_item",	_("%g|| %W%1: %n%2"), 1);
 	format_add("nntp_command_help_footer",	_("%g`+=%G----- End of 100%n\n"), 1);
 
-	format_add("nntp_message_quote_level1",	"%g%1", 1);
-	format_add("nntp_message_quote_level2", "%y%1", 1);
+	format_add("nntp_message_quote_level1",	"%y%1", 1);
+	format_add("nntp_message_quote_level2", "%g%1", 1);
+	format_add("nntp_message_quote_level3", "%r%1", 1);
+	format_add("nntp_message_quote_level4", "%c%1", 1);
 	format_add("nntp_message_quote_level",	"%B%1", 1);	/* upper levels.. */
 	format_add("nntp_message_signature",	"%B%1", 1);
 
@@ -539,6 +542,13 @@ NNTP_HANDLER(nntp_message_process) {			/* 220, 221, 222 */
 	int article_headers	= (code == 220 || code == 221);
 	int article_body	= (code == 220 || code == 222);
 	char *mbody, **tmpbody;
+	char *content_charset = NULL;
+	enum {
+		ENCODING_UNKNOWN = 0,
+		ENCODING_BASE64,
+		ENCODING_QUOTEDPRINTABLE,
+		ENCODING_8BIT,
+	} cte = ENCODING_UNKNOWN;	/* Content-Transfer-Encoding: */
 
 	nntp_article_t *art = NULL;
 
@@ -578,7 +588,7 @@ NNTP_HANDLER(nntp_message_process) {			/* 220, 221, 222 */
 	if (article_headers) {
 		/* reencode headers */
 		char *text, *org;
-		char *tmp;
+		char *line, *tmp;
 		text = org = string_free(art->header, 0);
 
 		/* join long headers fields */
@@ -588,55 +598,90 @@ NNTP_HANDLER(nntp_message_process) {			/* 220, 221, 222 */
 
 		art->header = string_init(NULL);
 
-		while ((tmp = split_line(&text))) {
-			char *value;
+		while ((line = split_line(&text))) {
+			char *key, *value, *charset;
 			char *charque, *encque, *endque;
-			int i = 0;
+			int i, vlen;
 
-			if ((value = xstrstr(tmp, ": "))) {
+			if ((value = xstrstr(line, ": "))) {
 				*value = '\0';
 				value += 2;
 			} else {
-				string_append(art->header, tmp);
+				string_append(art->header, line);
 				string_append_c(art->header, '\n');
 				continue;
 			}
 
-			string_append(art->header, tmp);
+			string_append(art->header, line);
 			string_append(art->header, ": ");
 
-			while (value[i]) {
+			key = line;
+
+			/* Content-Transfer-Encoding */
+			if (!xstrcmp(key, "Content-Transfer-Encoding")) { /* base64 || quoted-printable || 8bit || .... */
+				if (!xstrncasecmp(value, "8bit", 4))		cte = ENCODING_8BIT;
+				if (!xstrncasecmp(value, "base64", 6))		cte = ENCODING_BASE64;
+				if (!xstrncasecmp(value, "quoted-printable", 16))	cte = ENCODING_QUOTEDPRINTABLE;
+			}
+
+			/* Content-Type */
+			if (!xstrcmp(key, "Content-Type") && (tmp=xstrstr(value, "charset="))) {
+				char *end = xstrchr(tmp, ';');
+				if (!end) 
+					end = value + xstrlen(value) + 1;
+
+				tmp += 8;
+				if ('"' == *tmp) tmp++;
+				if ('"' == end[-1]) end--;
+				content_charset = xstrndup(tmp, end - tmp);
+
+			}
+
+			for (i=0, vlen=xstrlen(value); i<vlen; i++) {
 				if	(!xstrncmp(&value[i], "=?", 2) &&			/* begins with =? */
 					(charque = xstrchr(&value[i+2], '?')) &&		/* charset end with '?' */
 					(encque = xstrchr(charque+1, '?')) &&			/* encoding end with '?' */
 					(endque = xstrstr(encque+1, "?=")) &&			/* end */
-					((*(encque-1) == 'Q' || *(encque-1) == 'B'))		/* valid encodings are: 'B' -- base64 && 'Q' -- quoted-printable */
-					) {
+					((toupper(*(encque-1)) == 'Q' || toupper(*(encque-1)) == 'B'))		/* valid encodings are: 'B' -- base64 && 'Q' -- quoted-printable */
+					)
+				{
+					GString *decode = g_string_new("");
+					char *recode;
 
-					debug("RFC1522: encoding: %c\n", *(encque-1));
+					*charque = '\0';
+					charset = value + i + 2;
+
+					debug("RFC1522: header '%s:', encoding='%c', charset='%s'\n", key, *(encque-1), charset);
 
 					i = (encque - value)+1;
 					while (&value[i] != endque) {
-	/* XXX before adding text to buffer do iconv() */
-						switch (*(encque-1)) {
+						switch (toupper(*(encque-1))) {
 							case 'Q':
 								if (value[i] == '=' && value[i+1] && value[i+2]) {
-									string_append_c(art->header, hextochar(value[i+1]) * 16 | hextochar(value[i+2]));
+									g_string_append_c(decode, hextochar(value[i+1]) * 16 | hextochar(value[i+2]));
 									i += 2;
-								} else	string_append_c(art->header, value[i]);
+								} else	g_string_append_c(decode, value[i]);
 								break;
 							case 'B':
 								*(endque) = 0;
-								string_append(art->header, base64_decode(&value[i]));
+								tmp = base64_decode(&value[i]);
+								g_string_append(decode, tmp);
+								xfree(tmp);
 								i = (endque - value)-1;
 								break;
 						}
 						i++;
 					}
 					i += 2;
+
+					recode = ekg_recode_from(charset, decode->str);
+					string_append(art->header, recode);
+					g_free(recode);
+
+					g_string_free(decode, TRUE);
 				}
-				string_append_c(art->header, value[i]);
-				i++;
+				if (i<vlen)
+					string_append_c(art->header, value[i]);
 			}
 
 			string_append_c(art->header, '\n');
@@ -646,29 +691,11 @@ NNTP_HANDLER(nntp_message_process) {			/* 220, 221, 222 */
 	}
 
 	if (article_body && article_headers) do {
-		enum {
-			ENCODING_UNKNOWN = 0,
-			ENCODING_BASE64,
-			ENCODING_QUOTEDPRINTABLE,
-			ENCODING_8BIT,
-		} cte = ENCODING_UNKNOWN;
-
-//		char *encoding;
-		char *tmp;
 
 		char *text;
 		int i = 0;
 
-		/* Content-Transfer-Encoding */
-		if ((tmp = xstrstr(art->header->str, "Content-Transfer-Encoding: "))) { /* base64 || quoted-printable || 8bit || .... */
-			char *value = xstrchr(tmp, ' ')+1;
-
-			if (!xstrncmp(value, "8bit", 4))		cte = ENCODING_8BIT;
-			if (!xstrncmp(value, "base64", 6))		cte = ENCODING_BASE64;
-			if (!xstrncmp(value, "quoted-printable", 16))	cte = ENCODING_QUOTEDPRINTABLE;
-		}
-		debug("encoding type: %d\n", cte);
-/* XXX, console_charset + iconv... */
+		debug("content encoding type: %d, charset=%s\n", cte, content_charset?content_charset:"?");
 		if (cte == ENCODING_UNKNOWN);
 
 		text = string_free(art->body, 0);
@@ -686,6 +713,7 @@ NNTP_HANDLER(nntp_message_process) {			/* 220, 221, 222 */
 						i += 2;
 					} else	string_append_c(art->body, text[i]);
 					break;
+				case ENCODING_BASE64:	/* XXX ? */
 				case ENCODING_8BIT:
 				default:
 					string_append_c(art->body, text[i]);
@@ -693,6 +721,13 @@ NNTP_HANDLER(nntp_message_process) {			/* 220, 221, 222 */
 			i++;
 		}
 		xfree(text);
+
+		if (content_charset) {
+			char *recode = ekg_recode_from(content_charset, art->body->str);
+			string_free(art->body, 1);
+			art->body = string_init(recode);
+			g_free(recode);
+		}
 	} while(0);
 
 
@@ -897,19 +932,18 @@ static void nntp_parse_line(session_t *s, const char *line) {
 static void nntp_handle_stream(connection_data_t *cd, GString *buffer) {
 	session_t *s = ekg2_connection_get_session(cd);
 
-	const char *found, *le = "\n";
+	const char *found;
 
-	while ((found = g_strstr_len(buffer->str, buffer->len, le))) {
+	while ((found = g_strstr_len(buffer->str, buffer->len, "\n"))) {
 		int len = found - buffer->str + 1;
 		gchar *line = g_strndup(buffer->str, len - 1);
 		if ((len>1) && ('\r' == line[len-2]))
 			line[len-2] = '\0';
+debug_iorecv("%s\n", line);	// XXX temp
 		nntp_parse_line(s, line);
 		g_free(line);
 		buffer = g_string_erase(buffer, 0, len);
 	}
-
-
 }
 
 static void nntp_handle_connect(connection_data_t *cd) {
