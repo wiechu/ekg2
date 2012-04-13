@@ -17,22 +17,6 @@
 
 #include "ekg2.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#ifdef __sun	  /* Solaris, thanks to Beeth */
-#include <sys/filio.h>
-#endif
-
 #define NNTP_ONLY         SESSION_MUSTBELONG | SESSION_MUSTHASPRIVATE
 #define NNTP_FLAGS        NNTP_ONLY  | SESSION_MUSTBECONNECTED
 #define NNTP_FLAGS_TARGET NNTP_FLAGS | COMMAND_ENABLEREQPARAMS | COMMAND_PARAMASTARGET
@@ -387,7 +371,8 @@ typedef struct {
 
 typedef struct {
 	int connecting;
-	int fd;
+	connection_data_t *connection;
+
 	int lock;
 	int authed;
 
@@ -397,8 +382,25 @@ typedef struct {
 	string_t buf;
 	list_t newsgroups;
 
-	watch_t *send_watch;
 } nntp_private_t;
+
+void nntp_write(session_t *session, const gchar *format, ...) {
+	nntp_private_t *j = nntp_private(session);
+	char *tmp, **lines;
+	va_list args;
+	int i;
+
+	va_start(args, format);
+	tmp = g_strdup_vprintf(format, args);
+	lines = g_strsplit(tmp, "\r\n", 0);
+	for (i=0; lines[i]; i++)
+		if (*lines[i])
+			debug_io("nntp_write(0x%x) %s\n", session, lines[i]);
+	ekg2_connection_write(j->connection, tmp, xstrlen(tmp));
+	g_strfreev(lines);
+	xfree(tmp);
+	va_end(args);
+}
 
 static nntp_article_t *nntp_article_find(nntp_newsgroup_t *group, int articleid, char *msgid) {
 	nntp_article_t *article;
@@ -451,14 +453,6 @@ static void nntp_handle_disconnect(session_t *s, const char *reason, int type) {
 	if (!j)
 		return;
 
-	if (j->connecting)
-		watch_remove(&nntp_plugin, j->fd, WATCH_WRITE);
-
-	if (j->send_watch) {
-		j->send_watch->type = WATCH_NONE;
-		watch_free(j->send_watch);
-		j->send_watch = NULL;
-	}
 	if (j->newsgroup)
 		j->newsgroup->state = NNTP_IDLE;
 	j->newsgroup = NULL;
@@ -467,10 +461,10 @@ static void nntp_handle_disconnect(session_t *s, const char *reason, int type) {
 	j->authed	= 0;
 
 	j->connecting = 0;
-	close(j->fd);
-	j->fd = -1;
 
 	protocol_disconnected_emit(s, reason, type);
+
+	ekg2_connection_close(&j->connection);
 }
 
 typedef struct {
@@ -482,10 +476,10 @@ typedef struct {
 	time_t last_mtime;
 } nntp_children_t;
 
+#if 0
 static void nntp_children_died(GPid pid, gint status, gpointer data) {
 	nntp_children_t *d = data;
 	session_t *s = session_find(d->session);
-	nntp_private_t *j;
 	struct stat st;
 
 	if (!s || !s->priv) {
@@ -505,8 +499,6 @@ static void nntp_children_died(GPid pid, gint status, gpointer data) {
 
 	print("nntp_posting", session_name(s), d->newsgroup, d->subject);
 
-	j = nntp_private(s);
-
 fail:
 	xfree(d->session);
 	xfree(d->filename);
@@ -514,13 +506,14 @@ fail:
 	xfree(d->subject);
 	xfree(d);
 }
+#endif
 
 #define NNTP_HANDLER(x) static int x(session_t *s, int code, char *str, void *data)
 typedef int (*nntp_handler) (session_t *, int, char *, void *);
 
 
 NNTP_HANDLER(nntp_help_process) {			/* 100 */
-	debug("nntp_help_process() %s\n", str);
+	debug_function("nntp_help_process() %s\n", str);
 
 //	format_add("nntp_command_help_header",	_("%g,+=%G----- %2 %n(%T%1%n)"), 1);
 //	format_add("nntp_command_help_item",	_("%g|| %W%1: %n%2"), 1);
@@ -568,7 +561,7 @@ NNTP_HANDLER(nntp_message_process) {			/* 220, 221, 222 */
 
 	if (article_headers && article_body) {
 		char *tmp;
-		if ((tmp = xstrchr(str, '\r'))) {
+		if ((tmp = xstrstr(str, "\n\n"))) {
 			string_append_n(art->header, str, tmp-str-1);
 			str = tmp + 2;		/* +\r\n */
 		} else {
@@ -730,10 +723,10 @@ NNTP_HANDLER(nntp_auth_process) {
 			xfree(tmp);
 
 			if (!j->authed && session_get(s, "username"))
-				watch_write(j->send_watch, "AUTHINFO USER %s\r\n", session_get(s, "username"));
+				nntp_write(s, "AUTHINFO USER %s\r\n", session_get(s, "username"));
 			break;
 		case 381:
-			watch_write(j->send_watch, "AUTHINFO PASS %s\r\n", session_get(s, "password"));
+			nntp_write(s, "AUTHINFO PASS %s\r\n", session_get(s, "password"));
 			break;
 		case 281:
 			j->authed = 1;
@@ -849,24 +842,14 @@ static nntp_handler_t *nntp_handler_find(int code) {
 	return NULL;
 }
 
-static WATCHER_LINE(nntp_handle_stream) {
-	session_t *s = session_find(data);
+static void nntp_parse_line(session_t *s, const char *line) {
 	nntp_private_t *j = nntp_private(s);
-
 	char **p;
-
-	if (type == 1) {
-		nntp_handle_disconnect(s, strerror(errno), EKG_DISCONNECT_NETWORK);
-		xfree(data);
-		return 0;
-	}
-
-	if (!watch || !s) return -1;
 
 	if (j->last_code != -1) {
 		nntp_handler_t *handler = nntp_handler_find(j->last_code);
 
-		if (!xstrcmp(watch, ".")) {
+		if (!xstrcmp(line, ".")) {
 			int res = -1;
 
 			if (handler && handler->is_multi) res = handler->handler(s, j->last_code, j->buf->str, handler->data);
@@ -875,16 +858,16 @@ static WATCHER_LINE(nntp_handle_stream) {
 
 			string_clear(j->buf);
 			j->last_code = -1;
-			if (res != -1) return 0;
+			if (res != -1) return;
 		}
 
 		if (handler && handler->is_multi) {
-			nntp_string_append(s, watch);
-			return 0;
+			nntp_string_append(s, line);
+			return;
 		}
 	}
 
-	if ((p = array_make(watch, " ", 2, 1, 0)) && p[0] && atoi(p[0])) {
+	if ((p = array_make(line, " ", 2, 1, 0)) && p[0] && atoi(p[0])) {
 		int code = atoi(p[0]);
 
 		nntp_handler_t *handler = nntp_handler_find(code);
@@ -899,37 +882,35 @@ static WATCHER_LINE(nntp_handle_stream) {
 			debug("nntp_handle_stream() unhandled: %d (%s)\n", code, p[1]);
 		}
 	} else {
-		debug("nntp_handle_stream() buf: %s (last: %d)\n", watch, j->last_code);
+		debug("nntp_handle_stream() buf: %s (last: %d)\n", line, j->last_code);
 	}
 	g_strfreev(p);
-
-	return 0;
 }
 
-static WATCHER(nntp_handle_connect) {
-	session_t *s = session_find(data);
+static void nntp_handle_stream(connection_data_t *cd, GString *buffer) {
+	session_t *s = ekg2_connection_get_session(cd);
+
+	const char *found, *le = "\n";
+
+	while ((found = g_strstr_len(buffer->str, buffer->len, le))) {
+		int len = found - buffer->str + 1;
+		gchar *line = g_strndup(buffer->str, len - 1);
+		if ((len>1) && ('\r' == line[len-2]))
+			line[len-2] = '\0';
+		nntp_parse_line(s, line);
+		g_free(line);
+		buffer = g_string_erase(buffer, 0, len);
+	}
+
+
+}
+
+static void nntp_handle_connect(connection_data_t *cd) {
+	session_t *s = ekg2_connection_get_session(cd);
 	nntp_private_t *j = nntp_private(s);
-	int res = 0;
-	socklen_t res_size = sizeof(res);
-
-	debug("nntp_handle_connect() type: %d\n", type);
-
-	if (type) {
-		xfree(data);
-		return 0;
-	}
-
-	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &res, &res_size) || res) {
-		nntp_handle_disconnect(s, strerror(res), EKG_DISCONNECT_FAILURE);
-		return -1;
-	}
 
 	j->connecting = 0;
 	protocol_connected_emit(s);
-
-	watch_add_line(&nntp_plugin, fd, WATCH_READ_LINE, nntp_handle_stream, xstrdup(data));
-	j->send_watch = watch_add_line(&nntp_plugin, fd, WATCH_WRITE_LINE, NULL, NULL);
-	return -1;
 }
 
 static COMMAND(nntp_command_disconnect)
@@ -942,7 +923,7 @@ static COMMAND(nntp_command_disconnect)
 	}
 
 	if (session_connected_get(session))
-		watch_write(j->send_watch, "QUIT\r\n");
+		nntp_write(session, "QUIT\r\n");
 
 	if (j->connecting)
 		nntp_handle_disconnect(session, NULL, EKG_DISCONNECT_STOPPED);
@@ -954,11 +935,10 @@ static COMMAND(nntp_command_disconnect)
 
 static COMMAND(nntp_command_connect) {
 	nntp_private_t *j = nntp_private(session);
-	struct sockaddr_in sin;
-	/* just proof of concpect... no checking for errors... no resolving etc... it's boring */
-	int fd, res;
-	const char *ip;
-	int one = 1;
+	connection_data_t *cd;
+
+	const char *server;
+	int port = session_int_get(session, "port");
 
 	if (j->connecting) {
 		printq("during_connect", session_name(session));
@@ -969,34 +949,31 @@ static COMMAND(nntp_command_connect) {
 		return -1;
 	}
 
-	if (!(ip = session_get(session, "server"))) {
+	if (!(server = session_get(session, "server"))) {
 		printq("generic_error", "gdzie lecimy ziom ?! [/session server]");
 		return -1;
 	}
 
-	j->fd = fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (port <= 0 || port > G_MAXUINT16)
+		port = 119;		/* XXX default port */
 
-	sin.sin_family		= AF_INET;
-	sin.sin_addr.s_addr	= inet_addr(ip);
-	sin.sin_port		= g_htons(session_int_get(session, "port"));
+	session->connecting = 1;
+	printq("connecting", session_name(session));
 
-	ioctl(fd, FIONBIO, &one);
+	j->connection = cd = ekg2_connection_new(session, port);
 
-	j->connecting = 1;
-	res = connect(fd, (struct sockaddr*) &sin, sizeof(sin));
+	ekg2_connection_set_servers(cd, server);
 
-	if (res && (errno != EINPROGRESS)) {
-		nntp_handle_disconnect(session, strerror(errno), EKG_DISCONNECT_FAILURE);
-		return -1;
-	}
+	ekg2_connection_connect(cd,
+			nntp_handle_connect,
+			nntp_handle_stream,
+			nntp_handle_disconnect);
 
-	watch_add(&nntp_plugin, fd, WATCH_WRITE, nntp_handle_connect, xstrdup(session->uid));
 	return 0;
 }
 
 static COMMAND(nntp_command_raw) {
-	nntp_private_t *j = nntp_private(session);
-	watch_write(j->send_watch, "%s\r\n", params[0]);
+	nntp_write(session, "%s\r\n", params[0]);
 	return 0;
 }
 
@@ -1011,10 +988,10 @@ static COMMAND(nntp_command_nextprev) {
 	if (!xstrcmp(name, "next"))	j->newsgroup->article++;
 	else				j->newsgroup->article--;
 
-	if (mode == 2)				watch_write(j->send_watch, "HEAD %d\r\n", j->newsgroup->article);
-	else if (mode == 3 || mode == 4)	watch_write(j->send_watch, "ARTICLE %d\r\n", j->newsgroup->article);
+	if (mode == 2)				nntp_write(session, "HEAD %d\r\n", j->newsgroup->article);
+	else if (mode == 3 || mode == 4)	nntp_write(session, "ARTICLE %d\r\n", j->newsgroup->article);
 	else if (mode == 0 || mode == -1)	;
-	else					watch_write(j->send_watch, "BODY %d\r\n", j->newsgroup->article);
+	else					nntp_write(session, "BODY %d\r\n", j->newsgroup->article);
 
 	return 0;
 }
@@ -1047,7 +1024,7 @@ static COMMAND(nntp_command_get) {
 	if (!j->newsgroup || xstrcmp(j->newsgroup->name, group)) {
 /* zmienic grupe na target jesli != aktualnej .. */
 		j->newsgroup = nntp_newsgroup_find(session, group);
-		watch_write(j->send_watch, "GROUP %s\r\n", group);
+		nntp_write(session, "GROUP %s\r\n", group);
 	}
 
 	j->newsgroup->article = atoi(article);
@@ -1058,7 +1035,7 @@ static COMMAND(nntp_command_get) {
 
 	if (!xstrcmp(name, "body")) comm = "BODY";
 
-	watch_write(j->send_watch, "%s %s\r\n", comm, article);
+	nntp_write(session, "%s %s\r\n", comm, article);
 	return 0;
 }
 
@@ -1087,7 +1064,7 @@ static COMMAND(nntp_command_check) {
 
 		j->newsgroup	= n;
 		n->state	= NNTP_CHECKING;
-		watch_write(j->send_watch, "GROUP %s\r\n", n->name);
+		nntp_write(session, "GROUP %s\r\n", n->name);
 
 		while (n->state == NNTP_CHECKING) ekg_loop();
 		if (u->status == EKG_STATUS_ERROR) continue;
@@ -1104,10 +1081,10 @@ static COMMAND(nntp_command_check) {
 			j->newsgroup	= n;
 			nntp_set_descr(u, saprintf("Downloading %d article from %d", i, n->lart));
 
-			if (mode == 2)				watch_write(j->send_watch, "HEAD %d\r\n", i);
-			else if (mode == 3 || mode == 4)	watch_write(j->send_watch, "ARTICLE %d\r\n", i);
+			if (mode == 2)				nntp_write(session, "HEAD %d\r\n", i);
+			else if (mode == 3 || mode == 4)	nntp_write(session, "ARTICLE %d\r\n", i);
 			else if (mode == 0 || mode == -1)	;
-			else					watch_write(j->send_watch, "BODY %d\r\n", i);
+			else					nntp_write(session, "BODY %d\r\n", i);
 
 			while (n->state == NNTP_DOWNLOADING) ekg_loop();
 		}
