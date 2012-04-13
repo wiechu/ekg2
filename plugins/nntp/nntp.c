@@ -17,6 +17,8 @@
 
 #include "ekg2.h"
 
+#include <string.h>
+
 #define NNTP_ONLY         SESSION_MUSTBELONG | SESSION_MUSTHASPRIVATE
 #define NNTP_FLAGS        NNTP_ONLY  | SESSION_MUSTBECONNECTED
 #define NNTP_FLAGS_TARGET NNTP_FLAGS | COMMAND_ENABLEREQPARAMS | COMMAND_PARAMASTARGET
@@ -578,6 +580,11 @@ NNTP_HANDLER(nntp_message_process) {			/* 220, 221, 222 */
 		char *text, *org;
 		char *tmp;
 		text = org = string_free(art->header, 0);
+
+		/* join long headers fields */
+		while ((tmp = xstrstr(text, "\n\t")) || (tmp = xstrstr(text, "\n "))) {
+			memmove(tmp, tmp+1, xstrlen(tmp));
+		}
 
 		art->header = string_init(NULL);
 
