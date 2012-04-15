@@ -177,15 +177,21 @@ static QUERY(nntp_message) {
 			}
 
 			formatka = saprintf("nntp_server_header_%s", tmp);
-			if (!format_exists(formatka)) { xfree(formatka); formatka = NULL; }
+			formatka[xstrlen(formatka)-1] = '\0';
+			if (!format_exists(formatka)) {
+				g_free(formatka);
+				formatka = g_strdup("nntp_server_header_generic");
+			}
 
-			formated = format_string(format_find(formatka ? formatka : "nntp_server_header_generic"), tmp, value ? value+1 : "");
+			formated = format_string(format_find(formatka), tmp, value ? value+1 : "");
 			print_window_w(targetwnd, EKG_WINACT_RSS, "nntp_message_body", formated ? formated : tmp);
 
-			xfree(formatka);
+			g_free(formated);
+			g_free(formatka);
 		}
 		if (headers || body) print_window_w(targetwnd, EKG_WINACT_RSS, "nntp_message_body", "");	/* rozdziel */
 	}
+
 	if (headers) {
 		char *str, *org;
 		str = org = xstrdup(headers);
@@ -203,58 +209,57 @@ static QUERY(nntp_message) {
 			}
 
 			formatka = saprintf("nntp_message_header_%s", tmp);
-			if (!format_exists(formatka)) { xfree(formatka); formatka = NULL; }
+			formatka[xstrlen(formatka)-1] = '\0';
+			if (!format_exists(formatka)) {
+				xfree(formatka);
+				formatka = g_strdup("nntp_message_header_generic");
+			}
 
-			formated = format_string(format_find(formatka ? formatka : "nntp_message_header_generic"), tmp, value ? value+1 : "");
+			formated = format_string(format_find(formatka), tmp, value ? value+1 : "");
 			print_window_w(targetwnd, EKG_WINACT_RSS, "nntp_message_body", formated ? formated : tmp);
 
-			xfree(formated);
-			xfree(formatka);
+			g_free(formated);
+			g_free(formatka);
 		}
 		if (body) print_window_w(targetwnd, EKG_WINACT_RSS, "nntp_message_body", "");	/* rozdziel */
 		xfree(org);
 	}
+
 	if (body) {
-		if (session_check(s, 0, "nntp")) {
-			int article_signature	= 0;
-			char *str, *org;
-			str = org = xstrdup(body);
+		int article_signature	= 0;
+		char *str, *org;
+		str = org = xstrdup(body);
 
-			while ((tmp = split_line(&str))) {
-				char *formated = NULL;
+		while ((tmp = split_line(&str))) {
+			char *formated = NULL;
 
-				if (!xstrcmp(tmp, "-- ")) article_signature = 1;
-				if (article_signature) {
-					formated = format_string(format_find("nntp_message_signature"), tmp);
-				} else {
-					int i;
-					char *quote_name = NULL;
-					const char *f = NULL;
-					for (i = 0; i < xstrlen(tmp) && tmp[i] == '>'; i++);
+			if (!xstrcmp(tmp, "-- ")) article_signature = 1;
+			if (article_signature) {
+				formated = format_string(format_find("nntp_message_signature"), tmp);
+			} else {
+				int i;
+				char *quote_name = NULL;
+				const char *f = NULL;
+				for (i = 0; i < xstrlen(tmp) && tmp[i] == '>'; i++);
 
-//					if (i > 0 && tmp[i] == ' ')	/* normal clients quote:  >>>> aaaa */
-					if (i > 0)			/* buggy clients quote:   >>>>>aaaa */
-					{
-						quote_name = saprintf("nntp_message_quote_level%d", i);
+				if (i > 0) {
+					quote_name = saprintf("nntp_message_quote_level%d", i);
 
-						f = format_find(quote_name);
-						if (!format_ok(f)) {
-							debug("[NNTP, QUOTE] format: %s not found, using global one...\n", quote_name);
-							f = format_find("nntp_message_quote_level");
-						}
-						xfree(quote_name);
+					f = format_find(quote_name);
+					if (!format_ok(f)) {
+						debug("[NNTP, QUOTE] format: %s not found, using global one...\n", quote_name);
+						f = format_find("nntp_message_quote_level");
 					}
-					if (f && f[0] != '\0')
-						formated = format_string(f, tmp);
+					g_free(quote_name);
 				}
-
-				print_window_w(targetwnd, EKG_WINACT_RSS, "nntp_message_body", formated ? formated : tmp);
-				xfree(formated);
+				if (f && f[0] != '\0')
+					formated = format_string(f, tmp);
 			}
-			xfree(org);
-		} else {
-			print_window_w(targetwnd, EKG_WINACT_RSS, "nntp_message_body", body);
+
+			print_window_w(targetwnd, EKG_WINACT_RSS, "nntp_message_body", formated ? formated : tmp);
+			g_free(formated);
 		}
+		g_free(org);
 	}
 
 	print_window_w(targetwnd, EKG_WINACT_RSS, "nntp_message_footer");
@@ -627,7 +632,7 @@ NNTP_HANDLER(nntp_message_process) {			/* 220, 221, 222 */
 			/* Content-Type */
 			if (!xstrcmp(key, "Content-Type") && (tmp=xstrstr(value, "charset="))) {
 				char *end = xstrchr(tmp, ';');
-				if (!end) 
+				if (!end)
 					end = value + xstrlen(value) + 1;
 
 				tmp += 8;
