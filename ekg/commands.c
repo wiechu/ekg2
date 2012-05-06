@@ -574,6 +574,7 @@ static WATCHER_LINE(cmd_exec_watch_handler)	/* sta³y */
 		return -1;
 
 	if (type == 1) {
+		close(fd);
 		if ((i->ref--) > 0)
 			return 0;
 
