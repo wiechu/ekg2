@@ -377,6 +377,7 @@ static void timer_destroy_notify(gpointer data) {
 static gboolean timer_wrapper(gpointer data) {
 	struct ekg_source *t = data;
 
+	g_source_get_current_time(t->source, &(t->details.as_timer.lasttime));
 	return t->handler.as_timer(t->priv_data);
 }
 
