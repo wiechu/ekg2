@@ -570,8 +570,10 @@ static void async_resolvers(connection_data_t *cd, char *query, aresolv_t type) 
 		return;
 	}
 
-	if (pid > 0)
+	if (pid > 0) {
+		ekg_child_add(NULL, "async_resolver", pid, NULL, NULL, NULL, NULL);
 		return;
+	}
 
 	/* children */
 
