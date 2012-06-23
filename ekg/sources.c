@@ -59,7 +59,7 @@ struct ekg_source {
 		} as_child;
 
 		struct {
-			GTimeVal lasttime;
+			gint64 lasttime;
 			guint64 interval;
 			/* persist arg is deprecated, and mostly unused
 			 * however, /at uses it, and so does xmsg plugin
@@ -307,6 +307,16 @@ ekg_child_t ekg_child_add(plugin_t *plugin, const gchar *name_format, GPid pid, 
 /*
  * Timers
  */
+static gint64 xxx_source_get_time(GSource *source) {
+#if GLIB_CHECK_VERSION(2, 28, 0)
+	// since 2.28
+	return g_source_get_time(source);
+#else
+	GTimeVal t;
+	g_source_get_current_time(source, &t);
+	return 1000000 * t.tv_sec + t.tv_usec;
+#endif
+}
 
 static void timer_wrapper_destroy_notify(gpointer data) {
 	struct ekg_source *t = data;
@@ -320,7 +330,7 @@ static void timer_wrapper_destroy_notify(gpointer data) {
 static gboolean timer_wrapper_old(gpointer data) {
 	struct ekg_source *t = data;
 
-	g_source_get_current_time(t->source, &(t->details.as_timer.lasttime));
+	t->details.as_timer.lasttime = xxx_source_get_time(t->source);
 	return !(t->handler.as_old_timer(0, t->priv_data) == -1 || !t->details.as_timer.persist);
 }
 
@@ -333,7 +343,7 @@ ekg_timer_t timer_add_ms(plugin_t *plugin, const gchar *name, guint period, gboo
 	timers = g_slist_prepend(timers, t);
 
 	source_set_id(t, g_timeout_add_full(G_PRIORITY_DEFAULT, period, timer_wrapper_old, t, timer_wrapper_destroy_notify));
-	g_source_get_current_time(t->source, &(t->details.as_timer.lasttime));
+	t->details.as_timer.lasttime = xxx_source_get_time(t->source);
 
 	return t;
 }
@@ -377,7 +387,7 @@ static void timer_destroy_notify(gpointer data) {
 static gboolean timer_wrapper(gpointer data) {
 	struct ekg_source *t = data;
 
-	g_source_get_current_time(t->source, &(t->details.as_timer.lasttime));
+	t->details.as_timer.lasttime = xxx_source_get_time(t->source);
 	return t->handler.as_timer(t->priv_data);
 }
 
@@ -424,7 +434,7 @@ ekg_timer_t ekg_timer_add(plugin_t *plugin, const gchar *name_format, guint64 in
 		id = g_timeout_add_full(G_PRIORITY_DEFAULT, interval, timer_wrapper, t, timer_destroy_notify);
 
 	source_set_id(t, id);
-	g_source_get_current_time(t->source, &(t->details.as_timer.lasttime));
+	t->details.as_timer.lasttime = xxx_source_get_time(t->source);
 
 	return t;
 }
@@ -498,28 +508,16 @@ gint timer_remove_user(gint (*handler)(gint, gpointer)) {
 }
 
 static gchar *timer_next_call(struct ekg_source *t) {
-	long usec, sec, minutes = 0, hours = 0, days = 0;
-	GTimeVal tv, ends;
+	long msec, sec, minutes = 0, hours = 0, days = 0;
+	gint64 tms;
 
-	ends.tv_sec = t->details.as_timer.lasttime.tv_sec + (t->details.as_timer.interval / 1000);
-	ends.tv_usec = t->details.as_timer.lasttime.tv_usec + ((t->details.as_timer.interval % 1000) * 1000);
-	if (ends.tv_usec > 1000000) {
-		ends.tv_usec -= 1000000;
-		ends.tv_sec++;
-	}
+	tms = ((t->details.as_timer.lasttime - xxx_source_get_time(t->source)) / 1000) + t->details.as_timer.interval;
 
-	g_source_get_current_time(t->source, &tv);
-
-	if (tv.tv_sec - ends.tv_sec > 2)
+	if (tms < 0)
 		return g_strdup("?");
 
-	if (ends.tv_usec < tv.tv_usec) {
-		sec = ends.tv_sec - tv.tv_sec - 1;
-		usec = (ends.tv_usec - tv.tv_usec + 1000000) / 1000;
-	} else {
-		sec = ends.tv_sec - tv.tv_sec;
-		usec = (ends.tv_usec - tv.tv_usec) / 1000;
-	}
+	sec	= tms / 1000;
+	msec	= tms % 1000;
 
 	if (sec > 86400) {
 		days = sec / 86400;
@@ -537,15 +535,15 @@ static gchar *timer_next_call(struct ekg_source *t) {
 	}
 
 	if (days)
-		return saprintf("%ldd %ldh %ldm %ld.%.3ld", days, hours, minutes, sec, usec);
+		return saprintf("%ldd %ldh %ldm %ld.%.3ld", days, hours, minutes, sec, msec);
 
 	if (hours)
-		return saprintf("%ldh %ldm %ld.%.3ld", hours, minutes, sec, usec);
+		return saprintf("%ldh %ldm %ld.%.3ld", hours, minutes, sec, msec);
 
 	if (minutes)
-		return saprintf("%ldm %ld.%.3ld", minutes, sec, usec);
+		return saprintf("%ldm %ld.%.3ld", minutes, sec, msec);
 
-	return saprintf("%ld.%.3ld", sec, usec);
+	return saprintf("%ld.%.3ld", sec, msec);
 }
 
 static inline gint timer_match_name(gconstpointer li, gconstpointer ui) {
@@ -591,14 +589,14 @@ static void timer_debug_print(gpointer data, gpointer user_data) {
 	tmp = timer_next_call(t);
 
 	/* XXX: pointer truncated */
-	snprintf(buf, sizeof(buf), "%-11s %-20s %-2d %-8" G_GINT64_MODIFIER "u %.8x %-20s", plugin, t->name, t->details.as_timer.persist, t->details.as_timer.interval, GPOINTER_TO_UINT(t->handler.as_old_timer), tmp);
+	snprintf(buf, sizeof(buf), "%-11s %-20s %-2d %8" G_GINT64_MODIFIER "u %.8x %-20s", plugin, t->name, t->details.as_timer.persist, t->details.as_timer.interval, GPOINTER_TO_UINT(t->handler.as_old_timer), tmp);
 	printq("generic", buf);
 	g_free(tmp);
 }
 
 COMMAND(cmd_debug_timers) {
 /* XXX, */
-	printq("generic_bold", ("plugin      name               pers peri     handler  next"));
+	printq("generic_bold", ("plugin      name              pers  interval handler  next"));
 
 	g_slist_foreach(timers, timer_debug_print, &quiet);
 	return 0;
@@ -623,7 +621,7 @@ struct timer_print_args {
 
 static void timer_print(gpointer data, gpointer user_data) {
 	struct ekg_source *t = data;
-	GTimeVal ends, tv;
+	time_t ends;
 	struct tm *at_time;
 	char tmp[100], tmp2[150];
 	time_t sec, minutes = 0, hours = 0, days = 0;
@@ -637,11 +635,8 @@ static void timer_print(gpointer data, gpointer user_data) {
 
 	(*args->count)++;
 
-	g_source_get_current_time(t->source, &tv);
-
-	ends.tv_sec = t->details.as_timer.lasttime.tv_sec + (t->details.as_timer.interval / 1000);
-	ends.tv_usec = t->details.as_timer.lasttime.tv_usec + ((t->details.as_timer.interval % 1000) * 1000);
-	at_time = localtime((time_t *) &ends);
+	ends = ((t->details.as_timer.lasttime / 1000) + t->details.as_timer.interval) / 1000;
+	at_time = localtime(&ends);
 	if (!strftime(tmp, sizeof(tmp), format_find("at_timestamp"), at_time) && format_exists("at_timestamp"))
 		xstrcpy(tmp, "TOOLONG");
 
@@ -867,8 +862,7 @@ COMMAND(cmd_at)
 				guint d = t->details.as_timer.interval;
 				t->details.as_timer.interval = freq * 1000;
 				d -= t->details.as_timer.interval;
-				t->details.as_timer.lasttime.tv_sec += (d / 1000);
-				t->details.as_timer.lasttime.tv_usec += ((d % 1000) * 1000);
+				t->details.as_timer.lasttime += (d * 1000);
 			}
 			if (!in_autoexec)
 				config_changed = 1;
@@ -1141,7 +1135,7 @@ void timers_write(GOutputStream *f) {
 
 		if (t->handler.as_old_timer == timer_handle_at) {
 			char buf[100];
-			time_t foo = (time_t) t->details.as_timer.lasttime.tv_sec + (t->details.as_timer.interval / 1000);
+			time_t foo = (time_t) (((t->details.as_timer.lasttime / 1000) + t->details.as_timer.interval) / 1000);
 			struct tm *tt = localtime(&foo);
 
 			strftime(buf, sizeof(buf), "%G%m%d%H%M.%S", tt);
@@ -1156,7 +1150,7 @@ void timers_write(GOutputStream *f) {
 			if (t->details.as_timer.persist)
 				foo = saprintf("*/%s", ekg_itoa(t->details.as_timer.interval / 1000));
 			else
-				foo = saprintf("%s", ekg_itoa(t->details.as_timer.lasttime.tv_sec + (t->details.as_timer.interval / 1000)));
+				foo = saprintf("%s", ekg_itoa(((t->details.as_timer.lasttime / 1000) + t->details.as_timer.interval) / 1000));
 
 			ekg_fprintf(f, "timer %s %s %s\n", name, foo, (char*)(t->priv_data));
 
