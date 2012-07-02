@@ -218,6 +218,10 @@ static COMMAND(gg_command_connect) {
 		p.password = (char*) password;
 		p.image_size = gg_config_image_size;
 
+#ifndef NO_POSIX_SYSTEM
+		p.resolver = GG_RESOLVER_FORK;
+#endif
+
 		_status = GG_S(_status);
 		if (session_int_get(session, "private"))
 			_status |= GG_STATUS_FRIENDS_MASK;
