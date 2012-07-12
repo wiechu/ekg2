@@ -184,7 +184,7 @@ void window_switch(int id) {
 		if (id != window_current->id)
 			window_last_id = window_current->id;
 
-		if (w->id != 0 && w->session)
+		if (w->id != WINDOW_DEBUG_ID && w->session)
 			session_current = w->session;
 
 		window_current = w;
@@ -196,7 +196,7 @@ void window_switch(int id) {
 			ul_refresh	= 1;
 		}
 
-		if (!(config_make_window & 3) && w->id == 1 && session_current) {
+		if (!(config_make_window & 3) && w->id == WINDOW_STATUS_ID && session_current) {
 			userlist_t *ul;
 			session_t *s = session_current;
 
@@ -274,7 +274,7 @@ window_t *window_new(const char *target, session_t *session, int new_id) {
 			window_t *w = v;
 			v = v->next;		/* goto next window */
 
-			if (w->id < 2)					/* [RESERVED CLASS: 0-1]	0 for __debug, 1 for __status */
+			if (w->id <= WINDOW_STATUS_ID)			/* [RESERVED CLASS: 0-1]	0 for __debug, 1 for __status */
 				continue;
 
 			/* if current window is larger than current id... than we found good id! */
@@ -294,7 +294,7 @@ window_t *window_new(const char *target, session_t *session, int new_id) {
 
 	/* debug window */
 	if (new_id == -1)
-		new_id = 0;
+		new_id = WINDOW_DEBUG_ID;
 
 	w = xmalloc(sizeof(window_t));
 
@@ -445,7 +445,7 @@ void window_kill(window_t *w) {
 			if (w->floating)
 				continue;
 			/* XXX, i'm leaving it. however if we set sort_windows for example when we have: windows: 1, 3, 5, 7 and we will remove 3.. We'll still have: 1, 4, 6 not: 1, 2, 3 bug? */
-			if (w->id > 1 && w->id > id)
+			if (w->id > WINDOW_STATUS_ID && w->id > id)
 				w->id--;
 		}
 	}
@@ -557,8 +557,8 @@ char *window_target(window_t *window) {
 	if (!window)			return "__current";
 
 	if (window->target)		return window->target;
-	else if (window->id == 1)	return "__status";
-	else if (window->id == 0)	return "__debug";
+	else if (window->id == WINDOW_STATUS_ID)	return "__status";
+	else if (window->id == WINDOW_DEBUG_ID)		return "__debug";
 	else				return "";
 }
 

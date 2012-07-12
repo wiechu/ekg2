@@ -636,9 +636,8 @@ int main(int argc, char **argv)
 		theme_init();
 
 	window_debug	= window_new(NULL, NULL, -1);			/* debugowanie */
-	window_status	= window_new(NULL, NULL, 1);			/* okno stanu */
+	window_status	= window_new(NULL, NULL, WINDOW_STATUS_ID);	/* okno stanu */
 	window_current	= window_status;
-
 #if 0
 	if (!no_global_config)
 		config_read(SYSCONFDIR "/ekg2.conf");

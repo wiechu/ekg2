@@ -1138,7 +1138,7 @@ COMMAND(session_command)
 		}
 		if (window_current->session == s)
 			return 0; /* we don't need to switch to the same session */
-		if (window_current->target && (window_current->id != 0))
+		if (window_current->target && (window_current->id != WINDOW_DEBUG_ID))
 			command_exec(NULL, NULL, "/window switch 1", 2);
 
 		window_session_set(window_current, s);

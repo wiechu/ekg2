@@ -773,7 +773,7 @@ static QUERY(protocol_message)
 			 */
 			w = window_find_s(session_class, uid);
 
-			if (w ? (window_current->id != w->id) : (window_current->id != 1))
+			if (w ? (window_current->id != w->id) : (window_current->id != WINDOW_STATUS_ID))
 				userlist->blink = 1;
 		}
 

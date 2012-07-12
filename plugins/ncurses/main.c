@@ -331,7 +331,7 @@ static QUERY(ncurses_variable_changed)
 			if (w->floating)
 				continue;
 
-			if (w->id > 1)
+			if (w->id > WINDOW_STATUS_ID)
 				w->id = id++;
 		}
 	} else if (!xstrcasecmp(name, "timestamp") || !xstrcasecmp(name, "timestamp_show")) {
