@@ -523,63 +523,65 @@ static int logs_buffer_raw_display(const char *file, int items) {
  */
 
 static char *logs_prepare_path(session_t *session, const char *logs_path, const char *uid, time_t sent) {
-	char *uidtmp, datetime[5];
+	char *uidtmp = g_strdup(uid);
 	struct tm *tm = NULL;
 	string_t buf;
 
 	if (!logs_path)
 		return NULL;
 
-	buf = string_init(NULL);
+	if (xstrchr(uidtmp, '/'))
+		*(xstrchr(uidtmp, '/')) = 0; // strip resource
+
+	buf = g_string_new(NULL);
 
 	while (*logs_path) {
-		if ((char)*logs_path == '%' && (logs_path+1) != NULL) {
-			switch (*(logs_path+1)) {
-				case 'S':	string_append_n(buf, session ? session->uid : "_null_", -1);
+		if (*logs_path == '%' && *(logs_path+1) != '\0') {
+			char *append = NULL;
+			logs_path++;
+			switch (*logs_path) {
+				case 'S':	append = g_strdup(session ? session->uid : "_null_");
 						break;
-				case 'P':	string_append_n(buf, config_profile ? config_profile : "_default_", -1);
+				case 'P':	append = g_strdup(config_profile ? config_profile : "_default_");
 						break;
-				case 'u':	uidtmp = xstrdup(get_uid(session, uid));
-						goto attach; /* avoid code duplication */
-				case 'U':	uidtmp = xstrdup(get_nickname(session, uid));
-attach:
-						if (!uidtmp) uidtmp = xstrdup(uid);
-
-						if (xstrchr(uidtmp, '/'))
-							*(xstrchr(uidtmp, '/')) = 0; // strip resource
-						string_append_n(buf, uidtmp ? uidtmp : uid, -1);
-						xfree(uidtmp);
+				case 'U':
+				case 'u':	append = g_strdup(*logs_path=='u' ? get_uid(session, uid) : get_nickname(session, uid));
+						if (!append)
+							append = g_strdup(uidtmp);
 						break;
 				case 'Y':	if (!tm) tm = localtime(&sent);
-							snprintf(datetime, 5, "%4d", tm->tm_year+1900);
-						string_append_n(buf, datetime, 4);
+						append = g_strdup_printf("%4d", tm->tm_year+1900);
 						break;
 				case 'M':	if (!tm) tm = localtime(&sent);
-							snprintf(datetime, 3, "%02d", tm->tm_mon+1);
-						string_append_n(buf, datetime, 2);
+						append = g_strdup_printf("%02d", tm->tm_mon+1);
 						break;
 				case 'D':	if (!tm) tm = localtime(&sent);
-							snprintf(datetime, 3, "%02d", tm->tm_mday);
-						string_append_n(buf, datetime, 2);
+						append = g_strdup_printf("%02d", tm->tm_mday);
 						break;
-				default:	string_append_c(buf, *(logs_path+1));
+				default:	string_append_c(buf, *logs_path);
 			};
+			if (append) {
+				// XXX g_uri_escape_string( , , allow_utf8) ?
+				char *tmp = g_uri_escape_string(append, G_URI_RESERVED_CHARS_ALLOWED_IN_PATH_ELEMENT, TRUE);
+				g_string_append(buf, tmp);
+				g_free(tmp);
+				g_free(append);
+			}
 
-			logs_path++;
 		} else if (*logs_path == '~' && (*(logs_path+1) == '/' || *(logs_path+1) == '\0')) {
-			string_append_n(buf, home_dir, -1);
+			g_string_append(buf, home_dir);
 			//string_append_c(buf, '/');
 		} else
 			string_append_c(buf, *logs_path);
 		logs_path++;
 	};
 
-	// sanityzacja sciezki - wywalic "../", zamienic znaki spec. na inne
-	// zamieniamy szkodliwe znaki na minusy, spacje na podkreslenia
-	// TODO
+	g_free(uidtmp);
+
+	// TODO sanityzacja sciezki - wywalic "../",
 	xstrtr(buf->str, ' ', '_');
 
-	return string_free(buf, 0);
+	return g_string_free(buf, FALSE);
 }
 
 /*
