@@ -1091,13 +1091,6 @@ static QUERY(logs_handler_raw) {
 	if (!config_logs_log_raw) return 0;
 	if (!w || !line || w->id == 0) return 0;	/* don't log debug window */
 
-	/* if profile || sesion hasgot '/' we are in trouble */
-	/* XXX, what about changing / to somethink different? */
-	if (xstrchr(config_profile, '/') || xstrchr(session_uid_get(w->session), '/') || xstrchr(get_uid(w->session, window_target(w)), '/')) {
-		debug_error("logs_handler_raw() %s %s %s cannot be saved\n", config_profile, session_uid_get(w->session), get_uid(w->session, window_target(w)));
-		return 0;
-	}
-
 	/* line->str + line->attr == ascii str with formats */
 	path = logs_prepare_path(w->id != 1 ? w->session : NULL, "~/.ekg2/logs/__internal__/%P/%S/%u", window_target(w), 0);
 	str  = fstring_reverse(line);
@@ -1120,14 +1113,6 @@ static QUERY(logs_handler_newwin) {
 		FILE *f;
 		char *line;
 		char *path;
-
-		/* if profile || sesion hasgot '/' we are in trouble */
-		/* XXX, what about changing / to somethink different? */
-
-		if (xstrchr(config_profile, '/') || xstrchr(session_uid_get(w->session), '/') || xstrchr(get_uid(w->session, window_target(w)), '/')) {
-			debug_error("logs_handler_newwin() %s %s %s cannot be restored\n", config_profile, session_uid_get(w->session), get_uid(w->session, window_target(w)));
-			return 0;
-		}
 
 		path = logs_prepare_path(w->id != 1 ? w->session : NULL, "~/.ekg2/logs/__internal__/%P/%S/%u", window_target(w), 0 /* time(NULL) */ );
 		debug("logs_handler_newwin() loading buffer from: %s\n", __(path));
