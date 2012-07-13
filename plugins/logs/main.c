@@ -1089,10 +1089,11 @@ static QUERY(logs_handler_raw) {
 	char *str;
 
 	if (!config_logs_log_raw) return 0;
-	if (!w || !line || w->id == 0) return 0;	/* don't log debug window */
+	if (!w || !line || w->id == WINDOW_DEBUG_ID || w->id == WINDOW_STATUS_ID || w->id == WINDOW_CONTACTS_ID)
+		return 0;
 
 	/* line->str + line->attr == ascii str with formats */
-	path = logs_prepare_path(w->id != 1 ? w->session : NULL, "~/.ekg2/logs/__internal__/%P/%S/%u", window_target(w), 0);
+	path = logs_prepare_path(w->session, "~/.ekg2/logs/__internal__/%P/%S/%u", window_target(w), 0);
 	str  = fstring_reverse(line);
 
 	buffer_add(&buffer_lograw, path, str);
@@ -1109,12 +1110,12 @@ static QUERY(logs_handler_newwin) {
 /* w->floating */
 
 	logs_window_new(w);
-	if (config_logs_log_raw) {
+	if (config_logs_log_raw && w->id != WINDOW_STATUS_ID && w->id != WINDOW_CONTACTS_ID) {
 		FILE *f;
 		char *line;
 		char *path;
 
-		path = logs_prepare_path(w->id != 1 ? w->session : NULL, "~/.ekg2/logs/__internal__/%P/%S/%u", window_target(w), 0 /* time(NULL) */ );
+		path = logs_prepare_path(w->session, "~/.ekg2/logs/__internal__/%P/%S/%u", window_target(w), 0 /* time(NULL) */ );
 		debug("logs_handler_newwin() loading buffer from: %s\n", __(path));
 
 		f = logs_open_file(path, LOG_FORMAT_RAW);
