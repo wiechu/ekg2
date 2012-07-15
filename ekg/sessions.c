@@ -777,6 +777,14 @@ int session_set(session_t *s, const char *key, const char *value) {
 	return 0;
 
 notify:
+	{
+		char *__suid = g_strdup(s->uid);
+		char *__name = g_strdup(key);
+		query_emit(NULL, "session-variable-changed", &__suid, &__name);
+		g_free(__name);
+		g_free(__suid);
+	}
+
 	if (pa && pa->notify)		/* XXX: notify only when ret == 0 ? */
 		pa->notify(s, key);
 

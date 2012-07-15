@@ -176,6 +176,11 @@ static const query_def_t core_query_list[] = {
 		/* XXX */
 		QUERY_ARG_END } },
 
+	{ NULL, "session-variable-changed", 0, {
+		QUERY_ARG_CHARP,		/* session uid */
+		QUERY_ARG_CHARP,		/* session variable */
+		QUERY_ARG_END } },
+
 	{ NULL, "ekg-sigusr1", 0, {
 		QUERY_ARG_END } },		/* no params */
 
