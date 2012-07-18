@@ -1,7 +1,7 @@
 /* $Id$ */
 
 /*
- *  (C) Copyright 2003-2004 Leszek Krupiñski <leafnode@wafel.com>
+ *  (C) Copyright 2003-2004 Leszek KrupiÅ„ski <leafnode@wafel.com>
  *		       2005 Adam Mikuta <adamm@ekg2.org>
  *
  *  This program is free software; you can redistribute it and/or modify

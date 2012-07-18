@@ -2,8 +2,8 @@
 
 /*
  *  (C) Copyright 2003-2005 Tomasz Torcz <zdzichu@irc.pl>
- *			    Leszek Krupiñski <leafnode@wafel.com>
- *			    Adam Kuczyñski <dredzik@ekg2.org>
+ *			    Leszek KrupiÅ„ski <leafnode@wafel.com>
+ *			    Adam KuczyÅ„ski <dredzik@ekg2.org>
  *			    Adam Mikuta <adamm@ekg2.org>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -59,7 +59,7 @@ static logs_log_t *log_curlog = NULL;
 /*
  * log_escape()
  *
- * je¶li trzeba, eskejpuje tekst do logów.
+ * jeÅ›li trzeba, eskejpuje tekst do logÃ³w.
  *
  *  - str - tekst.
  *
@@ -516,10 +516,10 @@ static int logs_buffer_raw_display(const char *file, int items) {
 /*
  * przygotowanie nazwy pliku bez rozszerzenia
  * %S - sesja nasza
- * %u - u¿ytkownik (uid), z którym piszemy
- * %U - u¿ytkownik (nick)   -||-
- * %Y, %M, %D - rok, miesi±c, dzieñ
- * zwraca ¶cie¿kê, która nale¿y rêcznie zwolniæ przez xfree()
+ * %u - uÅ¼ytkownik (uid), z ktÃ³rym piszemy
+ * %U - uÅ¼ytkownik (nick)   -||-
+ * %Y, %M, %D - rok, miesiÄ…c, dzieÅ„
+ * zwraca Å›cieÅ¼kÄ™, ktÃ³ra naleÅ¼y rÄ™cznie zwolniÄ‡ przez xfree()
  */
 
 static char *logs_prepare_path(session_t *session, const char *logs_path, const char *uid, time_t sent) {
@@ -586,9 +586,9 @@ static char *logs_prepare_path(session_t *session, const char *logs_path, const 
 
 /*
  * otwarcie pliku do zapisu/odczytu
- * tworzy wszystkie katalogi po drodze, je¶li nie istniej± i mkdir =1
+ * tworzy wszystkie katalogi po drodze, jeÅ›li nie istniejÄ… i mkdir =1
  * ff - xml 2 || irssi 3 || simple 1
- * zwraca numer deskryptora b±d¼ NULL
+ * zwraca numer deskryptora bÄ…dÅº NULL
  */
 
 static FILE* logs_open_file(char *path, int ff) {
@@ -643,8 +643,8 @@ static FILE* logs_open_file(char *path, int ff) {
 	else if (ff == LOG_FORMAT_RAW)		g_strlcat(fullname, ".raw", PATH_MAX);
 
 #ifdef HAVE_LIBZ /* z log.c i starego ekg1. Wypadaloby zaimplementowac... */
-	/* nawet je¶li chcemy gzipowane logi, a istnieje nieskompresowany log,
-	 * olewamy kompresjê. je¶li loga nieskompresowanego nie ma, dodajemy
+	/* nawet jeÅ›li chcemy gzipowane logi, a istnieje nieskompresowany log,
+	 * olewamy kompresjÄ™. jeÅ›li loga nieskompresowanego nie ma, dodajemy
 	 * rozszerzenie .gz i balujemy. */
 	if (config_log & 4) {
 		struct stat st;
@@ -726,8 +726,8 @@ static void logs_simple(FILE *file, const char *session, const char *uid, const 
 	};
 
 	/*
-	 * chatsend,<numer>,<nick>,<czas>,<tre¶æ>
-	 * chatrecv,<numer>,<nick>,<czas_otrzymania>,<czas_nadania>,<tre¶æ>
+	 * chatsend,<numer>,<nick>,<czas>,<treÅ›Ä‡>
+	 * chatrecv,<numer>,<nick>,<czas_otrzymania>,<czas_nadania>,<treÅ›Ä‡>
 	 * status,<numer>,<nick>,[<ip>],<time>,<status>,<descr>
 	 */
 
@@ -897,8 +897,8 @@ static void logs_irssi(FILE *file, const char *session, const char *uid, const c
 }
 
 /*
- * zwraca na przemian jeden z dwóch statycznych buforów, wiêc w obrêbie
- * jednego wyra¿enia mo¿na wywo³aæ tê funkcjê dwukrotnie.
+ * zwraca na przemian jeden z dwÃ³ch statycznych buforÃ³w, wiÄ™c w obrÄ™bie
+ * jednego wyraÅ¼enia moÅ¼na wywoÅ‚aÄ‡ tÄ™ funkcjÄ™ dwukrotnie.
  */
 /* w sumie starczylby 1 statyczny bufor ... */
 static const char *prepare_timestamp_format(const char *format, time_t t)  {
