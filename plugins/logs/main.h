@@ -3,6 +3,7 @@
 /*
  *  (C) Copyright 2003-2004 Leszek Krupiński <leafnode@wafel.com>
  *		       2005 Adam Mikuta <adamm@ekg2.org>
+ *		       2012 Wiesław Ochmiński <wiechu@wiechu.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License Version

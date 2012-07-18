@@ -5,6 +5,7 @@
  *			    Leszek Krupiński <leafnode@wafel.com>
  *			    Adam Kuczyński <dredzik@ekg2.org>
  *			    Adam Mikuta <adamm@ekg2.org>
+ *		       2012 Wiesław Ochmiński <wiechu@wiechu.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License Version
@@ -52,6 +53,8 @@
 
 PLUGIN_DEFINE(logs, PLUGIN_LOG, NULL);
 
+#define EKG_RAW_LOGS_PATH "~/.ekg2/logs/__internal__/%P/%S/%u"
+
 static struct buffer_info buffer_lograw = { NULL, 0, 0 };
 
 static logs_log_t *log_curlog = NULL;
@@ -69,27 +72,22 @@ static char *log_escape(const char *str)
 {
 	const char *p;
 	char *res, *q;
-	int size, needto = 0;
+	int len, esclen;
 
 	if (!str)
 		return NULL;
 
+	len = esclen = strlen(str);
+
 	for (p = str; *p; p++) {
-		if (*p == '"' || *p == '\'' || *p == '\r' || *p == '\n' || *p == ',')
-			needto = 1;
+		if (*p == '"' || *p == '\'' || *p == '\r' || *p == '\n' || *p == ',' || *p == '\\')
+			esclen++;
 	}
 
-	if (!needto)
-		return xstrdup(str);
+	if (len == esclen)
+		return g_strdup(str);
 
-	for (p = str, size = 0; *p; p++) {
-		if (*p == '"' || *p == '\'' || *p == '\r' || *p == '\n' || *p == '\\')
-			size += 2;
-		else
-			size++;
-	}
-
-	q = res = xmalloc(size + 3);
+	q = res = xmalloc(esclen + 3);
 
 	*q++ = '"';
 
@@ -685,6 +683,18 @@ static FILE* logs_open_file(char *path, int ff) {
 	return fopen(fullname, "a+");
 }
 
+static const char *logs_class2str(msgclass_t class) {
+	switch (class) {
+		case EKG_MSGCLASS_MESSAGE	: return "msgrecv";
+		case EKG_MSGCLASS_CHAT		: return "chatrecv";
+		case EKG_MSGCLASS_SENT		: return "msgsend";
+		case EKG_MSGCLASS_SENT_CHAT	: return "chatsend";
+		case EKG_MSGCLASS_SYSTEM	: return "msgsystem";
+		case EKG_MSGCLASS_PRIV_STATUS	: return "status";
+		default				: return "chatrecv";
+	};
+}
+
 /*
  * zapis w formacie znanym z ekg1
  * typ,uid,nickname,timestamp,{timestamp wyslania dla odleglych}, text
@@ -708,22 +718,8 @@ static void logs_simple(FILE *file, const char *session, const char *uid, const 
 	if (!gotten_uid)	gotten_uid = uid;
 	if (!gotten_nickname)	gotten_nickname = uid;
 
-	switch (class) {
-		case EKG_MSGCLASS_MESSAGE	: fputs("msgrecv,", file);
-						  break;
-		case EKG_MSGCLASS_CHAT		: fputs("chatrecv,", file);
-						  break;
-		case EKG_MSGCLASS_SENT		: fputs("msgsend,", file);
-						  break;
-		case EKG_MSGCLASS_SENT_CHAT	: fputs("chatsend,", file);
-						  break;
-		case EKG_MSGCLASS_SYSTEM	: fputs("msgsystem,", file);
-						  break;
-		case EKG_MSGCLASS_PRIV_STATUS	: fputs("status,", file);
-						  break;
-		default				: fputs("chatrecv,", file);
-						  break;
-	};
+	fputs(logs_class2str(class), file);
+	fputc(',', file);
 
 	/*
 	 * chatsend,<numer>,<nick>,<czas>,<treść>
@@ -810,14 +806,7 @@ static void logs_xml(FILE *file, const char *session, const char *uid, const cha
 
 	fputs("<message class=\"",file);
 
-	switch (class) {
-		case EKG_MSGCLASS_MESSAGE	: fputs("msgrecv", file);	  break;
-		case EKG_MSGCLASS_CHAT		: fputs("chatrecv", file);	  break;
-		case EKG_MSGCLASS_SENT		: fputs("msgsend", file);	  break;
-		case EKG_MSGCLASS_SENT_CHAT	: fputs("chatsend", file);	  break;
-		case EKG_MSGCLASS_SYSTEM	: fputs("msgsystem", file);	  break;
-		default				: fputs("chatrecv", file);	  break;
-	};
+	fputs(logs_class2str(class), file);
 
 	fputs("\">\n", file);
 
@@ -1093,7 +1082,7 @@ static QUERY(logs_handler_raw) {
 		return 0;
 
 	/* line->str + line->attr == ascii str with formats */
-	path = logs_prepare_path(w->session, "~/.ekg2/logs/__internal__/%P/%S/%u", window_target(w), 0);
+	path = logs_prepare_path(w->session, EKG_RAW_LOGS_PATH, window_target(w), 0);
 	str  = fstring_reverse(line);
 
 	buffer_add(&buffer_lograw, path, str);
@@ -1115,7 +1104,7 @@ static QUERY(logs_handler_newwin) {
 		char *line;
 		char *path;
 
-		path = logs_prepare_path(w->session, "~/.ekg2/logs/__internal__/%P/%S/%u", window_target(w), 0 /* time(NULL) */ );
+		path = logs_prepare_path(w->session, EKG_RAW_LOGS_PATH, window_target(w), 0 /* time(NULL) */ );
 		debug("logs_handler_newwin() loading buffer from: %s\n", __(path));
 
 		f = logs_open_file(path, LOG_FORMAT_RAW);
