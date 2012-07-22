@@ -58,13 +58,14 @@ static char *logs_prepare_path(session_t *session, const char *logs_path, const 
 static const char *prepare_timestamp_format(const char *format, time_t t);
 
 static logs_log_t *logs_log_find(const char *session, const char *uid, int create);
-static logs_log_t *logs_log_new(logs_log_t *l, const char *session, const char *uid);
+static logs_log_t *logs_log_new(logs_log_t *l, const char *session, const char *uid, gboolean raw);
 
 static FILE *logs_open_file(char *path, int ff);
 
 static void logs_simple(FILE *file, const char *session, const char *uid, const char *text, time_t sent, msgclass_t class, const char *status);
 static void logs_xml	(FILE *file, const char *session, const char *uid, const char *text, time_t sent, msgclass_t class);
 static void logs_irssi(FILE *file, const char *session, const char *uid, const char *text, time_t sent, msgclass_t class);
+static void logs_irssi_sysmsg(FILE *file, const char *text);
 #if 0 /* never started? */
 static void logs_gaim();
 #endif
