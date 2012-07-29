@@ -43,17 +43,40 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef HAVE_LIBZ
-#include <zlib.h>
-#endif
-
 #include "main.h"
-
-#undef HAVE_LIBZ		/* disable zlib fjuczer */
 
 PLUGIN_DEFINE(logs, PLUGIN_LOG, NULL);
 
 #define EKG_RAW_LOGS_PATH "~/.ekg2/logs/__internal__/%P/%S/%u"
+
+#define EKG_EMPTY_XML_LOG	"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
+				"<!DOCTYPE ekg2log PUBLIC \"-//ekg2log//DTD ekg2log 1.0//EN\" " \
+				"\"http://www.ekg2.org/DTD/ekg2log.dtd\">\n" \
+				"<ekg2log xmlns=\"http://www.ekg2.org/DTD/\">\n" \
+				"</ekg2log>\n"
+
+	/* irssi style info messages */
+#define IRSSI_LOG_EKG2_OPENED	"--- Log opened %a %b %d %H:%M:%S %Y"	/* defaultowy log_open_string irssi , jak cos to dodac zmienna... */
+#define IRSSI_LOG_EKG2_CLOSED	"--- Log closed %a %b %d %H:%M:%S %Y"	/* defaultowy log_close_string irssi, jak cos to dodac zmienna... */
+#define IRSSI_LOG_DAY_CHANGED	"--- Day changed %a %b %d %Y"		/* defaultowy log_day_changed irssi , jak cos to dodac zmienna... */
+
+/*
+ *	variables
+ */
+
+static GPtrArray *logs_logs = NULL;
+
+static int open_files_count = 0;
+
+static int config_logs_log;
+static int config_logs_log_raw;
+static int config_logs_log_ignored;		// XXX unused
+static int config_logs_log_status;
+static int config_logs_remind_number = 0;
+static int config_logs_max_files = 7;
+static char *config_logs_path;
+static char *config_logs_timestamp;
+static gchar *config_logs_encoding;
 
 /*
  * log_escape()
@@ -199,7 +222,7 @@ static char *fstring_reverse(fstring_t *fstr) {
 }
 
 /*
- * zwraca irssi lub simple lub xml lub NULL
+ * zwraca format
  * w zaleznosci od ustawien log_format w sesji i log:logs
  */
 
@@ -222,218 +245,394 @@ static int logs_log_format(session_t *s) {
 	return LOG_FORMAT_NONE;
 }
 
-/* zwraca 1 lub  2 lub 3 jesli cos sie zmienilo. (log_format, sciezka, t) i zmienia path w log_window_t i jak cos zamyka plik / otwiera na nowo.
- *	  0 jesli nie.
- *	  -1 jesli cos sie zjebalo.
+/*
+ * zwraca na przemian jeden z dwóch statycznych buforów, więc w obrębie
+ * jednego wyrażenia można wywołać tę funkcję dwukrotnie.
  */
+/* w sumie starczylby 1 statyczny bufor ... */
+static const char *prepare_timestamp_format(const char *format, time_t t) {
+	static char buf[2][100];
+	struct tm *tm = localtime(&t);
+	static int i = 0;
 
-static int logs_window_check(logs_log_t *ll, time_t t, gboolean raw) {
+	if (!format)
+		return ekg_itoa(t);
+
+	if (!format[0])
+		return "";
+
+	i = i % 2;
+
+	if (!strftime(buf[i], sizeof(buf[0]), format, tm))
+		return "TOOLONG";
+
+	return buf[i++];
+}
+
+/*
+ * przygotowanie nazwy pliku z rozszerzeniem
+ * %S - sesja nasza
+ * %u - użytkownik (uid), z którym piszemy
+ * %U - użytkownik (nick)   -||-
+ * %Y, %M, %D - rok, miesiąc, dzień
+ * zwraca ścieżkę, która należy ręcznie zwolnić przez xfree()
+ */
+static char *logs_prepare_fname(logs_log_t *log) {
 	session_t *s;
-	log_window_t *l = ll->lw;
-	int chan = 0;
-	int tmp;
+	const char *logs_path;
+	struct tm *tm = NULL;
+	string_t buf;
+	time_t sent = time(NULL);
 
-	if (!l || !(s = session_find(ll->session)))
+	g_return_val_if_fail(log != NULL, NULL);
+	g_return_val_if_fail(log->format != LOG_FORMAT_NONE, NULL);
+
+	logs_path = (LOG_FORMAT_RAW == log->format) ? EKG_RAW_LOGS_PATH : config_logs_path;
+
+	g_return_val_if_fail(logs_path != NULL, NULL);
+
+	buf = g_string_new(NULL);
+	s = session_find(log->session);
+
+	while (*logs_path) {
+		if (*logs_path == '%' && *(logs_path+1) != '\0') {
+			char *append = NULL;
+			logs_path++;
+			switch (*logs_path) {
+				case 'S':	append = g_strdup(s ? s->uid : "_null_");
+						break;
+				case 'P':	append = g_strdup(config_profile ? config_profile : "_default_");
+						break;
+				case 'U':
+				case 'u':	append = g_strdup(*logs_path=='u' ? log->uid : get_nickname(s, log->uid));
+						if (!append)
+							append = g_strdup(log->uid);
+						break;
+				case 'Y':	if (!tm) tm = localtime(&sent);
+						append = g_strdup_printf("%4d", tm->tm_year+1900);
+						break;
+				case 'M':	if (!tm) tm = localtime(&sent);
+						append = g_strdup_printf("%02d", tm->tm_mon+1);
+						break;
+				case 'D':	if (!tm) tm = localtime(&sent);
+						append = g_strdup_printf("%02d", tm->tm_mday);
+						break;
+				default:	g_string_append_c(buf, *logs_path);
+			};
+			if (append) {
+				// XXX g_uri_escape_string( , , allow_utf8) ?
+				char *tmp = g_uri_escape_string(append, G_URI_RESERVED_CHARS_ALLOWED_IN_PATH_ELEMENT, TRUE);
+				g_string_append(buf, tmp);
+				g_free(tmp);
+				g_free(append);
+			}
+
+		} else if (*logs_path == '~' && (*(logs_path+1) == '/' || *(logs_path+1) == '\0')) {
+			g_string_append(buf, home_dir);
+		} else
+			string_append_c(buf, *logs_path);
+		logs_path++;
+	};
+
+	switch (log->format) {
+		case LOG_FORMAT_RAW:	g_string_append(buf, ".raw");	break;
+		case LOG_FORMAT_SIMPLE:	g_string_append(buf, ".txt");	break;
+		case LOG_FORMAT_IRSSI:	g_string_append(buf, ".log");	break;
+		case LOG_FORMAT_XML:	g_string_append(buf, ".xml");	break;
+	}
+
+	// TODO sanityzacja sciezki - wywalic "../",
+	xstrtr(buf->str, ' ', '_');
+
+	return g_string_free(buf, FALSE);
+}
+
+static void logs_log_close(logs_log_t *ll) {
+
+	if (!ll || !ll->file)
+		return;
+
+	fclose(ll->file);
+	ll->file = NULL;
+	open_files_count--;
+
+	return;
+}
+
+static void logs_log_destroy(gpointer data) {
+	logs_log_t *log = data;
+
+	g_return_if_fail(log != NULL);
+
+	if ((LOG_FORMAT_IRSSI == log->format) && xstrlen(IRSSI_LOG_EKG2_CLOSED)) {
+		logs_open_file(log);
+		log->daychanged = 0;
+		logs_irssi_sysmsg(log, prepare_timestamp_format(IRSSI_LOG_EKG2_CLOSED, time(NULL)));
+	}
+
+	logs_log_close(log);
+
+	debug_function("logs_log_destroy(%d) %s\n", logs_logs->len, log->fname);
+
+	g_free(log->fname);
+	g_free(log->session);
+	g_free(log->uid);
+}
+
+/*
+ * otwarcie pliku do zapisu/odczytu
+ * tworzy wszystkie katalogi po drodze, jeśli nie istnieją i mkdir =1
+ * ff - xml 2 || irssi 3 || simple 1
+ * zwraca numer deskryptora bądź NULL
+ */
+static int logs_open_file(logs_log_t *ll) {
+
+	g_return_val_if_fail(ll != NULL, -1);
+
+	if (ll->file)
+		return fseek(ll->file, 0, SEEK_END);
+
+	g_return_val_if_fail(ll->fname != NULL, -1);
+	g_return_val_if_fail(ll->format != LOG_FORMAT_NONE, -1);
+
+// XXX temp
+debug("[logs] opening log file %s ff:%d\n", __(ll->fname), ll->format);
+
+	if (!g_file_test(ll->fname, G_FILE_TEST_IS_REGULAR) && mkdir_recursive(ll->fname, 0)) {
+		print("directory_cant_create", ll->fname, strerror(errno));
+		return -1;
+	}
+
+	if (!(ll->file = fopen(ll->fname, "a+")))
 		return -1;
 
-	if (raw)
-		l->logformat = LOG_FORMAT_RAW;
-	else if (l->logformat != (tmp = logs_log_format(s))) {
-		l->logformat = tmp;
-		chan = 1;
+	if (ll->format == LOG_FORMAT_XML) {
+		/* prepare xml file */
+		fputs(EKG_EMPTY_XML_LOG, ll->file);
 	}
-	if (!(l->path)) {
-		chan = 2;
-	} else {
-		int datechanged = 0; /* bitmaska 0x01 (dzien) 0x02 (miesiac) 0x04 (rok) */
-		struct tm *tm	= g_memdup(localtime(&(ll->t)), sizeof(struct tm));
-		struct tm *tm2	= localtime(&t);
 
-		/* sprawdzic czy dane z (tm == tm2) */
-		if (tm->tm_mday != tm2->tm_mday)	datechanged |= 0x01;
-		if (tm->tm_mon != tm2->tm_mon)		datechanged |= 0x02;
-		if (tm->tm_year != tm2->tm_year)	datechanged |= 0x04;
-		if (
-				((datechanged & 0x04) && xstrstr(config_logs_path, "%Y")) ||
-				((datechanged & 0x02) && xstrstr(config_logs_path, "%M")) ||
-				((datechanged & 0x01) && xstrstr(config_logs_path, "%D"))
-		   )
-			chan = 3;
-		/* zalogowac jak sie zmienila data */
-		if (datechanged && l->logformat == LOG_FORMAT_IRSSI) { /* yes i know it's wrong place for doing this but .... */
-			if (!(l->file))
-				l->file = logs_open_file(l->path, LOG_FORMAT_IRSSI);
-			logs_irssi_sysmsg(l->file, prepare_timestamp_format(IRSSI_LOG_DAY_CHANGED, time(NULL)));
-		}
-		xfree(tm);
+	// move ll on top
+	if (ll != g_ptr_array_index(logs_logs, logs_logs->len - 1)) {
+		g_ptr_array_set_free_func(logs_logs, NULL);
+		g_ptr_array_remove(logs_logs, ll);
+		g_ptr_array_add(logs_logs, ll);
+		g_ptr_array_set_free_func(logs_logs, logs_log_destroy);
 	}
-	ll->t = t;
 
-	if (chan > 1) {
-		char *tmp = l->path;
+	open_files_count++;
+	logs_open_files_check();
 
-		l->path = logs_prepare_path(s, raw ? EKG_RAW_LOGS_PATH : config_logs_path, ll->uid, t);
-		debug("[logs] logs_window_check chan = %d oldpath = %s newpath = %s\n", chan, __(tmp), __(l->path));
-#if 0 /* TODO: nie moze byc - bo mogl logformat sie zmienic... */
-		if (chan != 3 && !xstrcmp(tmp, l->path))  /* jesli sciezka sie nie zmienila to nie otwieraj na nowo pliku */
-			chan = -chan;
-#endif
-		xfree(tmp);
-	}
-	if (chan > 0) {
-		if (l->file) { /* jesli plik byl otwarty otwieramy go z nowa sciezka */
-			fclose(l->file); l->file = NULL;
-			l->file = logs_open_file(l->path, l->logformat);
-		}
-	}
-	return chan;
+	return fseek(ll->file, 0, SEEK_END);
 }
 
 
-static FILE *logs_window_close(logs_log_t *l, int close);	/* forward */
-
 static logs_log_t *logs_log_find(const char *session, const char *uid, gboolean raw) {
-	list_t l;
+	int i;
 
-	for (l=log_logs; l; l = l->next) {
-		logs_log_t *ll = l->data;
-		if ( (!ll->session || !xstrcmp(ll->session, session)) && !xstrcmp(ll->uid, uid)) {
-			log_window_t *lw = ll->lw;
-			if (lw && (raw ^ (LOG_FORMAT_RAW == lw->logformat))) continue;
-			if (lw)
-				logs_window_check(ll, time(NULL), raw); /* tutaj ? */
-			return ll;
-		}
+	for (i = logs_logs->len - 1; i >=0; i--) {
+		logs_log_t *ll = g_ptr_array_index(logs_logs, i);
+
+		if (raw ^ (LOG_FORMAT_RAW == ll->format)) continue;
+		if (xstrcmp(ll->uid, uid)) continue;
+		if (ll->session && xstrcmp(ll->session, session)) continue;
+
+		return ll;
 	}
 
 	return NULL;
 
 }
 
-static logs_log_t *logs_log_new(logs_log_t *l, const char *session, const char *uid, gboolean raw) {
+static logs_log_t *logs_log_new(const char *session, const char *target, gboolean raw) {
 	logs_log_t *ll;
-	int created = 0;
+	log_format_t format;
+	char *uid, *tmp;
 
-	debug("[logs] log_new uid = %s session %s", __(uid), __(session));
-	ll = l ? l : logs_log_find(session, uid, raw);
-	debug(" logs_log_t %x\n", ll);
+	if (LOG_FORMAT_NONE == (format = raw ? LOG_FORMAT_RAW : logs_log_format(session_find(session))))
+		return NULL;
 
-	if (!ll) {
-		ll = xmalloc(sizeof(logs_log_t));
-		ll->session = xstrdup(session);
-		ll->uid = xstrdup(uid);
-		created = 1;
+	if (!(uid = g_strdup(get_uid_any(session_find(session), target))))
+		uid = g_strdup(target);
+	if ((tmp = xstrchr(uid, '/')))
+		*tmp = '\0';		// strip resource
+
+	ll = logs_log_find(session, uid, raw);
+
+	if (ll) {
+		g_free(uid);
+		return ll;
 	}
 
-	if (!(ll->lw)) {
-		ll->lw = xmalloc(sizeof(log_window_t));
-		logs_window_check(ll, time(NULL), raw); /* l->log_format i l->path, l->t */
-		ll->lw->file = logs_open_file(ll->lw->path, ll->lw->logformat);
+	// Create new
+	ll = xmalloc(sizeof(logs_log_t));
+	ll->session = g_strdup(session);
+	ll->uid = uid;
+	ll->format = format;
+	ll->fname = logs_prepare_fname(ll);
+
+	g_ptr_array_add(logs_logs, ll);
+
+	if (ll->format == LOG_FORMAT_IRSSI && xstrlen(IRSSI_LOG_EKG2_OPENED)) {
+		logs_open_file(ll);
+		logs_irssi_sysmsg(ll, prepare_timestamp_format(IRSSI_LOG_EKG2_OPENED, time(NULL)));
 	}
 
-	if (created) {
-		if (ll->lw->logformat == LOG_FORMAT_IRSSI && xstrlen(IRSSI_LOG_EKG2_OPENED)) {
-			logs_irssi_sysmsg(ll->lw->file, prepare_timestamp_format(IRSSI_LOG_EKG2_OPENED, time(NULL)));
-		}
-		list_add(&log_logs, ll);
-	}
+	debug("[logs] log_new s=%s uid=%s ff=%d logs_log_t %x\n", __(session), __(uid), ll->format, ll);
+
 	return ll;
 }
 
 static logs_log_t *logs_log_open(const char *session, const char *uid, gboolean raw) {
 	logs_log_t *ll;
 
-	return (ll = logs_log_find(session, uid, raw)) ? ll : logs_log_new(NULL, session, uid, raw);
+	if (!(ll = logs_log_new(session, uid, raw)))
+		return NULL;
+
+	logs_open_file(ll);
+
+	if (ll->file)
+		return ll;
+
+	debug_error("logs_log_open(%s, %u, %d) - Can't open %s ff=%d\n", session, uid, raw, ll->fname, ll->format);
+
+	logs_log_destroy(ll);
+
+	return NULL;
 }
 
-static void logs_window_new(window_t *w) {
-	const char *uid;
+static void logs_open_files_check() {
+	int i;
 
-	if (!w->target || !w->session || w->id == WINDOW_CONTACTS_ID) /* XXX w->id in WINDOW_RESERVED_ID ??? */
+	if (config_logs_max_files <= 0)
 		return;
 
-	uid = get_uid_any(w->session, w->target);
-
-/* XXX, do we really want/need to create log struct with invalid uid? XXX */
-	logs_log_new(NULL, session_uid_get(w->session), uid ? uid : w->target, FALSE);
-	logs_log_new(NULL, session_uid_get(w->session), uid ? uid : w->target, TRUE);
-}
-
-
-static FILE *logs_window_close(logs_log_t *l, int close) {
-	log_window_t *lw;
-	FILE *f;
-
-	if (!l || !(lw = l->lw))
-		return NULL;
-
-	f = lw->file;
-
-	xfree(lw->path);
-	xfree(lw);
-	l->lw = NULL;
-	if (close && f) {
-		fclose(f);
-		return NULL;
+	for (i=0; (open_files_count > config_logs_max_files) && (i < logs_logs->len); i++) {
+		logs_log_close(g_ptr_array_index(logs_logs, i));
 	}
-	return f;
 }
 
-static void logs_log_destroy(logs_log_t *ll) {
-	time_t t = time(NULL);
-	int ff = (ll->lw) ? ll->lw->logformat : logs_log_format(session_find(ll->session));
+static void logs_log_reopen(logs_log_t *ll) {
+	char *session = g_strdup(ll->session);
+	char *uid = g_strdup(ll->uid);
+	char *oldfn = g_strdup(ll->fname);
 
-	if (ff == LOG_FORMAT_IRSSI && xstrlen(IRSSI_LOG_EKG2_CLOSED)) {
-		char *path	= (ll->lw) ? g_strdup(ll->lw->path) : logs_prepare_path(session_find(ll->session), config_logs_path, ll->uid, t);
-		FILE *f		= (ll->lw) ? logs_window_close(ll, 0) : NULL;
+	g_ptr_array_remove(logs_logs, ll);
 
-		if (!f)
-			f = logs_open_file(path, ff);
+	ll = logs_log_new(session, uid, FALSE);
 
-		if (f)
-			logs_irssi_sysmsg(f, prepare_timestamp_format(IRSSI_LOG_EKG2_CLOSED, t));
+	debug_function("logs_log_reopen() %s => %s\n", oldfn, ll?ll->fname:"");
 
-		fclose(f);
-		g_free(path);
-	} else
-		logs_window_close(ll, 1);
-
-
-	g_free(ll->session);
-	g_free(ll->uid);
+	g_free(session);
+	g_free(uid);
+	g_free(oldfn);
 }
 
-static void logs_changed_path(const char *var) {
-#ifdef FIXME_LOG_LOGS
-	list_t l;
-	if (in_autoexec || !log_logs)
-		return;
+/*
+ * logs_day_changed()
+ *
+ * "day-changed" handler
+ */
+static QUERY(logs_day_changed) {
+	struct tm *now	= *(va_arg(ap, struct tm**));
+	struct tm *old	= *(va_arg(ap, struct tm**));
+	int i;
+	gboolean dfmt;
 
-	for (l = log_logs; l; l = l->next) {
-		logs_log_t *ll = l->data;
+	if (!logs_logs)
+		return 0;
 
-		if (ll->lw) {
-			/* We don't need reopening file../ recreate magic struct.. because it'd be done when we try log smth into it. */
-			if (ll->lw->file) {
-				fclose(ll->lw->file);
-				ll->lw->file = NULL;
-			}
+	debug_function("logs_day_changed()\n");
 
-			if (ll->lw->path) {
-				xfree(ll->lw->path);
-				ll->lw->path = NULL;
-			}
+	dfmt =	((now->tm_year != old->tm_year) && xstrstr(config_logs_path, "%Y")) ||
+		((now->tm_mon != old->tm_mon) && xstrstr(config_logs_path, "%M")) ||
+		((now->tm_mday != old->tm_mday) && xstrstr(config_logs_path, "%D"));
+
+	for (i = logs_logs->len - 1; i >= 0; i--) {
+		logs_log_t *ll = g_ptr_array_index(logs_logs, i);
+		if (LOG_FORMAT_RAW == ll->format) continue;
+		if (dfmt)
+			logs_log_reopen(ll);
+		else
+			ll->daychanged = 1;
+	}
+
+	return 0;
+}
+
+/*
+ * logs_session_var_changed()
+ *
+ * "session-variable-changed" handler
+ */
+static QUERY(logs_session_var_changed) {
+	char *session	= *(va_arg(ap, char**));
+	char *var	= *(va_arg(ap, char**));
+	int i;
+
+	if (!logs_logs || (0 == logs_logs->len))
+		return 0;
+
+	if (!xstrcmp(var, "log_formats")) {
+		session_t *s = session_find(session);
+		int newformat = logs_log_format(s);
+
+		debug_function("logs_session_var_changed() s=%s, %s=%s\n", session, var, session_get(s, var));
+
+		for (i = logs_logs->len - 1; 0 <= i; i--) {
+			logs_log_t *ll = g_ptr_array_index(logs_logs, i);
+			if (LOG_FORMAT_RAW == ll->format) continue;
+			if (xstrcmp(ll->session, session)) continue;
+			if (ll->format != newformat)
+				logs_log_reopen(ll);
 		}
 	}
-#endif
+
+	return 0;
 }
 
-static void logs_changed_raw(const char *var) {
-#ifdef FIXME_LOG_LOGS
-	/* if logs:log_raw == 0, clean LOGRAW buffer */
-	if (!config_logs_log_raw)
-		buffer_free(&buffer_lograw);
-#endif
+/*
+ * plugin's variable handler
+ *
+ */
+static void logs_variable_changed(const char *var) {
+	int i;
+
+	g_return_if_fail(logs_logs != NULL);
+
+	if (!xstrcmp(var, "logs:max_open_files")) {
+		logs_open_files_check();
+	} else if (!xstrcmp(var, "logs:log_raw") && !config_logs_log_raw) {
+		// remove raw logs
+		for (i = logs_logs->len - 1; 0 <= i; i--) {
+			logs_log_t *ll = g_ptr_array_index(logs_logs, i);
+			if (LOG_FORMAT_RAW == ll->format)
+				g_ptr_array_remove(logs_logs, ll);
+		}
+	} else if (!xstrcmp(var, "logs:path") || !xstrcmp(var, "logs:log")) {
+		for (i = logs_logs->len - 1; 0 <= i; i--) {
+			logs_log_t *ll = g_ptr_array_index(logs_logs, i);
+			char *tmp;
+			if (LOG_FORMAT_RAW == ll->format) continue;
+			if (!config_logs_path || (LOG_FORMAT_NONE == config_logs_log)) {
+				g_ptr_array_remove(logs_logs, ll);
+				continue;
+			}
+
+			tmp = logs_prepare_fname(ll);
+			if (xstrcmp(tmp, ll->fname)) {
+				// new file name; reopen
+				logs_log_reopen(ll);
+			}
+			g_free(tmp);
+		}
+	} else if (!xstrcmp(var, "logs:log_status") && !config_logs_log_status) {
+		for (i = logs_logs->len - 1; 0 <= i; i--) {
+			logs_log_t *ll = g_ptr_array_index(logs_logs, i);
+			if (LOG_FORMAT_RAW == ll->format) continue;
+			if (!window_find_s(session_find(ll->session), ll->uid))
+				g_ptr_array_remove(logs_logs, ll);
+		}
+	}
 }
 
 static int logs_print_window(session_t *s, window_t *w, const char *line, time_t ts) {
@@ -459,7 +658,7 @@ static int logs_print_window(session_t *s, window_t *w, const char *line, time_t
 
 static void logs_buffer_raw_display(window_t *w) {
 	char *line, **lines;
-	log_window_t *lw;
+	logs_log_t *ll;
 	int i, j, n, all = (config_logs_remind_number <= 0);
 
 	if (!w || !w->session)
@@ -468,24 +667,16 @@ static void logs_buffer_raw_display(window_t *w) {
 	if ((WINDOW_STATUS_ID == w->id) || (WINDOW_CONTACTS_ID == w->id) || (WINDOW_LASTLOG_ID ==w->id ))
 		return;
 
-	// XXX session, uid XXX
-	if (!(lw = logs_log_open(w->session->uid, window_target(w), TRUE)->lw)) {
-		debug_error("[LOGS:%d] logs_buffer_raw_display, shit happen\n", __LINE__);
+	if (!(ll = logs_log_open(session_uid_get(w->session), w->target, TRUE)))
 		return;
-	}
-
-	if ( !(lw->file) && !(lw->file = logs_open_file(lw->path, lw->logformat)) ) {
-		debug_error("[LOGS:%d] logs_buffer_raw_display Cannot open/create file: %s\n", __LINE__, __(lw->path));
-		return;
-	}
 
 	if (!all)
 		lines = g_new0(char *, config_logs_remind_number + 1);
 
 	// read log
 	n = 0;
-	fseek(lw->file, 0, SEEK_SET);
-	while ((line = read_file(lw->file, 0))) {
+	fseek(ll->file, 0, SEEK_SET);
+	while ((line = read_file(ll->file, 0))) {
 		ekg_fix_utf8(line);
 		if (all) {
 			time_t t = g_ascii_strtoll(line, &line, 10);
@@ -504,7 +695,7 @@ static void logs_buffer_raw_display(window_t *w) {
 		return;
 	}
 
-	ftruncate(fileno(lw->file), 0);
+	ftruncate(fileno(ll->file), 0);
 
 	// display and rewrite log
 	w->lock++;
@@ -513,8 +704,8 @@ static void logs_buffer_raw_display(window_t *w) {
 		j = n % config_logs_remind_number;
 		if (!lines[j])
 			continue;
-		fputs(lines[j], lw->file);
-		fputc('\n', lw->file);
+		fputs(lines[j], ll->file);
+		fputc('\n', ll->file);
 
 		t = g_ascii_strtoll(lines[j], &line, 10);
 		if (t>0 && *line == ' ') line++;
@@ -526,152 +717,6 @@ static void logs_buffer_raw_display(window_t *w) {
 
 	query_emit(NULL, "ui-window-refresh");
 
-}
-
-/*
- * przygotowanie nazwy pliku bez rozszerzenia
- * %S - sesja nasza
- * %u - użytkownik (uid), z którym piszemy
- * %U - użytkownik (nick)   -||-
- * %Y, %M, %D - rok, miesiąc, dzień
- * zwraca ścieżkę, która należy ręcznie zwolnić przez xfree()
- */
-
-static char *logs_prepare_path(session_t *session, const char *logs_path, const char *uid, time_t sent) {
-	char *uidtmp = g_strdup(uid);
-	struct tm *tm = NULL;
-	string_t buf;
-
-	if (!logs_path)
-		return NULL;
-
-	if (xstrchr(uidtmp, '/'))
-		*(xstrchr(uidtmp, '/')) = 0; // strip resource
-
-	buf = g_string_new(NULL);
-
-	while (*logs_path) {
-		if (*logs_path == '%' && *(logs_path+1) != '\0') {
-			char *append = NULL;
-			logs_path++;
-			switch (*logs_path) {
-				case 'S':	append = g_strdup(session ? session->uid : "_null_");
-						break;
-				case 'P':	append = g_strdup(config_profile ? config_profile : "_default_");
-						break;
-				case 'U':
-				case 'u':	append = g_strdup(*logs_path=='u' ? get_uid(session, uid) : get_nickname(session, uid));
-						if (!append)
-							append = g_strdup(uidtmp);
-						break;
-				case 'Y':	if (!tm) tm = localtime(&sent);
-						append = g_strdup_printf("%4d", tm->tm_year+1900);
-						break;
-				case 'M':	if (!tm) tm = localtime(&sent);
-						append = g_strdup_printf("%02d", tm->tm_mon+1);
-						break;
-				case 'D':	if (!tm) tm = localtime(&sent);
-						append = g_strdup_printf("%02d", tm->tm_mday);
-						break;
-				default:	string_append_c(buf, *logs_path);
-			};
-			if (append) {
-				// XXX g_uri_escape_string( , , allow_utf8) ?
-				char *tmp = g_uri_escape_string(append, G_URI_RESERVED_CHARS_ALLOWED_IN_PATH_ELEMENT, TRUE);
-				g_string_append(buf, tmp);
-				g_free(tmp);
-				g_free(append);
-			}
-
-		} else if (*logs_path == '~' && (*(logs_path+1) == '/' || *(logs_path+1) == '\0')) {
-			g_string_append(buf, home_dir);
-			//string_append_c(buf, '/');
-		} else
-			string_append_c(buf, *logs_path);
-		logs_path++;
-	};
-
-	g_free(uidtmp);
-
-	// TODO sanityzacja sciezki - wywalic "../",
-	xstrtr(buf->str, ' ', '_');
-
-	return g_string_free(buf, FALSE);
-}
-
-/*
- * otwarcie pliku do zapisu/odczytu
- * tworzy wszystkie katalogi po drodze, jeśli nie istnieją i mkdir =1
- * ff - xml 2 || irssi 3 || simple 1
- * zwraca numer deskryptora bądź NULL
- */
-
-static FILE* logs_open_file(char *path, int ff) {
-	char fullname[PATH_MAX];
-
-	if (ff != LOG_FORMAT_IRSSI && ff != LOG_FORMAT_SIMPLE && ff != LOG_FORMAT_XML && ff != LOG_FORMAT_RAW) {
-		if (ff == LOG_FORMAT_NONE)
-			debug("[logs] opening log file %s with ff == LOG_FORMAT_NONE CANCELLED\n", __(path), ff);
-		else	debug("[logs] opening log file %s with ff == %d CANCELED\n", __(path), ff);
-		return NULL;
-	}
-
-	debug("[logs] opening log file %s ff:%d\n", __(path), ff);
-
-	if (!path) {
-		errno = EACCES; /* = 0 ? */
-		return NULL;
-	}
-
-	{	/* check if such file was already open SLOW :( */
-		list_t l;
-
-		for (l=log_logs; l; l = l->next) {
-			logs_log_t *ll = l->data;
-			log_window_t *lw;
-
-			if (!ll || !(lw = ll->lw))
-				continue;
-
-/*			debug_error("here: %x [%s, %s] [%d %d]\n", lw->file, lw->path, path, lw->logformat, ff); */
-
-			if (lw->file && lw->logformat == ff && !xstrcmp(lw->path, path)) {
-				FILE *f = lw->file;
-				lw->file = NULL;	/* simulate fclose() on this */
-				return f;		/* simulate fopen() here */
-			}
-		}
-	}
-
-	if (mkdir_recursive(path, 0)) {
-		print("directory_cant_create", path, strerror(errno));
-		return NULL;
-	}
-
-	g_strlcpy(fullname, path, PATH_MAX);
-
-	if (ff == LOG_FORMAT_IRSSI)		g_strlcat(fullname, ".log", PATH_MAX);
-	else if (ff == LOG_FORMAT_SIMPLE)	g_strlcat(fullname, ".txt", PATH_MAX);
-	else if (ff == LOG_FORMAT_XML)		g_strlcat(fullname, ".xml", PATH_MAX);
-	else if (ff == LOG_FORMAT_RAW)		g_strlcat(fullname, ".raw", PATH_MAX);
-
-	/* if xml, prepare xml file */
-	if (ff == LOG_FORMAT_XML) {
-		FILE *fdesc = fopen(fullname, "r+");
-		if (!fdesc) {
-			if (!(fdesc = fopen(fullname, "w+")))
-				return NULL;
-					/* XXX: what about old, locale-encoded logs? */
-			fputs("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", fdesc);
-			fputs("<!DOCTYPE ekg2log PUBLIC \"-//ekg2log//DTD ekg2log 1.0//EN\" ", fdesc);
-			fputs("\"http://www.ekg2.org/DTD/ekg2log.dtd\">\n", fdesc);
-			fputs("<ekg2log xmlns=\"http://www.ekg2.org/DTD/\">\n", fdesc);
-			fputs("</ekg2log>\n", fdesc);
-		}
-		return fdesc;
-	}
-
-	return fopen(fullname, "a+");
 }
 
 static const char *logs_class2str(msgclass_t class) {
@@ -841,12 +886,17 @@ static void logs_gaim()
  * write to file like irssi do.
  */
 
-static void logs_irssi(FILE *file, const char *session, const char *uid, const char *text, time_t sent, msgclass_t class) {
+static void logs_irssi(logs_log_t *log, const char *session, const char *uid, const char *text, time_t sent, msgclass_t class) {
 	const char *nuid = NULL;	/* get_nickname(session_find(session), uid) */
 	gchar *tmp, *enc;
 
-	if (!file)
-		return;
+	g_return_if_fail(log != NULL);
+	g_return_if_fail(log->file != NULL);
+
+	if (log->daychanged) {
+		log->daychanged = 0;
+		logs_irssi_sysmsg(log, prepare_timestamp_format(IRSSI_LOG_DAY_CHANGED, time(NULL)));
+	}
 
 	switch (class) {
 		case EKG_MSGCLASS_PRIV_STATUS:
@@ -871,39 +921,16 @@ static void logs_irssi(FILE *file, const char *session, const char *uid, const c
 			return; /* to avoid flushisk file */
 	}
 	enc = ekg_recode_to(config_logs_encoding, tmp);
-	fputs(enc, file);
+	fputs(enc, log->file);
 	g_free(tmp);
 	g_free(enc);
-	fflush(file);
+	fflush(log->file);
 }
 
-static void logs_irssi_sysmsg(FILE *file, const char *text) {
-	logs_irssi(file, NULL, NULL, text, 0, EKG_MSGCLASS_SYSTEM);
+static void logs_irssi_sysmsg(logs_log_t *log, const char *text) {
+	logs_irssi(log, NULL, NULL, text, 0, EKG_MSGCLASS_SYSTEM);
 }
 
-/*
- * zwraca na przemian jeden z dwóch statycznych buforów, więc w obrębie
- * jednego wyrażenia można wywołać tę funkcję dwukrotnie.
- */
-/* w sumie starczylby 1 statyczny bufor ... */
-static const char *prepare_timestamp_format(const char *format, time_t t) {
-	static char buf[2][100];
-	struct tm *tm = localtime(&t);
-	static int i = 0;
-
-	if (!format)
-		return ekg_itoa(t);
-
-	if (!format[0])
-		return "";
-
-	i = i % 2;
-
-	if (!strftime(buf[i], sizeof(buf[0]), format, tm))
-		return "TOOLONG";
-
-	return buf[i++];
-}
 
 /**
  * glowny handler
@@ -920,7 +947,7 @@ static QUERY(logs_handler) {
 		char **UNUSED(seq)		= va_arg(ap, char**);
 
 	session_t *s = session_find(session); // session pointer
-	log_window_t *lw;
+	logs_log_t *ll;
 	char *conf_uid = NULL;		/* conference-uid */
 	char *target_uid;
 
@@ -948,31 +975,22 @@ static QUERY(logs_handler) {
 		}
 	}
 
-	if (!(lw = logs_log_open(session, conf_uid ? conf_uid : target_uid, FALSE)->lw)) {
-		debug_error("[LOGS:%d] logs_handler, shit happen\n", __LINE__);
+	if (!(ll = logs_log_open(session, conf_uid ? conf_uid : target_uid, FALSE)))
 		return 0;
-	}
-
-	if ( !(lw->file) && !(lw->file = logs_open_file(lw->path, lw->logformat)) ) {
-		debug_error("[LOGS:%d] logs_handler Cannot open/create file: %s\n", __LINE__, __(lw->path));
-		return 0;
-	}
-
-	/*	debug("[LOGS_MSG_HANDLER] %s : %s %d %x\n", target_uid, lw->path, lw->logformat, lw->file); */
 
 	/* uid = uid | target_uid ? */
 
-	switch (lw->logformat) {
+	switch (ll->format) {
 		case LOG_FORMAT_SIMPLE:
-			logs_simple(lw->file, session, target_uid, text, sent, class, (char*)NULL);
+			logs_simple(ll->file, session, target_uid, text, sent, class, (char*)NULL);
 			break;
 
 		case LOG_FORMAT_XML:
-			logs_xml(lw->file, session, uid, text, sent, class);
+			logs_xml(ll->file, session, uid, text, sent, class);
 			break;
 
 		case LOG_FORMAT_IRSSI:
-			logs_irssi(lw->file, session, uid, text, sent, EKG_MSGCLASS_MESSAGE);
+			logs_irssi(ll, session, uid, text, sent, EKG_MSGCLASS_MESSAGE);
 			break;
 	}
 	return 0;
@@ -988,7 +1006,7 @@ static QUERY(logs_status_handler) {
 	int status	= *(va_arg(ap, int*));
 	char *descr	= *(va_arg(ap, char**));
 
-	log_window_t *lw;
+	logs_log_t *ll;
 
 	/* joiny, party	ircowe jakies inne query. lub zrobic to w pluginie irc... ? */
 	/*
@@ -998,36 +1016,32 @@ static QUERY(logs_status_handler) {
 	if (config_logs_log_status <= 0)
 		return 0;
 
-	if (!(lw = logs_log_open(session, uid, FALSE)->lw)) {
-		debug_error("[LOGS:%d] logs_status_handler, shit happen\n", __LINE__);
+	if (ignored_check(session_find(session), uid) & IGNORE_LOG)
 		return 0;
-	}
 
-	if ( !(lw->file) && !(lw->file = logs_open_file(lw->path, lw->logformat)) ) {
-		debug_error("[LOGS:%d] logs_status_handler Cannot open/create file: %s\n", __LINE__, __(lw->path));
+	if (!(ll = logs_log_open(session, uid, FALSE)))
 		return 0;
-	}
 
 	if (!descr)
 		descr = "";
 
-	switch (lw->logformat) {
+	switch (ll->format) {
 		case LOG_FORMAT_SIMPLE:
 		{
-			logs_simple(lw->file, session, uid, descr, time(NULL), EKG_MSGCLASS_PRIV_STATUS, ekg_status_string(status, 0));
+			logs_simple(ll->file, session, uid, descr, time(NULL), EKG_MSGCLASS_PRIV_STATUS, ekg_status_string(status, 0));
 			break;
 		}
 
 		case LOG_FORMAT_XML:
 		{
-			// logs_xml(lw->file, session, uid, descr, time(NULL), EKG_MSGCLASS_PRIV_STATUS, status);
+			// logs_xml(ll->file, session, uid, descr, time(NULL), EKG_MSGCLASS_PRIV_STATUS, status);
 			break;
 		}
 
 		case LOG_FORMAT_IRSSI:
 		{
 			char *_what = saprintf("%s (%s)", descr, __(ekg_status_string(status, 0)));
-			logs_irssi(lw->file, session, uid, _what, time(NULL), EKG_MSGCLASS_PRIV_STATUS);
+			logs_irssi(ll, session, uid, _what, time(NULL), EKG_MSGCLASS_PRIV_STATUS);
 			xfree(_what);
 			break;
 		}
@@ -1043,25 +1057,18 @@ static QUERY(logs_handler_irc) {
 		int  *UNUSED(foryou)	= va_arg(ap, int*);
 		int  *UNUSED(priv_data)	= va_arg(ap, int*);
 	char *channame	= *(va_arg(ap, char**));
-	log_window_t *lw;
+	logs_log_t *ll;
 	session_t *s = session_find(session);
 
 	if (ignored_check(s, uid) & IGNORE_LOG)
 		return 0;
 
-	if (!(lw = logs_log_open(session, channame, FALSE)->lw)) {
-		debug_error("[LOGS:%d] logs_handler_irc, shit happen\n", __LINE__);
+	if (!(ll = logs_log_open(session, channame, FALSE)))
 		return 0;
-	}
 
-	if ( !(lw->file) && !(lw->file = logs_open_file(lw->path, lw->logformat)) ) {
-		debug_error("[LOGS:%d] logs_handler_irc Cannot open/create file: %s\n", __LINE__, __(lw->path));
-		return 0;
-	}
-
-	switch (lw->logformat) {
+	switch (ll->format) {
 		case LOG_FORMAT_IRSSI:
-			logs_irssi(lw->file, session, uid, text, time(NULL), EKG_MSGCLASS_MESSAGE);
+			logs_irssi(ll, session, uid, text, time(NULL), EKG_MSGCLASS_MESSAGE);
 			break;
 	}
 	return 0;
@@ -1070,40 +1077,39 @@ static QUERY(logs_handler_irc) {
 QUERY(logs_handler_raw) {
 	window_t *w	= *(va_arg(ap, window_t **));
 	fstring_t *line = *(va_arg(ap, fstring_t **));
-	log_window_t *lw;
+	logs_log_t *ll;
 	char *str;
 
 	if (!config_logs_log_raw) return 0;
 	if (!w || !line) return 0;
+	// XXX
 	if (w->id == WINDOW_DEBUG_ID || w->id == WINDOW_STATUS_ID || w->id == WINDOW_CONTACTS_ID) return 0;
+
+	if (!(ll = logs_log_open(session_uid_get(w->session), w->target, TRUE)))
+		return 0;
 
 	/* line->str + line->attr == ascii str with formats */
 	str  = fstring_reverse(line);
 
-	// XXX session, uid XXX
-	if (!(lw = logs_log_open(w->session->uid, window_target(w), TRUE)->lw)) {
-		debug_error("[LOGS:%d] logs_handler_raw, shit happen\n", __LINE__);
-		return 0;
-	}
+	fprintf(ll->file, "%ld %s\n", time(NULL), str);
+	fflush(ll->file);
 
-	if ( !(lw->file) && !(lw->file = logs_open_file(lw->path, lw->logformat)) ) {
-		debug_error("[LOGS:%d] logs_handler_raw Cannot open/create file: %s\n", __LINE__, __(lw->path));
-		return 0;
-	}
-
-	fseek(lw->file, 0, SEEK_END);
-	fprintf(lw->file, "%ld %s\n", time(NULL), str);
-	fflush(lw->file);
-
-	xfree(str);
+	g_free(str);
 
 	return 0;
 }
 
+static void logs_window_new(window_t *w) {
+
+	if (!w->target || !w->session || w->id == WINDOW_CONTACTS_ID || w->id == WINDOW_LASTLOG_ID)
+		return;
+
+	logs_log_new(session_uid_get(w->session), w->target, FALSE);
+	logs_log_new(session_uid_get(w->session), w->target, TRUE);
+}
+
 static QUERY(logs_handler_newwin) {
 	window_t *w = *(va_arg(ap, window_t **));
-
-/* w->floating */
 
 	logs_window_new(w);
 
@@ -1121,8 +1127,10 @@ static QUERY(logs_postinit) {
 
 static QUERY(logs_handler_killwin)  {
 	window_t *w = *(va_arg(ap, window_t **));
-	logs_window_close(logs_log_find(w->session ? w->session->uid : NULL, w->target, FALSE), 1);
-	logs_window_close(logs_log_find(w->session ? w->session->uid : NULL, w->target, TRUE), 1);
+
+	// logs_log_new() is wrapper for logs_log_find()
+	g_ptr_array_remove(logs_logs, logs_log_new(session_uid_get(w->session), w->target, FALSE));
+	g_ptr_array_remove(logs_logs, logs_log_new(session_uid_get(w->session), w->target, TRUE));
 	return 0;
 }
 
@@ -1131,6 +1139,27 @@ static QUERY(logs_setvar_default) {
 	xfree(config_logs_timestamp);
 	config_logs_path = xstrdup("~/.ekg2/logs/%S/%u");
 	config_logs_timestamp = NULL;
+	return 0;
+}
+
+static COMMAND(debug_logs) {
+	int i;
+
+	g_return_val_if_fail(logs_logs != NULL, 1);
+
+	printq("generic_bold", (" fd session    uid        fname"));
+
+	for (i = 0; i < logs_logs->len; i++) {
+		logs_log_t *ll = g_ptr_array_index(logs_logs, i);
+		session_t *s = session_find(ll->session);
+		char *line = g_strdup_printf("%3s %-10s %-10s %s",
+				ll->file ? ekg_itoa(fileno(ll->file)) : "-",
+				(s && s->alias) ? s->alias  : ll->session,
+				ll->uid,
+				ll->fname);
+		printq("generic", line);
+		g_free(line);
+	}
 	return 0;
 }
 
@@ -1148,74 +1177,35 @@ EXPORT int logs_plugin_init(int prio) {
 	query_connect(&logs_plugin, "ui-window-kill",	logs_handler_killwin, NULL);
 	query_connect(&logs_plugin, "protocol-status", logs_status_handler, NULL);
 	query_connect(&logs_plugin, "config-postinit", logs_postinit, NULL);
+	query_connect(&logs_plugin, "day-changed", logs_day_changed, NULL);
+	query_connect(&logs_plugin, "session-variable-changed", logs_session_var_changed, NULL);
 	/* XXX, implement UI_WINDOW_TARGET_CHANGED, IMPORTANT!!!!!! */
 
-		/* we need to reopen files on change and that's what logs_changed_path() does */
-	variable_add(&logs_plugin, ("encoding"), VAR_STR, 1, &config_logs_encoding, &logs_changed_path, NULL, NULL);
-	/* TODO: maksymalna ilosc plikow otwartych przez plugin logs */
-	variable_add(&logs_plugin, ("log_max_open_files"), VAR_INT, 1, &config_logs_max_files, NULL /* XXX: logs_changed_maxfd */, NULL, NULL);
-	variable_add(&logs_plugin, ("log"), VAR_MAP, 1, &config_logs_log, &logs_changed_path,
+	variable_add(&logs_plugin, ("encoding"), VAR_STR, 1, &config_logs_encoding, NULL, NULL, NULL);
+	variable_add(&logs_plugin, ("max_open_files"), VAR_INT, 1, &config_logs_max_files, &logs_variable_changed, NULL, NULL);
+	variable_add(&logs_plugin, ("log"), VAR_MAP, 1, &config_logs_log, &logs_variable_changed,
 			variable_map(3,
 				LOG_FORMAT_NONE, 0, "none",
 				LOG_FORMAT_SIMPLE, LOG_FORMAT_XML, "simple",
 				LOG_FORMAT_XML, LOG_FORMAT_SIMPLE, "xml"),
 			NULL);
-	variable_add(&logs_plugin, ("log_raw"), VAR_BOOL, 1, &config_logs_log_raw, &logs_changed_raw, NULL, NULL);
+	variable_add(&logs_plugin, ("log_raw"), VAR_BOOL, 1, &config_logs_log_raw, &logs_variable_changed, NULL, NULL);
 	variable_add(&logs_plugin, ("log_ignored"), VAR_INT, 1, &config_logs_log_ignored, NULL, NULL, NULL);
-	variable_add(&logs_plugin, ("log_status"), VAR_BOOL, 1, &config_logs_log_status, NULL, NULL, NULL);
-	variable_add(&logs_plugin, ("path"), VAR_DIR, 1, &config_logs_path, &logs_changed_path, NULL, NULL);
+	variable_add(&logs_plugin, ("log_status"), VAR_BOOL, 1, &config_logs_log_status, &logs_variable_changed, NULL, NULL);
+	variable_add(&logs_plugin, ("path"), VAR_DIR, 1, &config_logs_path, &logs_variable_changed, NULL, NULL);
 	variable_add(&logs_plugin, ("remind_number"), VAR_INT, 1, &config_logs_remind_number, NULL, NULL, NULL);
 	variable_add(&logs_plugin, ("timestamp"), VAR_STR, 1, &config_logs_timestamp, NULL, NULL, NULL);
+
+	command_add(&logs_plugin, ("_logs"), NULL, debug_logs, 0, NULL);
+
+	logs_logs = g_ptr_array_new_with_free_func(logs_log_destroy);
 
 	return 0;
 }
 
 static int logs_plugin_destroy() {
-#ifdef FIXME_LOG_LOGS
-	list_t old_logs = log_logs;
-	struct buffer *b;
 
-	for (; log_logs; log_logs = log_logs->next) {
-		logs_log_t *ll = log_logs->data;
-
-		logs_log_destroy(ll);
-	}
-	list_destroy(old_logs, 1);	log_logs = NULL;
-#endif
-
-#ifdef FIXME_RAW
-	if (config_logs_log_raw) for (b = buffer_lograw.data; b;) {
-		static FILE *f = NULL;
-		static char *oldtarget = NULL;
-		/*
-		 * path: b->target
-		 *   ts: b->ts
-		 *  str: b->line
-		 */
-		if (f && !xstrcmp(b->target, oldtarget));		/* if file is already opened and current target match old one, use it */
-		else {
-			if (f) fclose(f);				/* close file */
-			f = logs_open_file(b->target, LOG_FORMAT_RAW);	/* otherwise try to open new file/reopen */
-		}
-
-		if (f) {
-			fprintf(f, "%i %s\n", (unsigned int) b->ts, b->line);
-		} else debug_error("[LOGS:%d] Cannot open/create file: %s\n", __LINE__, __(b->target));
-
-		xfree(b->line);
-		xfree(oldtarget);
-		oldtarget = b->target;
-
-		b = LIST_REMOVE2(&(buffer_lograw.data), b, NULL);
-
-		if (!b) {
-			if (f) fclose(f);
-			xfree(oldtarget);
-		}
-	}
-	/* just in case */
-	buffer_free(&buffer_lograw);
-#endif
+	g_ptr_array_free(logs_logs, TRUE);
 
 	plugin_unregister(&logs_plugin);
 	return 0;
