@@ -233,9 +233,12 @@ static void ekg2_conneciton_set_error(connection_data_t *cd, GError **err, const
 	g_string_vprintf(buffer, format, args);
 	va_end(args);
 
-	g_prefix_error(&cd->error, buffer->str);
-	debug_error("%s\n", cd->error->message);
-
+	if (cd->error) {
+		g_prefix_error(&cd->error, buffer->str);
+		debug_error("%s\n", cd->error->message);
+	} else {
+		debug_error("%s (null)\n", buffer->str);
+	}
 }
 
 int ekg2_connection_write(connection_data_t *cd, gconstpointer buffer, gsize length) {
