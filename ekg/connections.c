@@ -341,7 +341,7 @@ static void ekg2_failure_callback(connection_data_t *cd) {
 	if (s->disconnecting && g_error_matches(err, EKG_CONNECTION_ERROR, EKG_CONNECTION_ERROR_EOF))
 		cd->disconnect_handler(s, NULL, EKG_DISCONNECT_USER);
 	else
-		cd->disconnect_handler(s, err->message, EKG_DISCONNECT_NETWORK);
+		cd->disconnect_handler(s, err ? err->message : "", EKG_DISCONNECT_NETWORK);
 }
 
 static void ekg2_connect_failure_handler(connection_data_t *cd) {
