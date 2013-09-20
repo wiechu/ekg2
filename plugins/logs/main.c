@@ -377,6 +377,8 @@ static void logs_log_destroy(gpointer data) {
 	g_free(log->fname);
 	g_free(log->session);
 	g_free(log->uid);
+
+	g_free(log);
 }
 
 /*
@@ -495,7 +497,7 @@ static logs_log_t *logs_log_open(const char *session, const char *uid, gboolean 
 
 	debug_error("logs_log_open(%s, %u, %d) - Can't open %s ff=%d\n", session, uid, raw, ll->fname, ll->format);
 
-	logs_log_destroy(ll);
+	g_ptr_array_remove(logs_logs, ll);
 
 	return NULL;
 }
