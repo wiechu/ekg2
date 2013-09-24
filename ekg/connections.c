@@ -572,7 +572,7 @@ static void async_resolvers(connection_data_t *cd, char *query, aresolv_t type) 
 	}
 
 	if (pid > 0) {
-		ekg_child_add(NULL, "async_resolver", pid, NULL, NULL, NULL, NULL);
+		ekg_child_add(NULL, "async_resolver: %d", pid, NULL, NULL, NULL, pid);
 		return;
 	}
 
@@ -627,6 +627,7 @@ static void async_resolvers(connection_data_t *cd, char *query, aresolv_t type) 
 
 	g_strfreev(results);
 
+	sleep(1);
 	exit(0);
 }
 
